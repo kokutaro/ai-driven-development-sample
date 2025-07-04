@@ -1,0 +1,44 @@
+coverage:
+  precision: 2
+  round: down
+  range: '70...100'
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        if_not_found: success
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+        if_not_found: success
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: 'reach,diff,flags,files,footer'
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+ignore:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - '**/*.d.ts'
+  - '**/types.ts'
+  - '**/index.ts'
+  - 'src/app/**/*.tsx'
+  - 'tests/**/*'
+  - 'node_modules/**/*'
+  - '.next/**/*'
+  - 'coverage/**/*'
