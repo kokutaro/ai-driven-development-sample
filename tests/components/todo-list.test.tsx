@@ -1,6 +1,5 @@
 import { MantineProvider } from '@mantine/core'
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, beforeEach } from 'vitest'
 
 import { TodoList } from '../../src/components/features/todo-list'
 import { useTodoStore } from '../../stores/todo-store'
