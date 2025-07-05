@@ -1,19 +1,17 @@
-import { resolve } from 'path'
+import path from 'node:path'
 
+import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./tests/setup.ts'],
-    typecheck: {
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
     },
+  },
+  test: {
     coverage: {
-      reporter: ['text', 'json', 'lcov', 'html'],
-      include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.test.{ts,tsx}',
         'src/**/*.spec.{ts,tsx}',
@@ -22,6 +20,8 @@ export default defineConfig({
         'src/**/types.ts',
         'src/app/**/*.tsx', // Next.js App Router pages
       ],
+      include: ['src/**/*.{ts,tsx}'],
+      reporter: ['text', 'json', 'lcov', 'html'],
       thresholds: {
         global: {
           branches: 80,
@@ -31,10 +31,12 @@ export default defineConfig({
         },
       },
     },
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.ts'],
+    typecheck: {
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
+      include: ['src/**/*.{ts,tsx}'],
     },
   },
 })
