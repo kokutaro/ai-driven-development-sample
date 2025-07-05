@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 
 import { Container, Paper, Stack, Title } from '@mantine/core'
 
+import { TodoStatsDashboard } from '@/components/dashboard/todo-stats-dashboard'
 import { TodoAddForm } from '@/components/todo-add-form'
 import { TodoList } from '@/components/todo-list'
 import { useTodoStore } from '@/stores/todo-store'
@@ -22,10 +23,11 @@ export default function HomePage() {
   return (
     <Container py="xl" size="md">
       <Stack gap="xl">
+        <Title order={1} ta="center">
+          Think Harder TODO App
+        </Title>
+        <TodoStatsDashboard />
         <Paper p="xl" withBorder>
-          <Title mb="lg" order={1} ta="center">
-            Think Harder TODO App
-          </Title>
           <Stack gap="lg">
             <TodoAddForm />
             <TodoList />
