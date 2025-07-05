@@ -3,31 +3,87 @@ import { vi } from 'vitest'
 
 import type { CreateTodoInput, Todo, UpdateTodoInput } from '@/types/todo'
 
+import * as todoService from '@/lib/todo-service'
 import { useTodoStats, useTodoStore } from '@/stores/todo-store'
 
-// Mock crypto.randomUUID for consistent testing
+// Test constants
+const mockDate = new Date('2023-12-25T10:00:00Z')
 const mockId = 'test-id-123'
-const mockRandomUUID = vi.fn(() => mockId)
-Object.defineProperty(globalThis, 'crypto', {
-  value: {
-    randomUUID: mockRandomUUID,
-  },
+
+// Mock todo-service module
+vi.mock('@/lib/todo-service', () => {
+  const mockDate = new Date('2023-12-25T10:00:00Z')
+
+  // In-memory todos storage for testing
+  let todosDB: Todo[] = []
+  let idCounter = 0
+
+  return {
+    // Helper function to reset the mock DB
+    __resetDB: () => {
+      todosDB = []
+      idCounter = 0
+    },
+
+    createTodo: vi.fn(async (input: CreateTodoInput): Promise<Todo> => {
+      const id = idCounter === 0 ? 'test-id-123' : `test-id-${idCounter}`
+      idCounter++
+      const newTodo: Todo = {
+        createdAt: mockDate,
+        description: input.description,
+        id,
+        status: 'pending',
+        title: input.title,
+        updatedAt: mockDate,
+      }
+      todosDB.push(newTodo)
+      return newTodo
+    }),
+
+    deleteTodo: vi.fn(async (id: string) => {
+      const todoIndex = todosDB.findIndex((todo) => todo.id === id)
+      if (todoIndex === -1) {
+        throw new Error('Todo not found')
+      }
+      todosDB.splice(todoIndex, 1)
+    }),
+
+    getTodos: vi.fn(async (): Promise<Todo[]> => {
+      return [...todosDB]
+    }),
+
+    toggleTodo: vi.fn(async (id: string): Promise<Todo> => {
+      const todo = todosDB.find((t) => t.id === id)
+      if (!todo) {
+        throw new Error('Todo not found')
+      }
+      todo.status = todo.status === 'completed' ? 'pending' : 'completed'
+      todo.updatedAt = mockDate
+      return { ...todo }
+    }),
+
+    updateTodo: vi.fn(
+      async (id: string, input: UpdateTodoInput): Promise<Todo> => {
+        const todo = todosDB.find((t) => t.id === id)
+        if (!todo) {
+          throw new Error('Todo not found')
+        }
+        if (input.title !== undefined) todo.title = input.title
+        if (input.description !== undefined)
+          todo.description = input.description
+        if (input.status !== undefined) todo.status = input.status
+        todo.updatedAt = mockDate
+        return { ...todo }
+      }
+    ),
+  }
 })
 
-// Mock Date for consistent testing
-const mockDate = new Date('2023-12-25T10:00:00Z')
-const mockDateNow = vi.fn(() => mockDate.getTime())
-Object.defineProperty(globalThis, 'Date', {
-  value: class extends Date {
-    constructor() {
-      super()
-      return mockDate
-    }
-    static now() {
-      return mockDateNow()
-    }
-  },
-})
+// Access mock service for testing
+interface MockTodoService {
+  __resetDB: () => void
+}
+const mockService = todoService as unknown as MockTodoService
 
 describe('useTodoStore', () => {
   beforeEach(() => {
@@ -36,13 +92,10 @@ describe('useTodoStore', () => {
       isLoading: false,
       todos: [],
     })
-    mockRandomUUID.mockReturnValue(mockId)
-    mockDateNow.mockReturnValue(mockDate.getTime())
-  })
-
-  afterEach(() => {
-    mockRandomUUID.mockClear()
-    mockDateNow.mockClear()
+    // Reset mock database
+    mockService.__resetDB()
+    // Clear all mock call history
+    vi.clearAllMocks()
   })
 
   describe('addTodo', () => {
@@ -145,12 +198,13 @@ describe('useTodoStore', () => {
         await result.current.addTodo(input)
       })
 
-      // Act
-      await act(async () => {
-        await result.current.deleteTodo('non-existent-id')
-      })
+      // Act & Assert
+      await expect(
+        act(async () => {
+          await result.current.deleteTodo('non-existent-id')
+        })
+      ).rejects.toThrow('Todo not found')
 
-      // Assert
       expect(result.current.todos).toHaveLength(1)
     })
   })
@@ -412,25 +466,19 @@ describe('useTodoStore', () => {
     it('toggles todo status from pending to completed', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
-      const todo: Todo = {
-        createdAt: mockDate,
-        id: 'test-id',
-        status: 'pending',
-        title: 'Test Todo',
-        updatedAt: mockDate,
-      }
+      const input: CreateTodoInput = { title: 'Test Todo' }
 
       await act(async () => {
-        await result.current.initializeTodos([todo])
+        await result.current.addTodo(input)
       })
 
       // Act
       await act(async () => {
-        await result.current.toggleTodoStatus('test-id')
+        await result.current.toggleTodoStatus(mockId)
       })
 
       // Assert
-      const updatedTodo = result.current.getTodoById('test-id')
+      const updatedTodo = result.current.getTodoById(mockId)
       expect(updatedTodo?.status).toBe('completed')
       expect(updatedTodo?.updatedAt).toEqual(mockDate)
     })
@@ -438,25 +486,21 @@ describe('useTodoStore', () => {
     it('toggles todo status from completed to pending', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
-      const todo: Todo = {
-        createdAt: mockDate,
-        id: 'test-id',
-        status: 'completed',
-        title: 'Test Todo',
-        updatedAt: mockDate,
-      }
+      const input: CreateTodoInput = { title: 'Test Todo' }
 
       await act(async () => {
-        await result.current.initializeTodos([todo])
+        await result.current.addTodo(input)
+        // First toggle to make it completed
+        await result.current.toggleTodoStatus(mockId)
       })
 
       // Act
       await act(async () => {
-        await result.current.toggleTodoStatus('test-id')
+        await result.current.toggleTodoStatus(mockId)
       })
 
       // Assert
-      const updatedTodo = result.current.getTodoById('test-id')
+      const updatedTodo = result.current.getTodoById(mockId)
       expect(updatedTodo?.status).toBe('pending')
       expect(updatedTodo?.updatedAt).toEqual(mockDate)
     })
@@ -464,25 +508,20 @@ describe('useTodoStore', () => {
     it('does not change anything when todo does not exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
-      const todo: Todo = {
-        createdAt: mockDate,
-        id: 'test-id',
-        status: 'pending',
-        title: 'Test Todo',
-        updatedAt: mockDate,
-      }
+      const input: CreateTodoInput = { title: 'Test Todo' }
 
       await act(async () => {
-        await result.current.initializeTodos([todo])
+        await result.current.addTodo(input)
       })
 
-      // Act
-      await act(async () => {
-        await result.current.toggleTodoStatus('non-existent-id')
-      })
+      // Act & Assert
+      await expect(
+        act(async () => {
+          await result.current.toggleTodoStatus('non-existent-id')
+        })
+      ).rejects.toThrow('Todo not found')
 
-      // Assert
-      const existingTodo = result.current.getTodoById('test-id')
+      const existingTodo = result.current.getTodoById(mockId)
       expect(existingTodo?.status).toBe('pending')
     })
   })
@@ -491,17 +530,13 @@ describe('useTodoStore', () => {
     it('updates todo with new values', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
-      const todo: Todo = {
-        createdAt: mockDate,
+      const input: CreateTodoInput = {
         description: 'Original Description',
-        id: 'test-id',
-        status: 'pending',
         title: 'Original Title',
-        updatedAt: mockDate,
       }
 
       await act(async () => {
-        await result.current.initializeTodos([todo])
+        await result.current.addTodo(input)
       })
 
       const updateInput: UpdateTodoInput = {
@@ -512,11 +547,11 @@ describe('useTodoStore', () => {
 
       // Act
       await act(async () => {
-        await result.current.updateTodo('test-id', updateInput)
+        await result.current.updateTodo(mockId, updateInput)
       })
 
       // Assert
-      const updatedTodo = result.current.getTodoById('test-id')
+      const updatedTodo = result.current.getTodoById(mockId)
       expect(updatedTodo?.title).toBe('Updated Title')
       expect(updatedTodo?.description).toBe('Updated Description')
       expect(updatedTodo?.status).toBe('completed')
@@ -526,17 +561,13 @@ describe('useTodoStore', () => {
     it('updates only provided fields', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
-      const todo: Todo = {
-        createdAt: mockDate,
+      const input: CreateTodoInput = {
         description: 'Original Description',
-        id: 'test-id',
-        status: 'pending',
         title: 'Original Title',
-        updatedAt: mockDate,
       }
 
       await act(async () => {
-        await result.current.initializeTodos([todo])
+        await result.current.addTodo(input)
       })
 
       const updateInput: UpdateTodoInput = {
@@ -545,11 +576,11 @@ describe('useTodoStore', () => {
 
       // Act
       await act(async () => {
-        await result.current.updateTodo('test-id', updateInput)
+        await result.current.updateTodo(mockId, updateInput)
       })
 
       // Assert
-      const updatedTodo = result.current.getTodoById('test-id')
+      const updatedTodo = result.current.getTodoById(mockId)
       expect(updatedTodo?.title).toBe('Updated Title')
       expect(updatedTodo?.description).toBe('Original Description')
       expect(updatedTodo?.status).toBe('pending')
@@ -559,29 +590,24 @@ describe('useTodoStore', () => {
     it('does not update anything when todo does not exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
-      const todo: Todo = {
-        createdAt: mockDate,
-        id: 'test-id',
-        status: 'pending',
-        title: 'Test Todo',
-        updatedAt: mockDate,
-      }
+      const input: CreateTodoInput = { title: 'Test Todo' }
 
       await act(async () => {
-        await result.current.initializeTodos([todo])
+        await result.current.addTodo(input)
       })
 
       const updateInput: UpdateTodoInput = {
         title: 'Updated Title',
       }
 
-      // Act
-      await act(async () => {
-        await result.current.updateTodo('non-existent-id', updateInput)
-      })
+      // Act & Assert
+      await expect(
+        act(async () => {
+          await result.current.updateTodo('non-existent-id', updateInput)
+        })
+      ).rejects.toThrow('Todo not found')
 
-      // Assert
-      const existingTodo = result.current.getTodoById('test-id')
+      const existingTodo = result.current.getTodoById(mockId)
       expect(existingTodo?.title).toBe('Test Todo')
     })
   })
