@@ -7,10 +7,11 @@ import * as todoService from '@/lib/todo-service'
  */
 export async function POST(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const todo = await todoService.toggleTodo(params.id)
+    const { id } = await params
+    const todo = await todoService.toggleTodo(id)
     return NextResponse.json(todo)
   } catch {
     return NextResponse.json(

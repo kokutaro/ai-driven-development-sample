@@ -4,9 +4,9 @@ import * as todoService from '@/lib/todo-service'
 import { updateTodoInputSchema } from '@/schemas/todo'
 
 interface Params {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 /**
@@ -14,7 +14,8 @@ interface Params {
  */
 export async function DELETE(request: Request, { params }: Params) {
   try {
-    await todoService.deleteTodo(params.id)
+    const { id } = await params
+    await todoService.deleteTodo(id)
     return new NextResponse(undefined, { status: 204 })
   } catch {
     return NextResponse.json(
@@ -29,7 +30,8 @@ export async function DELETE(request: Request, { params }: Params) {
  */
 export async function PATCH(request: Request, { params }: Params) {
   try {
-    const todo = await todoService.toggleTodo(params.id)
+    const { id } = await params
+    const todo = await todoService.toggleTodo(id)
     return NextResponse.json(todo)
   } catch {
     return NextResponse.json(
@@ -44,9 +46,10 @@ export async function PATCH(request: Request, { params }: Params) {
  */
 export async function PUT(request: Request, { params }: Params) {
   try {
+    const { id } = await params
     const body = (await request.json()) as unknown
     const validatedData = updateTodoInputSchema.parse(body)
-    const todo = await todoService.updateTodo(params.id, validatedData)
+    const todo = await todoService.updateTodo(id, validatedData)
     return NextResponse.json(todo)
   } catch {
     return NextResponse.json(
