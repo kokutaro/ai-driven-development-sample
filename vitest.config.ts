@@ -7,20 +7,24 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
+      '@': path.resolve(import.meta.dirname, '.'),
     },
   },
   test: {
     coverage: {
       exclude: [
-        'src/**/*.test.{ts,tsx}',
-        'src/**/*.spec.{ts,tsx}',
-        'src/**/*.d.ts',
-        'src/**/index.ts',
-        'src/**/types.ts',
-        'src/app/**/*.tsx', // Next.js App Router pages
+        'tests/**/*.test.{ts,tsx}',
+        'tests/**/*.spec.{ts,tsx}',
+        '**/*.d.ts',
+        '**/index.ts',
+        'types/**/*.ts',
+        'app/**/*.tsx', // Next.js App Router pages
       ],
-      include: ['src/**/*.{ts,tsx}'],
+      include: [
+        'components/**/*.{ts,tsx}',
+        'stores/**/*.{ts,tsx}',
+        'lib/**/*.{ts,tsx}',
+      ],
       reporter: ['text', 'json', 'lcov', 'html'],
       thresholds: {
         global: {
@@ -35,8 +39,12 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     typecheck: {
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
-      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['tests/**/*.test.{ts,tsx}', 'tests/**/*.spec.{ts,tsx}'],
+      include: [
+        'components/**/*.{ts,tsx}',
+        'stores/**/*.{ts,tsx}',
+        'lib/**/*.{ts,tsx}',
+      ],
     },
   },
 })
