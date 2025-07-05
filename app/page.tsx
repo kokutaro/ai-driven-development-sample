@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect } from 'react'
+
 import { Container, Paper, Stack, Title } from '@mantine/core'
+
+import type { Todo } from '@/types/todo'
+
 import { TodoList } from '@/components/todo-list'
 import { useTodoStore } from '@/stores/todo-store'
-import type { Todo } from '@/types/todo'
 
 /**
  * サンプルのTODO項目データ

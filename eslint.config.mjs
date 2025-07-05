@@ -30,6 +30,10 @@ const eslintConfig = tseslint.config(
         'warn',
         { fixStyle: 'inline-type-imports', prefer: 'type-imports' },
       ],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports' },
+      ],
       '@typescript-eslint/no-misused-promises': [
         'error',
         { checksVoidReturn: { attributes: false } },
@@ -39,6 +43,37 @@ const eslintConfig = tseslint.config(
         { argsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/require-await': 'off',
+      'import/order': [
+        'error',
+        {
+          alphabetize: {
+            order: 'asc',
+          },
+          groups: [
+            'builtin',
+            'external',
+            'parent',
+            'sibling',
+            'index',
+            'object',
+            'type',
+          ],
+          'newlines-between': 'always',
+          pathGroups: [
+            {
+              group: 'builtin',
+              pattern: '{react,react-dom/**,react-router-dom}',
+              position: 'before',
+            },
+            {
+              group: 'parent',
+              pattern: '@src/**',
+              position: 'before',
+            },
+          ],
+          pathGroupsExcludedImportTypes: ['builtin'],
+        },
+      ],
     },
   },
   {

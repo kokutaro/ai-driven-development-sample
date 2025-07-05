@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
+
+import type { Todo } from '@/types/todo'
+
 import { TodoList } from '@/components/todo-list'
 import { useTodoStore } from '@/stores/todo-store'
-import type { Todo } from '@/types/todo'
 
 /**
  * MantineProviderでラップしたカスタムrender関数
