@@ -6,26 +6,26 @@
  * - Mock setup for external dependencies
  * - Shared utilities for all tests
  */
+import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
-import '@testing-library/jest-dom'
 
 // Mock Next.js router
 
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
   useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
+    asPath: '/',
     back: vi.fn(),
     forward: vi.fn(),
-    refresh: vi.fn(),
     pathname: '/',
+    prefetch: vi.fn(),
+    push: vi.fn(),
     query: {},
-    asPath: '/',
+    refresh: vi.fn(),
+    replace: vi.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
-  usePathname: () => '/',
 }))
 
 // Cleanup after each test
