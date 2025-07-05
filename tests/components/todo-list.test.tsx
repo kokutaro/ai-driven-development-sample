@@ -1,5 +1,6 @@
 import { MantineProvider } from '@mantine/core'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
 import type { Todo } from '@/types/todo'
@@ -159,6 +160,132 @@ describe('TodoList', () => {
       // Assert
       const checkbox = screen.getByRole('checkbox')
       expect(checkbox).not.toBeChecked()
+    })
+
+    it('説明がないTODO項目は説明文を表示しない', () => {
+      // Arrange
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+          // descriptionは意図的に設定しない
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: vi.fn(),
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: vi.fn(),
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+
+      // Assert
+      expect(screen.getByText('テスト項目1')).toBeInTheDocument()
+      expect(screen.queryByText(/説明/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('TODO項目の操作', () => {
+    it('チェックボックスをクリックするとtoggleTodoStatusが呼ばれる', async () => {
+      // Arrange
+      const user = userEvent.setup()
+      const mockToggleTodoStatus = vi.fn().mockResolvedValue({
+        id: '1',
+        status: 'completed',
+        title: 'テスト項目1',
+      })
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: vi.fn(),
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: mockToggleTodoStatus,
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+      const checkbox = screen.getByRole('checkbox')
+      await user.click(checkbox)
+
+      // Assert
+      expect(mockToggleTodoStatus).toHaveBeenCalledWith('1')
+      expect(mockToggleTodoStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('toggleTodoStatusがエラーを投げた場合、エラーをコンソールに出力する', async () => {
+      // Arrange
+      const user = userEvent.setup()
+      const consoleErrorSpy = vi.spyOn(console, 'error')
+      const mockToggleTodoStatus = vi
+        .fn()
+        .mockRejectedValue(new Error('Toggle failed'))
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: vi.fn(),
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: mockToggleTodoStatus,
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+      const checkbox = screen.getByRole('checkbox')
+      await user.click(checkbox)
+
+      // Assert
+      expect(mockToggleTodoStatus).toHaveBeenCalledWith('1')
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to toggle todo:',
+        expect.any(Error)
+      )
+
+      // Cleanup
+      consoleErrorSpy.mockRestore()
     })
   })
 

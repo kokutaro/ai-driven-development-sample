@@ -44,9 +44,49 @@ describe('Todo Service', () => {
       expect(todo.updatedAt).toBeInstanceOf(Date)
     })
 
+    it('should create a todo without description', async () => {
+      // Arrange
+      const input = {
+        title: 'Test Todo Without Description',
+      }
+
+      // Act
+      const todo = await createTodo(input)
+
+      // Assert
+      expect(todo).toBeDefined()
+      expect(todo.title).toBe(input.title)
+      expect(todo.description).toBeUndefined()
+      expect(todo.status).toBe('pending')
+    })
+
+    it('should trim whitespace from title and description', async () => {
+      // Arrange
+      const input = {
+        description: '  Test Description  ',
+        title: '  Test Todo  ',
+      }
+
+      // Act
+      const todo = await createTodo(input)
+
+      // Assert
+      expect(todo.title).toBe('Test Todo')
+      expect(todo.description).toBe('Test Description')
+    })
+
     it('should throw error if title is empty', async () => {
       // Arrange & Act & Assert
-      await expect(createTodo({ title: '' })).rejects.toThrow()
+      await expect(createTodo({ title: '' })).rejects.toThrow(
+        'Todo title cannot be empty'
+      )
+    })
+
+    it('should throw error if title is only whitespace', async () => {
+      // Arrange & Act & Assert
+      await expect(createTodo({ title: '   ' })).rejects.toThrow(
+        'Todo title cannot be empty'
+      )
     })
   })
 
@@ -74,6 +114,25 @@ describe('Todo Service', () => {
       expect(todos[1].title).toBe('Todo 2')
       expect(todos[2].title).toBe('Todo 1')
     })
+
+    it('should return todos with correct description conversion', async () => {
+      // Arrange
+      await createTodo({
+        description: 'Test description',
+        title: 'Todo with description',
+      })
+      await createTodo({ title: 'Todo without description' })
+
+      // Act
+      const todos = await getTodos()
+
+      // Assert
+      expect(todos).toHaveLength(2)
+      expect(todos[0].title).toBe('Todo without description')
+      expect(todos[0].description).toBeUndefined() // null -> undefined conversion
+      expect(todos[1].title).toBe('Todo with description')
+      expect(todos[1].description).toBe('Test description')
+    })
   })
 
   describe('updateTodo', () => {
@@ -95,11 +154,93 @@ describe('Todo Service', () => {
       expect(updatedTodo.status).toBe(todo.status)
     })
 
+    it('should update only title', async () => {
+      // Arrange
+      const todo = await createTodo({
+        description: 'Original Description',
+        title: 'Original Todo',
+      })
+      const updateData = { title: 'Updated Title Only' }
+
+      // Act
+      const updatedTodo = await updateTodo(todo.id, updateData)
+
+      // Assert
+      expect(updatedTodo.title).toBe('Updated Title Only')
+      expect(updatedTodo.description).toBe('Original Description')
+      expect(updatedTodo.status).toBe('pending')
+    })
+
+    it('should update only description', async () => {
+      // Arrange
+      const todo = await createTodo({
+        description: 'Original Description',
+        title: 'Original Todo',
+      })
+      const updateData = { description: 'Updated Description Only' }
+
+      // Act
+      const updatedTodo = await updateTodo(todo.id, updateData)
+
+      // Assert
+      expect(updatedTodo.title).toBe('Original Todo')
+      expect(updatedTodo.description).toBe('Updated Description Only')
+      expect(updatedTodo.status).toBe('pending')
+    })
+
+    it('should update only status', async () => {
+      // Arrange
+      const todo = await createTodo({
+        description: 'Original Description',
+        title: 'Original Todo',
+      })
+      const updateData = { status: 'completed' as const }
+
+      // Act
+      const updatedTodo = await updateTodo(todo.id, updateData)
+
+      // Assert
+      expect(updatedTodo.title).toBe('Original Todo')
+      expect(updatedTodo.description).toBe('Original Description')
+      expect(updatedTodo.status).toBe('completed')
+    })
+
+    it('should trim whitespace from updated fields', async () => {
+      // Arrange
+      const todo = await createTodo({ title: 'Original Todo' })
+      const updateData = {
+        description: '  Updated Description  ',
+        title: '  Updated Title  ',
+      }
+
+      // Act
+      const updatedTodo = await updateTodo(todo.id, updateData)
+
+      // Assert
+      expect(updatedTodo.title).toBe('Updated Title')
+      expect(updatedTodo.description).toBe('Updated Description')
+    })
+
+    it('should handle updating to empty description', async () => {
+      // Arrange
+      const todo = await createTodo({
+        description: 'Original Description',
+        title: 'Test Todo',
+      })
+      const updateData = { description: '' }
+
+      // Act
+      const updatedTodo = await updateTodo(todo.id, updateData)
+
+      // Assert
+      expect(updatedTodo.description).toBe('')
+    })
+
     it('should throw error if todo not found', async () => {
       // Arrange & Act & Assert
       await expect(
         updateTodo('non-existent-id', { title: 'text' })
-      ).rejects.toThrow()
+      ).rejects.toThrow('Todo not found')
     })
   })
 
@@ -125,7 +266,23 @@ describe('Todo Service', () => {
 
     it('should throw error if todo not found', async () => {
       // Arrange & Act & Assert
-      await expect(toggleTodo('non-existent-id')).rejects.toThrow()
+      await expect(toggleTodo('non-existent-id')).rejects.toThrow(
+        'Todo not found'
+      )
+    })
+
+    it('should toggle from completed to pending', async () => {
+      // Arrange
+      const todo = await createTodo({ title: 'Toggle Test' })
+      // First toggle to completed
+      await toggleTodo(todo.id)
+
+      // Act - Toggle back to pending
+      const toggledTodo = await toggleTodo(todo.id)
+
+      // Assert
+      expect(toggledTodo.status).toBe('pending')
+      expect(toggledTodo.id).toBe(todo.id)
     })
   })
 
@@ -144,7 +301,9 @@ describe('Todo Service', () => {
 
     it('should throw error if todo not found', async () => {
       // Arrange & Act & Assert
-      await expect(deleteTodo('non-existent-id')).rejects.toThrow()
+      await expect(deleteTodo('non-existent-id')).rejects.toThrow(
+        'Todo not found'
+      )
     })
   })
 

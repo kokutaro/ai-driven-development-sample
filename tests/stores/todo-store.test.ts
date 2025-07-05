@@ -125,6 +125,43 @@ describe('useTodoStore', () => {
       })
     })
 
+    it('resets loading state after successful add operation', async () => {
+      // Arrange
+      const input: CreateTodoInput = { title: 'Test Todo' }
+      const { result } = renderHook(() => useTodoStore())
+
+      // Act
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      // Assert loading state is false after completion
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    it('resets loading state on error', async () => {
+      // Arrange
+      const input: CreateTodoInput = { title: 'Test Todo' }
+      const { result } = renderHook(() => useTodoStore())
+
+      // Mock API to throw error
+      vi.mocked(todoClient.createTodo).mockRejectedValueOnce(
+        new Error('API Error')
+      )
+
+      // Act & Assert
+      try {
+        await act(async () => {
+          await result.current.addTodo(input)
+        })
+      } catch (error) {
+        expect((error as Error).message).toBe('API Error')
+      }
+
+      // Assert loading state is false after error
+      expect(result.current.isLoading).toBe(false)
+    })
+
     it('adds a new todo without description', async () => {
       // Arrange
       const input: CreateTodoInput = {
@@ -206,6 +243,51 @@ describe('useTodoStore', () => {
       ).rejects.toThrow('Todo not found')
 
       expect(result.current.todos).toHaveLength(1)
+    })
+
+    it('resets loading state after successful delete operation', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const input: CreateTodoInput = { title: 'Test Todo' }
+
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      // Act
+      await act(async () => {
+        await result.current.deleteTodo(mockId)
+      })
+
+      // Assert loading state is false after completion
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    it('resets loading state on delete error', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const input: CreateTodoInput = { title: 'Test Todo' }
+
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      // Mock API to throw error
+      vi.mocked(todoClient.deleteTodo).mockRejectedValueOnce(
+        new Error('Delete failed')
+      )
+
+      // Act & Assert
+      try {
+        await act(async () => {
+          await result.current.deleteTodo(mockId)
+        })
+      } catch (error) {
+        expect((error as Error).message).toBe('Delete failed')
+      }
+
+      // Assert loading state is false after error
+      expect(result.current.isLoading).toBe(false)
     })
   })
 
@@ -493,6 +575,77 @@ describe('useTodoStore', () => {
       expect(todoClient.getTodos).toHaveBeenCalled()
       expect(result.current.todos).toEqual(apiTodos)
     })
+
+    it('resets loading state after successful API fetch', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const apiTodos: Todo[] = [
+        {
+          createdAt: mockDate,
+          id: '1',
+          status: 'pending',
+          title: 'API Todo 1',
+          updatedAt: mockDate,
+        },
+      ]
+
+      // Set up getTodos mock to return the API todos
+      vi.mocked(todoClient.getTodos).mockResolvedValueOnce(apiTodos)
+
+      // Act
+      await act(async () => {
+        await result.current.initializeTodos()
+      })
+
+      // Assert loading state is false after completion
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.todos).toEqual(apiTodos)
+    })
+
+    it('resets loading state on API fetch error', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+
+      // Mock API to throw error
+      vi.mocked(todoClient.getTodos).mockRejectedValueOnce(
+        new Error('API Error')
+      )
+
+      // Act & Assert
+      try {
+        await act(async () => {
+          await result.current.initializeTodos()
+        })
+      } catch (error) {
+        expect((error as Error).message).toBe('API Error')
+      }
+
+      // Assert loading state is false after error
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    it('does not set loading state when todos are provided', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const todos: Todo[] = [
+        {
+          createdAt: mockDate,
+          id: '1',
+          status: 'pending',
+          title: 'Todo 1',
+          updatedAt: mockDate,
+        },
+      ]
+
+      // Act
+      await act(async () => {
+        await result.current.initializeTodos(todos)
+      })
+
+      // Assert
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.todos).toEqual(todos)
+    })
   })
 
   describe('toggleTodoStatus', () => {
@@ -556,6 +709,53 @@ describe('useTodoStore', () => {
 
       const existingTodo = result.current.getTodoById(mockId)
       expect(existingTodo?.status).toBe('pending')
+    })
+
+    it('resets loading state after successful toggle operation', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const input: CreateTodoInput = { title: 'Test Todo' }
+
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      // Act
+      await act(async () => {
+        await result.current.toggleTodoStatus(mockId)
+      })
+
+      // Assert loading state is false after completion
+      expect(result.current.isLoading).toBe(false)
+      const updatedTodo = result.current.getTodoById(mockId)
+      expect(updatedTodo?.status).toBe('completed')
+    })
+
+    it('resets loading state on toggle error', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const input: CreateTodoInput = { title: 'Test Todo' }
+
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      // Mock API to throw error
+      vi.mocked(todoClient.toggleTodo).mockRejectedValueOnce(
+        new Error('Toggle failed')
+      )
+
+      // Act & Assert
+      try {
+        await act(async () => {
+          await result.current.toggleTodoStatus(mockId)
+        })
+      } catch (error) {
+        expect((error as Error).message).toBe('Toggle failed')
+      }
+
+      // Assert loading state is false after error
+      expect(result.current.isLoading).toBe(false)
     })
   })
 
@@ -642,6 +842,61 @@ describe('useTodoStore', () => {
 
       const existingTodo = result.current.getTodoById(mockId)
       expect(existingTodo?.title).toBe('Test Todo')
+    })
+
+    it('resets loading state after successful update operation', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const input: CreateTodoInput = { title: 'Test Todo' }
+
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      const updateInput: UpdateTodoInput = {
+        title: 'Updated Title',
+      }
+
+      // Act
+      await act(async () => {
+        await result.current.updateTodo(mockId, updateInput)
+      })
+
+      // Assert loading state is false after completion
+      expect(result.current.isLoading).toBe(false)
+      const updatedTodo = result.current.getTodoById(mockId)
+      expect(updatedTodo?.title).toBe('Updated Title')
+    })
+
+    it('resets loading state on update error', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const input: CreateTodoInput = { title: 'Test Todo' }
+
+      await act(async () => {
+        await result.current.addTodo(input)
+      })
+
+      const updateInput: UpdateTodoInput = {
+        title: 'Updated Title',
+      }
+
+      // Mock API to throw error
+      vi.mocked(todoClient.updateTodo).mockRejectedValueOnce(
+        new Error('Update failed')
+      )
+
+      // Act & Assert
+      try {
+        await act(async () => {
+          await result.current.updateTodo(mockId, updateInput)
+        })
+      } catch (error) {
+        expect((error as Error).message).toBe('Update failed')
+      }
+
+      // Assert loading state is false after error
+      expect(result.current.isLoading).toBe(false)
     })
   })
 
@@ -835,6 +1090,58 @@ describe('useTodoStats', () => {
       completionRate: 33, // 1/3 * 100 = 33.33, rounded to 33
       pending: 2,
       total: 3,
+    })
+  })
+
+  it('handles edge case with single todo', async () => {
+    // Arrange
+    const todos: Todo[] = [
+      {
+        createdAt: mockDate,
+        id: '1',
+        status: 'completed',
+        title: 'Single Todo',
+        updatedAt: mockDate,
+      },
+    ]
+
+    await act(async () => {
+      await useTodoStore.getState().initializeTodos(todos)
+    })
+
+    const { result } = renderHook(() => useTodoStats())
+
+    // Assert
+    expect(result.current).toEqual({
+      completed: 1,
+      completionRate: 100,
+      pending: 0,
+      total: 1,
+    })
+  })
+
+  it('handles edge case with large number of todos', async () => {
+    // Arrange
+    const todos: Todo[] = Array.from({ length: 1000 }, (_, i) => ({
+      createdAt: mockDate,
+      id: `${i + 1}`,
+      status: i < 333 ? 'completed' : ('pending' as const),
+      title: `Todo ${i + 1}`,
+      updatedAt: mockDate,
+    }))
+
+    await act(async () => {
+      await useTodoStore.getState().initializeTodos(todos)
+    })
+
+    const { result } = renderHook(() => useTodoStats())
+
+    // Assert
+    expect(result.current).toEqual({
+      completed: 333,
+      completionRate: 33, // 333/1000 * 100 = 33.3, rounded to 33
+      pending: 667,
+      total: 1000,
     })
   })
 })
