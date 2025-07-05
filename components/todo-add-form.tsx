@@ -36,9 +36,13 @@ export function TodoAddForm() {
    *
    * @param values - フォームの値
    */
-  function handleSubmit(values: CreateTodoInput) {
-    addTodo(values)
-    form.reset()
+  async function handleSubmit(values: CreateTodoInput) {
+    try {
+      await addTodo(values)
+      form.reset()
+    } catch (error) {
+      console.error('Failed to add todo:', error)
+    }
   }
 
   /**

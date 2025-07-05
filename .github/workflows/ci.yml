@@ -14,7 +14,23 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]
-
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      # Ensure the database URL is set for all steps
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,6 +44,11 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Setup database
+        run: |
+          npx prisma generate
+          npx prisma db push
+
       - name: Run format check
         run: yarn format --check
 
@@ -39,7 +60,6 @@ jobs:
 
       - name: Run tests with coverage
         run: yarn test --coverage
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -52,7 +72,6 @@ jobs:
 
       - name: Build application
         run: yarn build
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -11,7 +11,7 @@ import { useTodoStore } from '@/stores/todo-store'
  */
 interface TodoItemProps {
   /** 状態変更のハンドラ */
-  onToggle: (id: string) => void
+  onToggle: (id: string) => Promise<void>
   /** TODO項目のデータ */
   todo: Todo
 }
@@ -58,13 +58,21 @@ export function TodoList() {
  * 単一のTODO項目を表示するコンポーネント
  */
 function TodoItem({ onToggle, todo }: TodoItemProps) {
+  async function handleToggle() {
+    try {
+      await onToggle(todo.id)
+    } catch (error) {
+      console.error('Failed to toggle todo:', error)
+    }
+  }
+
   return (
     <Paper p="md" withBorder>
       <Stack gap="xs">
         <Checkbox
           checked={todo.status === 'completed'}
           label={todo.title}
-          onChange={() => onToggle(todo.id)}
+          onChange={handleToggle}
         />
         {todo.description && (
           <Text c="dimmed" pl="xl" size="sm">
