@@ -10,6 +10,21 @@ import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
+// Mock window.matchMedia for Mantine
+Object.defineProperty(globalThis, 'matchMedia', {
+  value: vi.fn().mockImplementation((query: string) => ({
+    addEventListener: vi.fn(),
+    addListener: vi.fn(), // deprecated
+    dispatchEvent: vi.fn(),
+    matches: false,
+    media: query,
+    onchange: undefined,
+    removeEventListener: vi.fn(),
+    removeListener: vi.fn(), // deprecated
+  })),
+  writable: true,
+})
+
 // Mock Next.js router
 
 vi.mock('next/navigation', () => ({
