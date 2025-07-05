@@ -46,7 +46,7 @@ describe('useTodoStore', () => {
   })
 
   describe('addTodo', () => {
-    it('adds a new todo with pending status', () => {
+    it('adds a new todo with pending status', async () => {
       // Arrange
       const input: CreateTodoInput = {
         description: 'Test Description',
@@ -55,8 +55,8 @@ describe('useTodoStore', () => {
       const { result } = renderHook(() => useTodoStore())
 
       // Act
-      act(() => {
-        result.current.addTodo(input)
+      await act(async () => {
+        await result.current.addTodo(input)
       })
 
       // Assert
@@ -72,7 +72,7 @@ describe('useTodoStore', () => {
       })
     })
 
-    it('adds a new todo without description', () => {
+    it('adds a new todo without description', async () => {
       // Arrange
       const input: CreateTodoInput = {
         title: 'Test Todo',
@@ -80,8 +80,8 @@ describe('useTodoStore', () => {
       const { result } = renderHook(() => useTodoStore())
 
       // Act
-      act(() => {
-        result.current.addTodo(input)
+      await act(async () => {
+        await result.current.addTodo(input)
       })
 
       // Assert
@@ -97,16 +97,16 @@ describe('useTodoStore', () => {
       })
     })
 
-    it('adds multiple todos', () => {
+    it('adds multiple todos', async () => {
       // Arrange
       const input1: CreateTodoInput = { title: 'Todo 1' }
       const input2: CreateTodoInput = { title: 'Todo 2' }
       const { result } = renderHook(() => useTodoStore())
 
       // Act
-      act(() => {
-        result.current.addTodo(input1)
-        result.current.addTodo(input2)
+      await act(async () => {
+        await result.current.addTodo(input1)
+        await result.current.addTodo(input2)
       })
 
       // Assert
@@ -118,36 +118,36 @@ describe('useTodoStore', () => {
   })
 
   describe('deleteTodo', () => {
-    it('deletes a todo by id', () => {
+    it('deletes a todo by id', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const input: CreateTodoInput = { title: 'Test Todo' }
 
-      act(() => {
-        result.current.addTodo(input)
+      await act(async () => {
+        await result.current.addTodo(input)
       })
 
       // Act
-      act(() => {
-        result.current.deleteTodo(mockId)
+      await act(async () => {
+        await result.current.deleteTodo(mockId)
       })
 
       // Assert
       expect(result.current.todos).toHaveLength(0)
     })
 
-    it('does not delete anything when id does not exist', () => {
+    it('does not delete anything when id does not exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const input: CreateTodoInput = { title: 'Test Todo' }
 
-      act(() => {
-        result.current.addTodo(input)
+      await act(async () => {
+        await result.current.addTodo(input)
       })
 
       // Act
-      act(() => {
-        result.current.deleteTodo('non-existent-id')
+      await act(async () => {
+        await result.current.deleteTodo('non-existent-id')
       })
 
       // Assert
@@ -156,15 +156,15 @@ describe('useTodoStore', () => {
   })
 
   describe('getAllTodos', () => {
-    it('returns all todos', () => {
+    it('returns all todos', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const input1: CreateTodoInput = { title: 'Todo 1' }
       const input2: CreateTodoInput = { title: 'Todo 2' }
 
-      act(() => {
-        result.current.addTodo(input1)
-        result.current.addTodo(input2)
+      await act(async () => {
+        await result.current.addTodo(input1)
+        await result.current.addTodo(input2)
       })
 
       // Act
@@ -176,7 +176,7 @@ describe('useTodoStore', () => {
       expect(allTodos[1].title).toBe('Todo 2')
     })
 
-    it('returns empty array when no todos exist', () => {
+    it('returns empty array when no todos exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
 
@@ -189,7 +189,7 @@ describe('useTodoStore', () => {
   })
 
   describe('getCompletedTodos', () => {
-    it('returns only completed todos', () => {
+    it('returns only completed todos', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todos: Todo[] = [
@@ -209,8 +209,8 @@ describe('useTodoStore', () => {
         },
       ]
 
-      act(() => {
-        result.current.initializeTodos(todos)
+      await act(async () => {
+        await result.current.initializeTodos(todos)
       })
 
       // Act
@@ -222,7 +222,7 @@ describe('useTodoStore', () => {
       expect(completedTodos[0].status).toBe('completed')
     })
 
-    it('returns empty array when no completed todos exist', () => {
+    it('returns empty array when no completed todos exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todos: Todo[] = [
@@ -235,8 +235,8 @@ describe('useTodoStore', () => {
         },
       ]
 
-      act(() => {
-        result.current.initializeTodos(todos)
+      await act(async () => {
+        await result.current.initializeTodos(todos)
       })
 
       // Act
@@ -248,7 +248,7 @@ describe('useTodoStore', () => {
   })
 
   describe('getPendingTodos', () => {
-    it('returns only pending todos', () => {
+    it('returns only pending todos', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todos: Todo[] = [
@@ -268,8 +268,8 @@ describe('useTodoStore', () => {
         },
       ]
 
-      act(() => {
-        result.current.initializeTodos(todos)
+      await act(async () => {
+        await result.current.initializeTodos(todos)
       })
 
       // Act
@@ -281,7 +281,7 @@ describe('useTodoStore', () => {
       expect(pendingTodos[0].status).toBe('pending')
     })
 
-    it('returns empty array when no pending todos exist', () => {
+    it('returns empty array when no pending todos exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todos: Todo[] = [
@@ -294,8 +294,8 @@ describe('useTodoStore', () => {
         },
       ]
 
-      act(() => {
-        result.current.initializeTodos(todos)
+      await act(async () => {
+        await result.current.initializeTodos(todos)
       })
 
       // Act
@@ -307,7 +307,7 @@ describe('useTodoStore', () => {
   })
 
   describe('getTodoById', () => {
-    it('returns todo by id', () => {
+    it('returns todo by id', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -318,8 +318,8 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       // Act
@@ -329,7 +329,7 @@ describe('useTodoStore', () => {
       expect(foundTodo).toEqual(todo)
     })
 
-    it('returns undefined when todo does not exist', () => {
+    it('returns undefined when todo does not exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
 
@@ -342,7 +342,7 @@ describe('useTodoStore', () => {
   })
 
   describe('initializeTodos', () => {
-    it('initializes todos with provided array', () => {
+    it('initializes todos with provided array', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todos: Todo[] = [
@@ -363,15 +363,15 @@ describe('useTodoStore', () => {
       ]
 
       // Act
-      act(() => {
-        result.current.initializeTodos(todos)
+      await act(async () => {
+        await result.current.initializeTodos(todos)
       })
 
       // Assert
       expect(result.current.todos).toEqual(todos)
     })
 
-    it('replaces existing todos with new ones', () => {
+    it('replaces existing todos with new ones', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const existingTodos: Todo[] = [
@@ -393,13 +393,13 @@ describe('useTodoStore', () => {
         },
       ]
 
-      act(() => {
-        result.current.initializeTodos(existingTodos)
+      await act(async () => {
+        await result.current.initializeTodos(existingTodos)
       })
 
       // Act
-      act(() => {
-        result.current.initializeTodos(newTodos)
+      await act(async () => {
+        await result.current.initializeTodos(newTodos)
       })
 
       // Assert
@@ -409,7 +409,7 @@ describe('useTodoStore', () => {
   })
 
   describe('toggleTodoStatus', () => {
-    it('toggles todo status from pending to completed', () => {
+    it('toggles todo status from pending to completed', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -420,13 +420,13 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       // Act
-      act(() => {
-        result.current.toggleTodoStatus('test-id')
+      await act(async () => {
+        await result.current.toggleTodoStatus('test-id')
       })
 
       // Assert
@@ -435,7 +435,7 @@ describe('useTodoStore', () => {
       expect(updatedTodo?.updatedAt).toEqual(mockDate)
     })
 
-    it('toggles todo status from completed to pending', () => {
+    it('toggles todo status from completed to pending', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -446,13 +446,13 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       // Act
-      act(() => {
-        result.current.toggleTodoStatus('test-id')
+      await act(async () => {
+        await result.current.toggleTodoStatus('test-id')
       })
 
       // Assert
@@ -461,7 +461,7 @@ describe('useTodoStore', () => {
       expect(updatedTodo?.updatedAt).toEqual(mockDate)
     })
 
-    it('does not change anything when todo does not exist', () => {
+    it('does not change anything when todo does not exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -472,13 +472,13 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       // Act
-      act(() => {
-        result.current.toggleTodoStatus('non-existent-id')
+      await act(async () => {
+        await result.current.toggleTodoStatus('non-existent-id')
       })
 
       // Assert
@@ -488,7 +488,7 @@ describe('useTodoStore', () => {
   })
 
   describe('updateTodo', () => {
-    it('updates todo with new values', () => {
+    it('updates todo with new values', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -500,8 +500,8 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       const updateInput: UpdateTodoInput = {
@@ -511,8 +511,8 @@ describe('useTodoStore', () => {
       }
 
       // Act
-      act(() => {
-        result.current.updateTodo('test-id', updateInput)
+      await act(async () => {
+        await result.current.updateTodo('test-id', updateInput)
       })
 
       // Assert
@@ -523,7 +523,7 @@ describe('useTodoStore', () => {
       expect(updatedTodo?.updatedAt).toEqual(mockDate)
     })
 
-    it('updates only provided fields', () => {
+    it('updates only provided fields', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -535,8 +535,8 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       const updateInput: UpdateTodoInput = {
@@ -544,8 +544,8 @@ describe('useTodoStore', () => {
       }
 
       // Act
-      act(() => {
-        result.current.updateTodo('test-id', updateInput)
+      await act(async () => {
+        await result.current.updateTodo('test-id', updateInput)
       })
 
       // Assert
@@ -556,7 +556,7 @@ describe('useTodoStore', () => {
       expect(updatedTodo?.updatedAt).toEqual(mockDate)
     })
 
-    it('does not update anything when todo does not exist', () => {
+    it('does not update anything when todo does not exist', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
       const todo: Todo = {
@@ -567,8 +567,8 @@ describe('useTodoStore', () => {
         updatedAt: mockDate,
       }
 
-      act(() => {
-        result.current.initializeTodos([todo])
+      await act(async () => {
+        await result.current.initializeTodos([todo])
       })
 
       const updateInput: UpdateTodoInput = {
@@ -576,8 +576,8 @@ describe('useTodoStore', () => {
       }
 
       // Act
-      act(() => {
-        result.current.updateTodo('non-existent-id', updateInput)
+      await act(async () => {
+        await result.current.updateTodo('non-existent-id', updateInput)
       })
 
       // Assert
@@ -587,7 +587,7 @@ describe('useTodoStore', () => {
   })
 
   describe('isLoading', () => {
-    it('has default loading state as false', () => {
+    it('has default loading state as false', async () => {
       // Arrange
       const { result } = renderHook(() => useTodoStore())
 
@@ -629,7 +629,7 @@ describe('useTodoStats', () => {
     })
   })
 
-  it('returns correct stats for todos with mixed statuses', () => {
+  it('returns correct stats for todos with mixed statuses', async () => {
     // Arrange
     const todos: Todo[] = [
       {
@@ -655,8 +655,8 @@ describe('useTodoStats', () => {
       },
     ]
 
-    act(() => {
-      useTodoStore.getState().initializeTodos(todos)
+    await act(async () => {
+      await useTodoStore.getState().initializeTodos(todos)
     })
 
     const { result } = renderHook(() => useTodoStats())
@@ -670,7 +670,7 @@ describe('useTodoStats', () => {
     })
   })
 
-  it('returns correct stats for all completed todos', () => {
+  it('returns correct stats for all completed todos', async () => {
     // Arrange
     const todos: Todo[] = [
       {
@@ -689,8 +689,8 @@ describe('useTodoStats', () => {
       },
     ]
 
-    act(() => {
-      useTodoStore.getState().initializeTodos(todos)
+    await act(async () => {
+      await useTodoStore.getState().initializeTodos(todos)
     })
 
     const { result } = renderHook(() => useTodoStats())
@@ -704,7 +704,7 @@ describe('useTodoStats', () => {
     })
   })
 
-  it('returns correct stats for all pending todos', () => {
+  it('returns correct stats for all pending todos', async () => {
     // Arrange
     const todos: Todo[] = [
       {
@@ -723,8 +723,8 @@ describe('useTodoStats', () => {
       },
     ]
 
-    act(() => {
-      useTodoStore.getState().initializeTodos(todos)
+    await act(async () => {
+      await useTodoStore.getState().initializeTodos(todos)
     })
 
     const { result } = renderHook(() => useTodoStats())
@@ -738,7 +738,7 @@ describe('useTodoStats', () => {
     })
   })
 
-  it('calculates completion rate correctly with fractional results', () => {
+  it('calculates completion rate correctly with fractional results', async () => {
     // Arrange
     const todos: Todo[] = [
       {
@@ -764,8 +764,8 @@ describe('useTodoStats', () => {
       },
     ]
 
-    act(() => {
-      useTodoStore.getState().initializeTodos(todos)
+    await act(async () => {
+      await useTodoStore.getState().initializeTodos(todos)
     })
 
     const { result } = renderHook(() => useTodoStats())
