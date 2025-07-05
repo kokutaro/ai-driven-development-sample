@@ -86,7 +86,9 @@ describe('utils', () => {
 
       it('should use fallback implementation when crypto is undefined', () => {
         // Arrange: Mock crypto to be undefined
-        vi.stubGlobal('crypto')
+        const originalCrypto = globalThis.crypto
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        delete (globalThis as any).crypto
 
         // Act
         const result = generateUUID()
@@ -97,6 +99,9 @@ describe('utils', () => {
         expect(result.charAt(14)).toBe('4')
         const variantChar = result.charAt(19)
         expect(['8', '9', 'a', 'b', 'A', 'B']).toContain(variantChar)
+
+        // Cleanup
+        globalThis.crypto = originalCrypto
       })
 
       it('should use fallback implementation when crypto.randomUUID does not exist', () => {
@@ -116,7 +121,9 @@ describe('utils', () => {
 
       it('should generate unique UUIDs with fallback implementation', () => {
         // Arrange: Mock crypto to be undefined
-        vi.stubGlobal('crypto')
+        const originalCrypto = globalThis.crypto
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        delete (globalThis as any).crypto
 
         // Act
         const uuid1 = generateUUID()
@@ -127,6 +134,9 @@ describe('utils', () => {
         expect(uuid1).not.toBe(uuid2)
         expect(uuid1).not.toBe(uuid3)
         expect(uuid2).not.toBe(uuid3)
+
+        // Cleanup
+        globalThis.crypto = originalCrypto
       })
     })
   })
