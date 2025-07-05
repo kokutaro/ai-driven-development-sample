@@ -2,17 +2,17 @@ import { create } from 'zustand'
 
 import type { CreateTodoInput, Todo, UpdateTodoInput } from '@/types/todo'
 
-import { generateUUID } from '@/lib/utils'
+import * as todoService from '@/lib/todo-service'
 
 /**
  * TODO項目の状態管理を行うストアの型定義
  */
 interface TodoStore {
   /** TODO項目を追加する */
-  addTodo: (input: CreateTodoInput) => void
+  addTodo: (input: CreateTodoInput) => Promise<void>
 
   /** TODO項目を削除する */
-  deleteTodo: (id: string) => void
+  deleteTodo: (id: string) => Promise<void>
 
   /** すべてのTODO項目を取得する */
   getAllTodos: () => Todo[]
@@ -27,7 +27,7 @@ interface TodoStore {
   getTodoById: (id: string) => Todo | undefined
 
   /** 初期データを設定する */
-  initializeTodos: (todos: Todo[]) => void
+  initializeTodos: (todos?: Todo[]) => Promise<void>
 
   /** ローディング状態 */
   isLoading: boolean
@@ -36,35 +36,41 @@ interface TodoStore {
   todos: Todo[]
 
   /** TODO項目の状態を切り替える */
-  toggleTodoStatus: (id: string) => void
+  toggleTodoStatus: (id: string) => Promise<void>
 
   /** TODO項目を更新する */
-  updateTodo: (id: string, input: UpdateTodoInput) => void
+  updateTodo: (id: string, input: UpdateTodoInput) => Promise<void>
 }
 
 /**
  * TODO項目を管理するZustandストア
  */
 export const useTodoStore = create<TodoStore>((set, get) => ({
-  addTodo: (input: CreateTodoInput) => {
-    const now = new Date()
-    const newTodo: Todo = {
-      createdAt: now,
-      description: input.description,
-      id: generateUUID(),
-      status: 'pending',
-      title: input.title,
-      updatedAt: now,
+  addTodo: async (input: CreateTodoInput) => {
+    set({ isLoading: true })
+    try {
+      const newTodo = await todoService.createTodo(input)
+      set((state) => ({
+        isLoading: false,
+        todos: [...state.todos, newTodo],
+      }))
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
     }
-
-    set((state) => ({
-      todos: [...state.todos, newTodo],
-    }))
   },
-  deleteTodo: (id: string) => {
-    set((state) => ({
-      todos: state.todos.filter((todo) => todo.id !== id),
-    }))
+  deleteTodo: async (id: string) => {
+    set({ isLoading: true })
+    try {
+      await todoService.deleteTodo(id)
+      set((state) => ({
+        isLoading: false,
+        todos: state.todos.filter((todo) => todo.id !== id),
+      }))
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
+    }
   },
 
   getAllTodos: () => {
@@ -83,40 +89,51 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     return get().todos.find((todo) => todo.id === id)
   },
 
-  initializeTodos: (todos: Todo[]) => {
-    set({ todos })
+  initializeTodos: async (todos?: Todo[]) => {
+    if (todos) {
+      set({ todos })
+    } else {
+      set({ isLoading: true })
+      try {
+        const fetchedTodos = await todoService.getTodos()
+        set({ isLoading: false, todos: fetchedTodos })
+      } catch (error) {
+        set({ isLoading: false })
+        throw error
+      }
+    }
   },
 
   isLoading: false,
 
   todos: [],
 
-  toggleTodoStatus: (id: string) => {
-    set((state) => ({
-      todos: state.todos.map((todo) =>
-        todo.id === id
-          ? {
-              ...todo,
-              status: todo.status === 'completed' ? 'pending' : 'completed',
-              updatedAt: new Date(),
-            }
-          : todo
-      ),
-    }))
+  toggleTodoStatus: async (id: string) => {
+    set({ isLoading: true })
+    try {
+      const updatedTodo = await todoService.toggleTodo(id)
+      set((state) => ({
+        isLoading: false,
+        todos: state.todos.map((todo) => (todo.id === id ? updatedTodo : todo)),
+      }))
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
+    }
   },
 
-  updateTodo: (id: string, input: UpdateTodoInput) => {
-    set((state) => ({
-      todos: state.todos.map((todo) =>
-        todo.id === id
-          ? {
-              ...todo,
-              ...input,
-              updatedAt: new Date(),
-            }
-          : todo
-      ),
-    }))
+  updateTodo: async (id: string, input: UpdateTodoInput) => {
+    set({ isLoading: true })
+    try {
+      const updatedTodo = await todoService.updateTodo(id, input)
+      set((state) => ({
+        isLoading: false,
+        todos: state.todos.map((todo) => (todo.id === id ? updatedTodo : todo)),
+      }))
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
+    }
   },
 }))
 
