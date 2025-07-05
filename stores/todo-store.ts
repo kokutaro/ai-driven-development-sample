@@ -2,7 +2,7 @@ import { create } from 'zustand'
 
 import type { CreateTodoInput, Todo, UpdateTodoInput } from '@/types/todo'
 
-import * as todoService from '@/lib/todo-service'
+import * as todoClient from '@/lib/api/todo-client'
 
 /**
  * TODO項目の状態管理を行うストアの型定義
@@ -49,7 +49,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   addTodo: async (input: CreateTodoInput) => {
     set({ isLoading: true })
     try {
-      const newTodo = await todoService.createTodo(input)
+      const newTodo = await todoClient.createTodo(input)
       set((state) => ({
         isLoading: false,
         todos: [...state.todos, newTodo],
@@ -62,7 +62,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   deleteTodo: async (id: string) => {
     set({ isLoading: true })
     try {
-      await todoService.deleteTodo(id)
+      await todoClient.deleteTodo(id)
       set((state) => ({
         isLoading: false,
         todos: state.todos.filter((todo) => todo.id !== id),
@@ -95,7 +95,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     } else {
       set({ isLoading: true })
       try {
-        const fetchedTodos = await todoService.getTodos()
+        const fetchedTodos = await todoClient.getTodos()
         set({ isLoading: false, todos: fetchedTodos })
       } catch (error) {
         set({ isLoading: false })
@@ -111,7 +111,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   toggleTodoStatus: async (id: string) => {
     set({ isLoading: true })
     try {
-      const updatedTodo = await todoService.toggleTodo(id)
+      const updatedTodo = await todoClient.toggleTodo(id)
       set((state) => ({
         isLoading: false,
         todos: state.todos.map((todo) => (todo.id === id ? updatedTodo : todo)),
@@ -125,7 +125,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   updateTodo: async (id: string, input: UpdateTodoInput) => {
     set({ isLoading: true })
     try {
-      const updatedTodo = await todoService.updateTodo(id, input)
+      const updatedTodo = await todoClient.updateTodo(id, input)
       set((state) => ({
         isLoading: false,
         todos: state.todos.map((todo) => (todo.id === id ? updatedTodo : todo)),

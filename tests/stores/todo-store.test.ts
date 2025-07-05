@@ -3,15 +3,15 @@ import { vi } from 'vitest'
 
 import type { CreateTodoInput, Todo, UpdateTodoInput } from '@/types/todo'
 
-import * as todoService from '@/lib/todo-service'
+import * as todoClient from '@/lib/api/todo-client'
 import { useTodoStats, useTodoStore } from '@/stores/todo-store'
 
 // Test constants
 const mockDate = new Date('2023-12-25T10:00:00Z')
 const mockId = 'test-id-123'
 
-// Mock todo-service module
-vi.mock('@/lib/todo-service', () => {
+// Mock todo-client module
+vi.mock('@/lib/api/todo-client', () => {
   const mockDate = new Date('2023-12-25T10:00:00Z')
 
   // In-memory todos storage for testing
@@ -80,10 +80,10 @@ vi.mock('@/lib/todo-service', () => {
 })
 
 // Access mock service for testing
-interface MockTodoService {
+interface MockTodoClient {
   __resetDB: () => void
 }
-const mockService = todoService as unknown as MockTodoService
+const mockClient = todoClient as unknown as MockTodoClient
 
 describe('useTodoStore', () => {
   beforeEach(() => {
@@ -93,7 +93,7 @@ describe('useTodoStore', () => {
       todos: [],
     })
     // Reset mock database
-    mockService.__resetDB()
+    mockClient.__resetDB()
     // Clear all mock call history
     vi.clearAllMocks()
   })
@@ -459,6 +459,39 @@ describe('useTodoStore', () => {
       // Assert
       expect(result.current.todos).toEqual(newTodos)
       expect(result.current.todos).toHaveLength(1)
+    })
+
+    it('fetches todos from API when no todos provided', async () => {
+      // Arrange
+      const { result } = renderHook(() => useTodoStore())
+      const apiTodos: Todo[] = [
+        {
+          createdAt: mockDate,
+          id: '1',
+          status: 'pending',
+          title: 'API Todo 1',
+          updatedAt: mockDate,
+        },
+        {
+          createdAt: mockDate,
+          id: '2',
+          status: 'completed',
+          title: 'API Todo 2',
+          updatedAt: mockDate,
+        },
+      ]
+
+      // Set up getTodos mock to return the API todos
+      vi.mocked(todoClient.getTodos).mockResolvedValueOnce(apiTodos)
+
+      // Act
+      await act(async () => {
+        await result.current.initializeTodos()
+      })
+
+      // Assert
+      expect(todoClient.getTodos).toHaveBeenCalled()
+      expect(result.current.todos).toEqual(apiTodos)
     })
   })
 
