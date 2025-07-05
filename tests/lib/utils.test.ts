@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { generateUUID } from '@/lib/utils'
 
@@ -59,6 +59,75 @@ describe('utils', () => {
       // Assert
       const variantChar = result.charAt(19)
       expect(['8', '9', 'a', 'b', 'A', 'B']).toContain(variantChar)
+    })
+
+    describe('when crypto.randomUUID() is not available', () => {
+      afterEach(() => {
+        // Restore all stubbed globals
+        vi.unstubAllGlobals()
+      })
+
+      it('should use fallback implementation when crypto.randomUUID() is undefined', () => {
+        // Arrange: Mock crypto.randomUUID to be undefined
+        vi.stubGlobal('crypto', {
+          randomUUID: undefined,
+        })
+
+        // Act
+        const result = generateUUID()
+
+        // Assert
+        expect(typeof result).toBe('string')
+        expect(result.length).toBe(36)
+        expect(result.charAt(14)).toBe('4')
+        const variantChar = result.charAt(19)
+        expect(['8', '9', 'a', 'b', 'A', 'B']).toContain(variantChar)
+      })
+
+      it('should use fallback implementation when crypto is undefined', () => {
+        // Arrange: Mock crypto to be undefined
+        vi.stubGlobal('crypto')
+
+        // Act
+        const result = generateUUID()
+
+        // Assert
+        expect(typeof result).toBe('string')
+        expect(result.length).toBe(36)
+        expect(result.charAt(14)).toBe('4')
+        const variantChar = result.charAt(19)
+        expect(['8', '9', 'a', 'b', 'A', 'B']).toContain(variantChar)
+      })
+
+      it('should use fallback implementation when crypto.randomUUID does not exist', () => {
+        // Arrange: Mock crypto without randomUUID
+        vi.stubGlobal('crypto', {})
+
+        // Act
+        const result = generateUUID()
+
+        // Assert
+        expect(typeof result).toBe('string')
+        expect(result.length).toBe(36)
+        expect(result.charAt(14)).toBe('4')
+        const variantChar = result.charAt(19)
+        expect(['8', '9', 'a', 'b', 'A', 'B']).toContain(variantChar)
+      })
+
+      it('should generate unique UUIDs with fallback implementation', () => {
+        // Arrange: Mock crypto to be undefined
+        vi.stubGlobal('crypto')
+
+        // Act
+        const uuid1 = generateUUID()
+        const uuid2 = generateUUID()
+        const uuid3 = generateUUID()
+
+        // Assert
+        expect(uuid1).not.toBe(uuid2)
+        expect(uuid1).not.toBe(uuid3)
+        expect(uuid2).not.toBe(uuid3)
+      })
     })
   })
 })
