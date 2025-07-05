@@ -63,13 +63,17 @@ describe('/api/todos/[id] route', () => {
         }
       )
       const mockTodo = {
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         id: 'test-id',
         status: 'completed' as const,
         title: 'Test Todo',
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       }
-      vi.mocked(todoService.toggleTodo).mockResolvedValueOnce(mockTodo)
+      vi.mocked(todoService.toggleTodo).mockResolvedValueOnce({
+        ...mockTodo,
+        createdAt: new Date(mockTodo.createdAt),
+        updatedAt: new Date(mockTodo.updatedAt),
+      })
 
       // Act
       const response = await PATCH(mockRequest, { params: mockParams })
@@ -117,13 +121,17 @@ describe('/api/todos/[id] route', () => {
         }
       )
       const mockTodo = {
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         id: 'test-id',
         status: 'pending' as const,
         title: 'Updated Todo',
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       }
-      vi.mocked(todoService.updateTodo).mockResolvedValueOnce(mockTodo)
+      vi.mocked(todoService.updateTodo).mockResolvedValueOnce({
+        ...mockTodo,
+        createdAt: new Date(mockTodo.createdAt),
+        updatedAt: new Date(mockTodo.updatedAt),
+      })
 
       // Act
       const response = await PUT(mockRequest, { params: mockParams })

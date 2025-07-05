@@ -20,13 +20,17 @@ describe('/api/todos/[id]/toggle route', () => {
         }
       )
       const mockTodo = {
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         id: 'test-id',
         status: 'completed' as const,
         title: 'Test Todo',
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       }
-      vi.mocked(todoService.toggleTodo).mockResolvedValueOnce(mockTodo)
+      vi.mocked(todoService.toggleTodo).mockResolvedValueOnce({
+        ...mockTodo,
+        createdAt: new Date(mockTodo.createdAt),
+        updatedAt: new Date(mockTodo.updatedAt),
+      })
 
       // Act
       const response = await POST(mockRequest, { params: mockParams })
