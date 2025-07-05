@@ -2,6 +2,8 @@ import { create } from 'zustand'
 
 import type { CreateTodoInput, Todo, UpdateTodoInput } from '@/types/todo'
 
+import { generateUUID } from '@/lib/utils'
+
 /**
  * TODO項目の状態管理を行うストアの型定義
  */
@@ -49,7 +51,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const newTodo: Todo = {
       createdAt: now,
       description: input.description,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       status: 'pending',
       title: input.title,
       updatedAt: now,
