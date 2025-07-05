@@ -6,6 +6,7 @@ import { Container, Paper, Stack, Title } from '@mantine/core'
 
 import type { Todo } from '@/types/todo'
 
+import { TodoAddForm } from '@/components/todo-add-form'
 import { TodoList } from '@/components/todo-list'
 import { useTodoStore } from '@/stores/todo-store'
 
@@ -56,7 +57,10 @@ export default function HomePage() {
           <Title mb="lg" order={1} ta="center">
             Think Harder TODO App
           </Title>
-          <TodoList />
+          <Stack gap="lg">
+            <TodoAddForm />
+            <TodoList />
+          </Stack>
         </Paper>
       </Stack>
     </Container>
