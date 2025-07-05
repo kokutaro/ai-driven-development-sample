@@ -1,8 +1,10 @@
 'use client'
 
 import { Checkbox, Container, Loader, Paper, Stack, Text } from '@mantine/core'
-import { useTodoStore } from '@/stores/todo-store'
+
 import type { Todo } from '@/types/todo'
+
+import { useTodoStore } from '@/stores/todo-store'
 
 /**
  * TODO項目を表示するコンポーネント

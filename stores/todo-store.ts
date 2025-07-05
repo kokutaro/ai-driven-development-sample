@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+
 import type { CreateTodoInput, Todo, UpdateTodoInput } from '@/types/todo'
 
 /**
