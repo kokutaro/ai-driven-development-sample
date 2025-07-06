@@ -12,7 +12,7 @@
 ## Root Directory Structure
 
 ```text
-project-root/
+project-root/src
 ├── app/                   # App Router pages and layouts
 ├── components/            # Reusable UI components
 ├── lib/                   # Utility functions and configurations

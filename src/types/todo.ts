@@ -13,7 +13,7 @@ export interface CreateTodoInput {
  */
 export interface Todo {
   /** TODO項目の作成日時 */
-  createdAt: Date
+  createdAt: Date | string
   /** TODO項目の説明（オプション） */
   description?: string
   /** TODO項目の一意識別子 */
@@ -23,7 +23,7 @@ export interface Todo {
   /** TODO項目のタイトル */
   title: string
   /** TODO項目の更新日時 */
-  updatedAt: Date
+  updatedAt: Date | string
 }
 
 /**
