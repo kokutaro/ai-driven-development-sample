@@ -25,6 +25,19 @@ Object.defineProperty(globalThis, 'matchMedia', {
   writable: true,
 })
 
+// Mock ResizeObserver for Mantine
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  value: vi.fn().mockImplementation((_callback) => ({
+    disconnect: vi.fn(),
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+  })),
+  writable: true,
+})
+
+// Mock scrollIntoView for Mantine Combobox
+Element.prototype.scrollIntoView = vi.fn()
+
 // Mock Next.js router
 
 vi.mock('next/navigation', () => ({

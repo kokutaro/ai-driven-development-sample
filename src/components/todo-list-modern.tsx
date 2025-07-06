@@ -10,10 +10,12 @@ import {
   Text,
   Title,
 } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import { IconPlus, IconStar } from '@tabler/icons-react'
 
 import type { Todo } from '@/types/todo'
 
+import { TodoAddModal } from '@/components/todo-add-modal'
 import { useTodoStore } from '@/stores/todo-store'
 import { useTodoUIStore } from '@/stores/todo-ui-store'
 
@@ -70,8 +72,9 @@ interface TodoListModernProps {
  * ```
  */
 export function TodoListModern({ showEmpty = false }: TodoListModernProps) {
-  const { todos, toggleTodoStatus } = useTodoStore()
+  const { addTodo, todos, toggleTodoStatus } = useTodoStore()
   const { setSelectedTodoId } = useTodoUIStore()
+  const [opened, { close, open }] = useDisclosure(false)
 
   // 現在の日付をフォーマット
   const today = new Date()
@@ -103,6 +106,29 @@ export function TodoListModern({ showEmpty = false }: TodoListModernProps) {
     }
   }
 
+  /**
+   * TODO作成処理
+   *
+   * @param data TODO作成データ
+   */
+  async function handleCreateTodo(data: {
+    description: string
+    dueDate: Date | null
+    title: string
+  }) {
+    try {
+      await addTodo({
+        description: data.description,
+        dueDate: data.dueDate,
+        status: 'pending',
+        title: data.title,
+      })
+      close()
+    } catch (error) {
+      console.error('Failed to create todo:', error)
+    }
+  }
+
   // テスト用の空表示
   if (showEmpty) {
     return (
@@ -120,7 +146,7 @@ export function TodoListModern({ showEmpty = false }: TodoListModernProps) {
           <Button
             justify="flex-start"
             leftSection={<IconPlus size={16} />}
-            onClick={handleAddTask}
+            onClick={open}
             style={{ textAlign: 'left' }}
             variant="subtle"
           >
@@ -152,7 +178,7 @@ export function TodoListModern({ showEmpty = false }: TodoListModernProps) {
         <Button
           justify="flex-start"
           leftSection={<IconPlus size={16} />}
-          onClick={handleAddTask}
+          onClick={open}
           style={{ textAlign: 'left' }}
           variant="subtle"
         >
@@ -190,16 +216,15 @@ export function TodoListModern({ showEmpty = false }: TodoListModernProps) {
           )}
         </Stack>
       </Stack>
+
+      {/* TODO追加モーダル */}
+      <TodoAddModal
+        onClose={close}
+        onSubmit={handleCreateTodo}
+        opened={opened}
+      />
     </Box>
   )
-}
-
-/**
- * タスク追加ボタンクリック処理（ダミー）
- */
-function handleAddTask() {
-  // TODO: 後でモーダルでタスク追加ダイアログを表示する
-  console.log('タスク追加ボタンがクリックされました')
 }
 
 /**
