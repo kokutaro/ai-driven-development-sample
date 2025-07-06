@@ -78,6 +78,7 @@ const eslintConfig = tseslint.config(
   },
   {
     extends: [unicornPlugin.configs.recommended],
+    ignores: ['tests/**/*.test.{ts,tsx}', 'tests/**/*.spec.{ts,tsx}'],
     rules: {
       'unicorn/prevent-abbreviations': 'off',
     },

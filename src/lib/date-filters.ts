@@ -37,11 +37,16 @@ export function getFilteredTodos(todos: Todo[], filter: TodoFilter): Todo[] {
  * @param date 判定対象の日付
  * @returns 今月の場合はtrue、そうでなければfalse
  */
-export function isThisMonth(date: Date): boolean {
+export function isThisMonth(date: Date | null | string | undefined): boolean {
+  const safeDate = toSafeDate(date)
+  if (!safeDate) {
+    return false
+  }
+
   const today = new Date()
   return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth()
+    safeDate.getFullYear() === today.getFullYear() &&
+    safeDate.getMonth() === today.getMonth()
   )
 }
 
@@ -52,7 +57,12 @@ export function isThisMonth(date: Date): boolean {
  * @param date 判定対象の日付
  * @returns 今週の場合はtrue、そうでなければfalse
  */
-export function isThisWeek(date: Date): boolean {
+export function isThisWeek(date: Date | null | string | undefined): boolean {
+  const safeDate = toSafeDate(date)
+  if (!safeDate) {
+    return false
+  }
+
   const today = new Date()
   const startOfWeek = new Date(today)
 
@@ -66,7 +76,7 @@ export function isThisWeek(date: Date): boolean {
   endOfWeek.setDate(startOfWeek.getDate() + 6)
   endOfWeek.setHours(23, 59, 59, 999)
 
-  return date >= startOfWeek && date <= endOfWeek
+  return safeDate >= startOfWeek && safeDate <= endOfWeek
 }
 
 /**
@@ -75,11 +85,41 @@ export function isThisWeek(date: Date): boolean {
  * @param date 判定対象の日付
  * @returns 今日の場合はtrue、そうでなければfalse
  */
-export function isToday(date: Date): boolean {
+export function isToday(date: Date | null | string | undefined): boolean {
+  const safeDate = toSafeDate(date)
+  if (!safeDate) {
+    return false
+  }
+
   const today = new Date()
   return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
+    safeDate.getFullYear() === today.getFullYear() &&
+    safeDate.getMonth() === today.getMonth() &&
+    safeDate.getDate() === today.getDate()
   )
+}
+
+/**
+ * 日付の入力値を安全にDateオブジェクトに変換する
+ *
+ * @param date 日付の入力値（Date、string、またはnull/undefined）
+ * @returns 有効なDateオブジェクト、または無効な場合はundefined
+ */
+function toSafeDate(date: Date | null | string | undefined): Date | undefined {
+  if (!date) {
+    return undefined
+  }
+
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date)
+
+    // Invalid Date の場合は undefined を返す
+    if (Number.isNaN(dateObj.getTime())) {
+      return undefined
+    }
+
+    return dateObj
+  } catch {
+    return undefined
+  }
 }

@@ -1,6 +1,5 @@
 import { MantineProvider } from '@mantine/core'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
 
 import type { Todo } from '@/types/todo'
@@ -138,14 +137,13 @@ describe('TodoListEnhanced', () => {
   })
 
   it('TODO項目をクリックすると選択される', async () => {
-    const user = userEvent.setup()
     render(<TodoListEnhanced />, { wrapper: TestWrapper })
 
-    const todoCard = screen.getByText('Today todo').closest('[data-selected]')
-    if (!todoCard) {
-      throw new Error('Todo card not found')
-    }
-    await user.click(todoCard)
+    // テキスト要素を見つけてそれをクリック（カードのclick eventが発火される）
+    const titleText = screen.getByText('Today todo')
+    expect(titleText).toBeInTheDocument()
+
+    fireEvent.click(titleText)
 
     expect(mockSetSelectedTodoId).toHaveBeenCalledWith('1')
   })

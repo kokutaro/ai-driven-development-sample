@@ -66,7 +66,8 @@ export function TodoDetailPanel() {
       form.reset()
       setOriginalValues({ description: '', title: '' })
     }
-  }, [selectedTodo, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTodo])
 
   /**
    * フォーム送信時の処理

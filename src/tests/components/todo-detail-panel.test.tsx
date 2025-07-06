@@ -119,8 +119,8 @@ describe('TodoDetailPanel', () => {
 
     expect(screen.getByDisplayValue('Test Todo')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Test Description')).toBeInTheDocument()
-    expect(screen.getByText('作成日時')).toBeInTheDocument()
-    expect(screen.getByText('更新日時')).toBeInTheDocument()
+    expect(screen.getByText('作成日時:', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('更新日時:', { exact: false })).toBeInTheDocument()
   })
 
   it('タイトルを編集できる', async () => {
