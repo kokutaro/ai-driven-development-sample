@@ -95,7 +95,7 @@ describe('TodoDetailPanel', () => {
       setSelectedTodoId: mockSetSelectedTodoId,
     })
 
-    mockGetTodoById.mockReturnValue()
+    mockGetTodoById.mockReturnValue(undefined)
 
     render(<TodoDetailPanel />, { wrapper: TestWrapper })
 
