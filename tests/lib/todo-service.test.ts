@@ -102,7 +102,10 @@ describe('Todo Service', () => {
     it('should return all todos', async () => {
       // Arrange
       await createTodo({ title: 'Todo 1' })
+      // 各TODOの作成時間が異なることを保証するため、小さな遅延を追加
+      await new Promise((resolve) => setTimeout(resolve, 10))
       await createTodo({ title: 'Todo 2' })
+      await new Promise((resolve) => setTimeout(resolve, 10))
       await createTodo({ title: 'Todo 3' })
 
       // Act
@@ -121,6 +124,8 @@ describe('Todo Service', () => {
         description: 'Test description',
         title: 'Todo with description',
       })
+      // 各TODOの作成時間が異なることを保証するため、小さな遅延を追加
+      await new Promise((resolve) => setTimeout(resolve, 10))
       await createTodo({ title: 'Todo without description' })
 
       // Act
