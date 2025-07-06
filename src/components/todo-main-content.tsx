@@ -1,19 +1,20 @@
 'use client'
 
-import { Paper, Stack } from '@mantine/core'
+import { Stack } from '@mantine/core'
 
-import { TodoStatsDashboard } from '@/components/dashboard/todo-stats-dashboard'
-import { TodoAddForm } from '@/components/todo-add-form'
-import { TodoListEnhanced } from '@/components/todo-list-enhanced'
+// import { TodoStatsDashboard } from '@/components/dashboard/todo-stats-dashboard'
+// import { TodoAddForm } from '@/components/todo-add-form'
+// import { TodoListEnhanced } from '@/components/todo-list-enhanced'
+import { TodoListModern } from '@/components/todo-list-modern'
 
 /**
  * メインコンテンツエリアのコンポーネント
  *
  * @description
  * AppShellの中央部分に表示されるコンテンツで、以下を含みます：
- * - 統計ダッシュボード
- * - TODO追加フォーム
- * - フィルタリング機能付きTODO一覧
+ * - Microsoft To-Do風のモダンなTODO一覧
+ *
+ * 統計ダッシュボードは一時的に非表示にしています。
  *
  * @example
  * ```tsx
@@ -23,14 +24,18 @@ import { TodoListEnhanced } from '@/components/todo-list-enhanced'
 export function TodoMainContent() {
   return (
     <Stack gap="xl">
-      <TodoStatsDashboard />
+      {/* 統計ダッシュボードは一時的に非表示 */}
+      {/* <TodoStatsDashboard /> */}
 
-      <Paper p="xl" withBorder>
+      <TodoListModern />
+
+      {/* 以前のコンポーネントは一時的に非表示 */}
+      {/* <Paper p="xl" withBorder>
         <Stack gap="lg">
           <TodoAddForm />
           <TodoListEnhanced />
         </Stack>
-      </Paper>
+      </Paper> */}
     </Stack>
   )
 }
