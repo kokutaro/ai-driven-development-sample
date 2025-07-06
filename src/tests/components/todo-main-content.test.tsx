@@ -84,59 +84,59 @@ describe('TodoMainContent', () => {
     expect(document.body).toBeInTheDocument()
   })
 
-  it('TodoStatsDashboardが表示される', () => {
+  it('TodoStatsDashboardは非表示になっている', () => {
     // Act
     render(<TodoMainContent />, { wrapper: TestWrapper })
 
-    // Assert
-    expect(screen.getByText('TODO統計')).toBeInTheDocument()
+    // Assert - 統計ダッシュボードは一時的に非表示
+    expect(screen.queryByText('TODO統計')).not.toBeInTheDocument()
   })
 
-  it('TodoAddFormが表示される', () => {
+  it('TodoListModernが表示される', () => {
     // Act
     render(<TodoMainContent />, { wrapper: TestWrapper })
 
     // Assert
-    expect(screen.getByLabelText(/タイトル/)).toBeInTheDocument()
+    expect(screen.getByText('今日の予定')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'TODO を追加' })
+      screen.getByRole('button', { name: /タスクの追加/ })
     ).toBeInTheDocument()
   })
 
-  it('TodoListEnhancedが表示される', () => {
+  it('サンプルTODOアイテムが表示される', () => {
     // Act
     render(<TodoMainContent />, { wrapper: TestWrapper })
 
-    // Assert - "該当するTODO項目がありません"が表示される（todosが空配列のため）
-    expect(screen.getByText('該当するTODO項目がありません')).toBeInTheDocument()
+    // Assert - サンプルデータが表示される（todosが空配列のため）
+    expect(screen.getByText('サンプル会議')).toBeInTheDocument()
+    expect(screen.getByText('タスク')).toBeInTheDocument()
   })
 
   it('適切なレイアウト構造が適用される', () => {
     // Act
     const { container } = render(<TodoMainContent />, { wrapper: TestWrapper })
 
-    // Assert - Paperコンポーネントが存在することを確認
-    const paperElements = container.querySelectorAll('[class*="Paper"]')
-    expect(paperElements.length).toBeGreaterThan(0)
+    // Assert - TodoListModernコンポーネントが存在することを確認
+    const todoListModern = container.querySelector(
+      '[data-testid="todo-list-modern"]'
+    )
+    expect(todoListModern).toBeInTheDocument()
 
     // Stack要素が存在することを確認
     const stackElements = container.querySelectorAll('[class*="Stack"]')
     expect(stackElements.length).toBeGreaterThan(0)
   })
 
-  it('TodoMainContentの全ての子コンポーネントが表示される', () => {
+  it('TodoMainContentの子コンポーネントが表示される', () => {
     // Act
     render(<TodoMainContent />, { wrapper: TestWrapper })
 
-    // Assert - 3つの子コンポーネントの存在を確認
-    // TodoStatsDashboard
-    expect(screen.getByText('TODO統計')).toBeInTheDocument()
-
-    // TodoAddForm
-    expect(screen.getByLabelText(/タイトル/)).toBeInTheDocument()
-
-    // TodoListEnhanced
-    expect(screen.getByText('該当するTODO項目がありません')).toBeInTheDocument()
+    // Assert - TodoListModernコンポーネントの存在を確認
+    expect(screen.getByText('今日の予定')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /タスクの追加/ })
+    ).toBeInTheDocument()
+    expect(screen.getByText('サンプル会議')).toBeInTheDocument()
   })
 
   it('TODO項目がある場合はTODO一覧が表示される', () => {
@@ -175,7 +175,7 @@ describe('TodoMainContent', () => {
     render(<TodoMainContent />, { wrapper: TestWrapper })
 
     // Assert
-    expect(screen.getByText('TODO一覧')).toBeInTheDocument()
+    expect(screen.getByText('今日の予定')).toBeInTheDocument()
     expect(screen.getByText('Test Todo')).toBeInTheDocument()
   })
 
@@ -204,7 +204,7 @@ describe('TodoMainContent', () => {
     // Act
     render(<TodoMainContent />, { wrapper: TestWrapper })
 
-    // Assert
-    expect(screen.getByText('読み込み中...')).toBeInTheDocument()
+    // Assert - TodoListModernのローディング表示
+    expect(screen.getByText('今日の予定')).toBeInTheDocument()
   })
 })
