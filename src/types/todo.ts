@@ -5,7 +5,7 @@ export interface CreateTodoInput {
   /** TODO項目の説明（オプション） */
   description?: string
   /** TODO項目の期限（オプション） */
-  dueDate?: Date | null | string
+  dueDate?: Date | null | string | undefined
   /** TODO項目の状態（オプション、デフォルト: pending） */
   status?: TodoStatus
   /** TODO項目のタイトル */
@@ -21,7 +21,7 @@ export interface Todo {
   /** TODO項目の説明（オプション） */
   description?: string
   /** TODO項目の期限（オプション） */
-  dueDate?: Date | null | string
+  dueDate?: Date | null | string | undefined
   /** TODO項目の一意識別子 */
   id: string
   /** TODO項目の状態 */
@@ -44,7 +44,7 @@ export interface UpdateTodoInput {
   /** TODO項目の説明（オプション） */
   description?: string
   /** TODO項目の期限（オプション） */
-  dueDate?: Date | null | string
+  dueDate?: Date | null | string | undefined
   /** TODO項目の状態 */
   status?: TodoStatus
   /** TODO項目のタイトル */

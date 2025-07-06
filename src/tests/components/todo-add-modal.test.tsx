@@ -109,7 +109,7 @@ describe('TodoAddModal', () => {
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith({
         description: 'テストの説明',
-        dueDate: null,
+        dueDate: undefined,
         title: 'テストタスク',
       })
     })
@@ -191,7 +191,7 @@ describe('TodoAddModal', () => {
 
     await waitFor(() => {
       const call = mockOnSubmit.mock.calls[0] as [
-        { description: string; dueDate: Date | null; title: string; },
+        { description: string; dueDate: Date | undefined; title: string },
       ]
       expect(call[0].title).toBe('テストタスク')
       expect(call[0].description).toBe('')

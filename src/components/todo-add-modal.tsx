@@ -20,7 +20,7 @@ interface TodoAddFormData {
   /** 説明 */
   description: string
   /** 期限 */
-  dueDate: Date | null
+  dueDate: Date | undefined
   /** タイトル */
   title: string
 }
@@ -72,7 +72,7 @@ const dueDateOptions = [
 export function TodoAddModal({ onClose, onSubmit, opened }: TodoAddModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [dueDate, setDueDate] = useState<null | string>('')
+  const [dueDate, setDueDate] = useState<string | undefined>('')
   const [titleError, setTitleError] = useState('')
 
   /**
@@ -170,7 +170,7 @@ export function TodoAddModal({ onClose, onSubmit, opened }: TodoAddModalProps) {
           <Select
             clearable
             data={dueDateOptions}
-            onChange={setDueDate}
+            onChange={(value) => setDueDate(value ?? undefined)}
             placeholder="期限を選択してください"
             value={dueDate}
           />
@@ -191,18 +191,20 @@ export function TodoAddModal({ onClose, onSubmit, opened }: TodoAddModalProps) {
  * 期限選択値を実際の日付に変換する
  *
  * @param dueDateValue 期限選択値
- * @returns 変換された日付またはnull
+ * @returns 変換された日付またはundefined
  */
-function convertDueDateToDate(dueDateValue: null | string): Date | null {
-  if (!dueDateValue) return null
+function convertDueDateToDate(
+  dueDateValue: string | undefined
+): Date | undefined {
+  if (!dueDateValue) return undefined
 
   const today = new Date()
   today.setHours(23, 59, 59, 999) // 当日の終了時刻に設定
 
   switch (dueDateValue) {
     case 'calendar': {
-      // カレンダーから指定の場合は現在は未実装のためnullを返す
-      return null
+      // カレンダーから指定の場合は現在は未実装のためundefinedを返す
+      return undefined
     }
     case 'next-week': {
       const nextWeek = new Date(today)
@@ -218,7 +220,7 @@ function convertDueDateToDate(dueDateValue: null | string): Date | null {
       return tomorrow
     }
     default: {
-      return null
+      return undefined
     }
   }
 }

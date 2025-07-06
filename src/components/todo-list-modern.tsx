@@ -113,7 +113,7 @@ export function TodoListModern({ showEmpty = false }: TodoListModernProps) {
    */
   async function handleCreateTodo(data: {
     description: string
-    dueDate: Date | null
+    dueDate: Date | undefined
     title: string
   }) {
     try {
