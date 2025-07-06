@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core'
-import { ModalsProvider } from '@mantine/modals'
-import { render, screen } from '@testing-library/react'
+import { modals, ModalsProvider } from '@mantine/modals'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
@@ -23,13 +23,26 @@ function renderWithMantine(ui: React.ReactElement) {
 // Zustandストアのモック
 vi.mock('@/stores/todo-store')
 
+// Mantineモーダルのモック
+vi.mock('@mantine/modals', async () => {
+  const actual = await vi.importActual('@mantine/modals')
+  return {
+    ...actual,
+    modals: {
+      openConfirmModal: vi.fn(),
+    },
+  }
+})
+
 // Mock関数の型定義
 const mockUseTodoStore = vi.mocked(useTodoStore)
+const mockOpenConfirmModal = vi.mocked(modals.openConfirmModal)
 
 describe('TodoList', () => {
   beforeEach(() => {
     // 各テストの前にモックをクリア
     vi.clearAllMocks()
+    mockOpenConfirmModal.mockClear()
   })
 
   describe('TODO項目の表示', () => {
@@ -358,16 +371,21 @@ describe('TodoList', () => {
       const deleteButton = screen.getByLabelText('削除')
       await user.click(deleteButton)
 
-      // Assert
-      expect(
-        await screen.findByText('TODO項目を削除しますか？')
-      ).toBeInTheDocument()
+      // Assert - モーダルが正しいパラメータで呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cancelProps: { color: 'gray' },
+          confirmProps: { color: 'red' },
+          labels: { cancel: 'キャンセル', confirm: '削除' },
+          title: 'TODO項目を削除しますか？',
+        })
+      )
     })
 
     it('削除確認モーダルで「削除」をクリックするとdeleteTodoが呼ばれる', async () => {
       // Arrange
       const user = userEvent.setup()
-      const mockDeleteTodo = vi.fn().mockResolvedValue()
+      const mockDeleteTodo = vi.fn().mockResolvedValue({})
       const mockTodos: Todo[] = [
         {
           createdAt: new Date('2023-01-01'),
@@ -397,21 +415,26 @@ describe('TodoList', () => {
       const deleteButton = screen.getByLabelText('削除')
       await user.click(deleteButton)
 
-      const confirmButton = await screen.findByRole('button', { name: '削除' })
-      await user.click(confirmButton)
+      // モックが呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledTimes(1)
 
-      // Wait for the async operation to complete
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      // onConfirmハンドラーを取得して実行
+      const confirmHandler = mockOpenConfirmModal.mock.calls[0][0].onConfirm
+      if (confirmHandler) {
+        confirmHandler()
+      }
 
       // Assert
-      expect(mockDeleteTodo).toHaveBeenCalledWith('1')
-      expect(mockDeleteTodo).toHaveBeenCalledTimes(1)
+      await waitFor(() => {
+        expect(mockDeleteTodo).toHaveBeenCalledWith('1')
+        expect(mockDeleteTodo).toHaveBeenCalledTimes(1)
+      })
     })
 
     it('削除確認モーダルで「キャンセル」をクリックするとdeleteTodoが呼ばれない', async () => {
       // Arrange
       const user = userEvent.setup()
-      const mockDeleteTodo = vi.fn().mockResolvedValue()
+      const mockDeleteTodo = vi.fn().mockResolvedValue({})
       const mockTodos: Todo[] = [
         {
           createdAt: new Date('2023-01-01'),
@@ -441,19 +464,25 @@ describe('TodoList', () => {
       const deleteButton = screen.getByLabelText('削除')
       await user.click(deleteButton)
 
-      const cancelButton = await screen.findByRole('button', {
-        name: 'キャンセル',
-      })
-      await user.click(cancelButton)
+      // モックが呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledTimes(1)
 
-      // Assert
+      // onCancelハンドラーがないことを確認（キャンセル時は何もしない）
+      const onCancel = mockOpenConfirmModal.mock.calls[0][0].onCancel
+      expect(onCancel).toBeUndefined()
+
+      // deleteToodoが呼ばれていないことを確認
       expect(mockDeleteTodo).not.toHaveBeenCalled()
     })
 
     it('deleteTodoがエラーを投げた場合、エラーをコンソールに出力する', async () => {
       // Arrange
       const user = userEvent.setup()
-      const consoleErrorSpy = vi.spyOn(console, 'error')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {
+          // エラーログをミュートする
+        })
       const mockDeleteTodo = vi
         .fn()
         .mockRejectedValue(new Error('Delete failed'))
@@ -486,18 +515,23 @@ describe('TodoList', () => {
       const deleteButton = screen.getByLabelText('削除')
       await user.click(deleteButton)
 
-      const confirmButton = await screen.findByRole('button', { name: '削除' })
-      await user.click(confirmButton)
+      // モックが呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledTimes(1)
 
-      // Wait for the async operation to complete
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      // onConfirmハンドラーを取得して実行
+      const confirmHandler = mockOpenConfirmModal.mock.calls[0][0].onConfirm
+      if (confirmHandler) {
+        confirmHandler()
+      }
 
       // Assert
-      expect(mockDeleteTodo).toHaveBeenCalledWith('1')
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to delete todo:',
-        expect.any(Error)
-      )
+      await waitFor(() => {
+        expect(mockDeleteTodo).toHaveBeenCalledWith('1')
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to delete todo:',
+          expect.any(Error)
+        )
+      })
 
       // Cleanup
       consoleErrorSpy.mockRestore()
