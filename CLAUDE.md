@@ -81,3 +81,10 @@
 4. **品質保証**: format、lint、type-checkを必ず実行する
 5. **テスト駆動**: 単体テストを作成・実行する
 6. **動作確認**: Web系機能はMCP経由でPlaywrightを使用して確認する
+
+## 参考ドキュメント
+
+- See @docs/todo-specs.md for whole specification for this application
+- See @docs/database-design.md for database desigining
+- See @docs/component-design.md when designing the UI
+- See @docs/api-specification.md to design the API
