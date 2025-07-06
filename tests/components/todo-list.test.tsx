@@ -1,5 +1,6 @@
 import { MantineProvider } from '@mantine/core'
-import { render, screen } from '@testing-library/react'
+import { modals, ModalsProvider } from '@mantine/modals'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 
@@ -9,22 +10,39 @@ import { TodoList } from '@/components/todo-list'
 import { useTodoStore } from '@/stores/todo-store'
 
 /**
- * MantineProviderでラップしたカスタムrender関数
+ * MantineProviderとModalsProviderでラップしたカスタムrender関数
  */
 function renderWithMantine(ui: React.ReactElement) {
-  return render(<MantineProvider>{ui}</MantineProvider>)
+  return render(
+    <MantineProvider>
+      <ModalsProvider>{ui}</ModalsProvider>
+    </MantineProvider>
+  )
 }
 
 // Zustandストアのモック
 vi.mock('@/stores/todo-store')
 
+// Mantineモーダルのモック
+vi.mock('@mantine/modals', async () => {
+  const actual = await vi.importActual('@mantine/modals')
+  return {
+    ...actual,
+    modals: {
+      openConfirmModal: vi.fn(),
+    },
+  }
+})
+
 // Mock関数の型定義
 const mockUseTodoStore = vi.mocked(useTodoStore)
+const mockOpenConfirmModal = vi.mocked(modals.openConfirmModal)
 
 describe('TodoList', () => {
   beforeEach(() => {
     // 各テストの前にモックをクリア
     vi.clearAllMocks()
+    mockOpenConfirmModal.mockClear()
   })
 
   describe('TODO項目の表示', () => {
@@ -283,6 +301,237 @@ describe('TodoList', () => {
         'Failed to toggle todo:',
         expect.any(Error)
       )
+
+      // Cleanup
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('削除ボタンを表示する', () => {
+      // Arrange
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: vi.fn(),
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: vi.fn(),
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+
+      // Assert
+      expect(screen.getByLabelText('削除')).toBeInTheDocument()
+    })
+
+    it('削除ボタンをクリックすると確認モーダルが表示される', async () => {
+      // Arrange
+      const user = userEvent.setup()
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: vi.fn(),
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: vi.fn(),
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+      const deleteButton = screen.getByLabelText('削除')
+      await user.click(deleteButton)
+
+      // Assert - モーダルが正しいパラメータで呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cancelProps: { color: 'gray' },
+          confirmProps: { color: 'red' },
+          labels: { cancel: 'キャンセル', confirm: '削除' },
+          title: 'TODO項目を削除しますか？',
+        })
+      )
+    })
+
+    it('削除確認モーダルで「削除」をクリックするとdeleteTodoが呼ばれる', async () => {
+      // Arrange
+      const user = userEvent.setup()
+      const mockDeleteTodo = vi.fn().mockResolvedValue({})
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: mockDeleteTodo,
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: vi.fn(),
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+      const deleteButton = screen.getByLabelText('削除')
+      await user.click(deleteButton)
+
+      // モックが呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledTimes(1)
+
+      // onConfirmハンドラーを取得して実行
+      const confirmHandler = mockOpenConfirmModal.mock.calls[0][0].onConfirm
+      if (confirmHandler) {
+        confirmHandler()
+      }
+
+      // Assert
+      await waitFor(() => {
+        expect(mockDeleteTodo).toHaveBeenCalledWith('1')
+        expect(mockDeleteTodo).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    it('削除確認モーダルで「キャンセル」をクリックするとdeleteTodoが呼ばれない', async () => {
+      // Arrange
+      const user = userEvent.setup()
+      const mockDeleteTodo = vi.fn().mockResolvedValue({})
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: mockDeleteTodo,
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: vi.fn(),
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+      const deleteButton = screen.getByLabelText('削除')
+      await user.click(deleteButton)
+
+      // モックが呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledTimes(1)
+
+      // onCancelハンドラーがないことを確認（キャンセル時は何もしない）
+      const onCancel = mockOpenConfirmModal.mock.calls[0][0].onCancel
+      expect(onCancel).toBeUndefined()
+
+      // deleteToodoが呼ばれていないことを確認
+      expect(mockDeleteTodo).not.toHaveBeenCalled()
+    })
+
+    it('deleteTodoがエラーを投げた場合、エラーをコンソールに出力する', async () => {
+      // Arrange
+      const user = userEvent.setup()
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {
+          // エラーログをミュートする
+        })
+      const mockDeleteTodo = vi
+        .fn()
+        .mockRejectedValue(new Error('Delete failed'))
+      const mockTodos: Todo[] = [
+        {
+          createdAt: new Date('2023-01-01'),
+          id: '1',
+          status: 'pending',
+          title: 'テスト項目1',
+          updatedAt: new Date('2023-01-01'),
+        },
+      ]
+
+      mockUseTodoStore.mockReturnValue({
+        addTodo: vi.fn(),
+        deleteTodo: mockDeleteTodo,
+        getAllTodos: vi.fn(),
+        getCompletedTodos: vi.fn(),
+        getPendingTodos: vi.fn(),
+        getTodoById: vi.fn(),
+        initializeTodos: vi.fn(),
+        isLoading: false,
+        todos: mockTodos,
+        toggleTodoStatus: vi.fn(),
+        updateTodo: vi.fn(),
+      })
+
+      // Act
+      renderWithMantine(<TodoList />)
+      const deleteButton = screen.getByLabelText('削除')
+      await user.click(deleteButton)
+
+      // モックが呼ばれたことを確認
+      expect(mockOpenConfirmModal).toHaveBeenCalledTimes(1)
+
+      // onConfirmハンドラーを取得して実行
+      const confirmHandler = mockOpenConfirmModal.mock.calls[0][0].onConfirm
+      if (confirmHandler) {
+        confirmHandler()
+      }
+
+      // Assert
+      await waitFor(() => {
+        expect(mockDeleteTodo).toHaveBeenCalledWith('1')
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to delete todo:',
+          expect.any(Error)
+        )
+      })
 
       // Cleanup
       consoleErrorSpy.mockRestore()
