@@ -54,7 +54,7 @@ Authorization: Bearer <token>
 GET /api/users/me
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -75,7 +75,7 @@ GET /api/users/me
 PUT /api/users/me
 ```
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -84,7 +84,7 @@ PUT /api/users/me
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -106,7 +106,7 @@ PUT /api/users/me
 GET /api/todos
 ```
 
-**クエリパラメータ**
+- クエリパラメータ
 
 | パラメータ | 型     | 必須 | 説明                                                 |
 | ---------- | ------ | ---- | ---------------------------------------------------- |
@@ -117,7 +117,7 @@ GET /api/todos
 | sortBy     | string | No   | ソートフィールド（`createdAt`, `dueDate`, `title`）  |
 | sortOrder  | string | No   | ソート順（`asc`, `desc`）                            |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -168,13 +168,13 @@ GET /api/todos
 GET /api/todos/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明    |
 | ---------- | ------ | ---- | ------- |
 | id         | string | Yes  | TODO ID |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -220,7 +220,7 @@ GET /api/todos/{id}
 POST /api/todos
 ```
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -232,7 +232,7 @@ POST /api/todos
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -259,13 +259,13 @@ POST /api/todos
 PUT /api/todos/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明    |
 | ---------- | ------ | ---- | ------- |
 | id         | string | Yes  | TODO ID |
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -277,7 +277,7 @@ PUT /api/todos/{id}
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -301,13 +301,13 @@ PUT /api/todos/{id}
 PATCH /api/todos/{id}/toggle
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明    |
 | ---------- | ------ | ---- | ------- |
 | id         | string | Yes  | TODO ID |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -326,13 +326,13 @@ PATCH /api/todos/{id}/toggle
 DELETE /api/todos/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明    |
 | ---------- | ------ | ---- | ------- |
 | id         | string | Yes  | TODO ID |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -350,7 +350,7 @@ DELETE /api/todos/{id}
 PATCH /api/todos/reorder
 ```
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -358,7 +358,7 @@ PATCH /api/todos/reorder
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -391,13 +391,13 @@ PATCH /api/todos/reorder
 GET /api/todos/{todoId}/subtasks
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明    |
 | ---------- | ------ | ---- | ------- |
 | todoId     | string | Yes  | TODO ID |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -422,13 +422,13 @@ GET /api/todos/{todoId}/subtasks
 POST /api/todos/{todoId}/subtasks
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明    |
 | ---------- | ------ | ---- | ------- |
 | todoId     | string | Yes  | TODO ID |
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -436,7 +436,7 @@ POST /api/todos/{todoId}/subtasks
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -459,14 +459,14 @@ POST /api/todos/{todoId}/subtasks
 PUT /api/todos/{todoId}/subtasks/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明          |
 | ---------- | ------ | ---- | ------------- |
 | todoId     | string | Yes  | TODO ID       |
 | id         | string | Yes  | サブタスク ID |
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -475,7 +475,7 @@ PUT /api/todos/{todoId}/subtasks/{id}
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -497,14 +497,14 @@ PUT /api/todos/{todoId}/subtasks/{id}
 DELETE /api/todos/{todoId}/subtasks/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明          |
 | ---------- | ------ | ---- | ------------- |
 | todoId     | string | Yes  | TODO ID       |
 | id         | string | Yes  | サブタスク ID |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -524,7 +524,7 @@ DELETE /api/todos/{todoId}/subtasks/{id}
 GET /api/categories
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -548,7 +548,7 @@ GET /api/categories
 POST /api/categories
 ```
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -557,7 +557,7 @@ POST /api/categories
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -579,13 +579,13 @@ POST /api/categories
 PUT /api/categories/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明        |
 | ---------- | ------ | ---- | ----------- |
 | id         | string | Yes  | カテゴリ ID |
 
-**リクエストボディ**
+- リクエストボディ
 
 ```json
 {
@@ -594,7 +594,7 @@ PUT /api/categories/{id}
 }
 ```
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -615,13 +615,13 @@ PUT /api/categories/{id}
 DELETE /api/categories/{id}
 ```
 
-**パスパラメータ**
+- パスパラメータ
 
 | パラメータ | 型     | 必須 | 説明        |
 | ---------- | ------ | ---- | ----------- |
 | id         | string | Yes  | カテゴリ ID |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
@@ -641,13 +641,13 @@ DELETE /api/categories/{id}
 GET /api/stats/todos
 ```
 
-**クエリパラメータ**
+- クエリパラメータ
 
 | パラメータ | 型     | 必須 | 説明                                     |
 | ---------- | ------ | ---- | ---------------------------------------- |
 | period     | string | No   | 期間（`today`, `week`, `month`, `year`） |
 
-**レスポンス**
+- レスポンス
 
 ```json
 {
