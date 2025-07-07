@@ -5,7 +5,7 @@ import { z } from 'zod'
  */
 export const todoSchema = z.object({
   categoryId: z
-    .union([z.string().uuid(), z.literal(''), z.null()])
+    .union([z.string().cuid(), z.literal(''), z.null()])
     .optional()
     .transform((val) => (val === '' || val === null ? undefined : val)),
   description: z
@@ -26,7 +26,7 @@ export const todoSchema = z.object({
 export const todoUpdateSchema = todoSchema.partial()
 
 export const todoQuerySchema = z.object({
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().cuid().optional(),
   filter: z
     .enum(['today', 'important', 'upcoming', 'completed', 'all'])
     .default('all'),
