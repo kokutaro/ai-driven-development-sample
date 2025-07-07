@@ -3,11 +3,45 @@
  * @fileoverview TODOアプリのメインページのユニットテスト
  */
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HomePage from './page'
 
+// Zustandストアのモック
+const mockGetFilteredTasks = vi.fn()
+const mockGetFilteredTaskCount = vi.fn()
+const mockAddTask = vi.fn()
+const mockSetFilter = vi.fn()
+const mockSetSortOrder = vi.fn()
+
+vi.mock('@/stores', () => ({
+  useTaskStore: () => ({
+    addTask: mockAddTask,
+    clearError: vi.fn(),
+    error: undefined,
+    filter: 'all',
+    getFilteredTaskCount: mockGetFilteredTaskCount,
+    getFilteredTasks: mockGetFilteredTasks,
+    isLoading: false,
+    removeTask: vi.fn(),
+    setError: vi.fn(),
+    setFilter: mockSetFilter,
+    setSelectedTaskId: vi.fn(),
+    setSortOrder: mockSetSortOrder,
+    sortOrder: 'createdAt',
+    toggleTaskCompletion: vi.fn(),
+    toggleTaskImportance: vi.fn(),
+  }),
+}))
+
 describe('HomePage', () => {
+  beforeEach(() => {
+    // 各テスト前にモックをリセット
+    vi.clearAllMocks()
+    mockGetFilteredTasks.mockReturnValue([])
+    mockGetFilteredTaskCount.mockReturnValue(0)
+  })
+
   // 基本的なレンダリングテスト
   it('renders the page correctly', () => {
     render(<HomePage />)
@@ -41,6 +75,58 @@ describe('HomePage', () => {
     // フィルターコントロールセクションが存在することを確認
     const controlsSection = screen.getByTestId('task-controls-section')
     expect(controlsSection).toBeInTheDocument()
+  })
+
+  // 実際のコンポーネントがレンダリングされるテスト
+  it('renders TaskControls component', () => {
+    render(<HomePage />)
+
+    // TaskControlsコンポーネントが存在することを確認
+    const taskControls = screen.getByTestId('task-controls')
+    expect(taskControls).toBeInTheDocument()
+  })
+
+  it('renders TaskForm component', () => {
+    render(<HomePage />)
+
+    // TaskFormコンポーネントが存在することを確認
+    const taskForm = screen.getByRole('form', { name: 'タスク作成フォーム' })
+    expect(taskForm).toBeInTheDocument()
+  })
+
+  it('renders TaskList component with empty state', () => {
+    render(<HomePage />)
+
+    // 空の状態のメッセージが表示されることを確認
+    expect(screen.getByText('タスクがありません')).toBeInTheDocument()
+    expect(
+      screen.getByText('新しいタスクを作成してください')
+    ).toBeInTheDocument()
+  })
+
+  it('renders TaskList component with tasks when available', () => {
+    // タスクがある状態をモック
+    const mockTasks = [
+      {
+        completed: false,
+        createdAt: new Date(),
+        id: 'test-task-1',
+        important: false,
+        subtasks: [],
+        title: 'テストタスク',
+        updatedAt: new Date(),
+        userId: 'test-user',
+      },
+    ]
+    mockGetFilteredTasks.mockReturnValue(mockTasks)
+    mockGetFilteredTaskCount.mockReturnValue(1)
+
+    render(<HomePage />)
+
+    // TaskListコンポーネントのリストが存在することを確認
+    const taskList = screen.getByRole('list', { name: 'タスクリスト' })
+    expect(taskList).toBeInTheDocument()
+    expect(screen.getByText('テストタスク')).toBeInTheDocument()
   })
 
   // ページ構造のテスト
