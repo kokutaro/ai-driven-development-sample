@@ -1,192 +1,405 @@
 /**
  * メインページのテスト
- * @fileoverview TODOアプリのメインページのユニットテスト
+ * @fileoverview 3カラムレイアウト対応のTODOアプリメインページのユニットテスト
  */
+import { useMediaQuery } from '@mantine/hooks'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HomePage from './page'
 
+import { useTaskStore } from '@/stores/task-store'
+import { useUIStore } from '@/stores/ui-store'
+import { createMockTaskStore, createMockUIStore } from '@/tests/mock-types'
 import { render, screen } from '@/tests/test-utils'
 
-// Zustandストアのモック
-const mockGetFilteredTasks = vi.fn()
-const mockGetFilteredTaskCount = vi.fn()
-const mockAddTask = vi.fn()
-const mockSetFilter = vi.fn()
-const mockSetSortOrder = vi.fn()
-
-vi.mock('@/stores', () => ({
-  useTaskStore: () => ({
-    addTask: mockAddTask,
-    clearError: vi.fn(),
-    error: undefined,
-    filter: 'all',
-    getFilteredTaskCount: mockGetFilteredTaskCount,
-    getFilteredTasks: mockGetFilteredTasks,
-    isLoading: false,
-    removeTask: vi.fn(),
-    setError: vi.fn(),
-    setFilter: mockSetFilter,
-    setSelectedTaskId: vi.fn(),
-    setSortOrder: mockSetSortOrder,
-    sortOrder: 'createdAt',
-    toggleTaskCompletion: vi.fn(),
-    toggleTaskImportance: vi.fn(),
-  }),
+// モック
+vi.mock('@/stores/task-store')
+vi.mock('@/stores/ui-store')
+vi.mock('@mantine/hooks', () => ({
+  useMediaQuery: vi.fn(),
 }))
+
+const mockUseTaskStore = vi.mocked(useTaskStore)
+const mockUseUIStore = vi.mocked(useUIStore)
+const mockUseMediaQuery = vi.mocked(useMediaQuery)
 
 describe('HomePage', () => {
   beforeEach(() => {
-    // 各テスト前にモックをリセット
-    vi.clearAllMocks()
-    mockGetFilteredTasks.mockReturnValue([])
-    mockGetFilteredTaskCount.mockReturnValue(0)
+    // UIストアのモック（デスクトップ表示をデフォルト）
+    mockUseUIStore.mockReturnValue(
+      createMockUIStore({
+        isDesktopScreen: () => true,
+        isMobileScreen: () => false,
+        isSidebarOpen: true,
+        isTabletScreen: () => false,
+        isTaskDetailPanelOpen: false,
+        screenSize: 'desktop',
+      })
+    )
+
+    // タスクストアのモック
+    mockUseTaskStore.mockReturnValue(
+      createMockTaskStore({
+        filter: 'all',
+        filteredTaskCount: 0,
+        filteredTasks: [],
+        selectedTask: undefined,
+      })
+    )
+
+    // useMediaQueryのモック（デスクトップ表示をデフォルト）
+    mockUseMediaQuery.mockImplementation((query: string) => {
+      if (query.includes('min-width: 1024px')) return true // desktop
+      if (
+        query.includes('min-width: 768px') &&
+        query.includes('max-width: 1023px')
+      )
+        return false // tablet
+      if (query.includes('max-width: 767px')) return false // mobile
+      return false
+    })
   })
 
-  // 基本的なレンダリングテスト
-  it('renders the page correctly', () => {
-    render(<HomePage />)
+  describe('基本レンダリング', () => {
+    it('should render AppLayout component correctly', () => {
+      render(<HomePage />)
 
-    // ページが正しくレンダリングされることを確認
-    expect(document.body).toBeInTheDocument()
+      // AppLayoutの基本構造が表示されている
+      expect(screen.getByRole('banner')).toBeInTheDocument() // header
+      expect(screen.getByRole('navigation')).toBeInTheDocument() // navbar
+      expect(screen.getByRole('main')).toBeInTheDocument() // main content
+    })
+
+    it('should render app title in header', () => {
+      render(<HomePage />)
+
+      // ヘッダーにアプリタイトルが表示されている
+      expect(screen.getByText('To Do')).toBeInTheDocument()
+    })
+
+    it('should render filter sidebar with all filter options', () => {
+      render(<HomePage />)
+
+      // フィルタサイドバーのすべてのオプションが表示されている
+      expect(screen.getByText('今日の予定')).toBeInTheDocument()
+      expect(screen.getByText('重要')).toBeInTheDocument()
+      expect(screen.getByText('今後の予定')).toBeInTheDocument()
+      expect(screen.getByText('自分に割り当て')).toBeInTheDocument()
+      expect(screen.getByText('フラグを設定したメール')).toBeInTheDocument()
+      expect(screen.getByText('タスク')).toBeInTheDocument()
+      expect(screen.getByText('完了済み')).toBeInTheDocument()
+    })
+
+    it('should render task list in main content area', () => {
+      render(<HomePage />)
+
+      // メインコンテンツエリアにタスクリストが表示されている
+      expect(screen.getByRole('main')).toBeInTheDocument()
+
+      // タスクがない場合のメッセージが表示される
+      expect(screen.getByText('タスクがありません')).toBeInTheDocument()
+    })
   })
 
-  // アプリタイトルのテスト
-  it('displays the app title', () => {
-    render(<HomePage />)
-
-    // メインタイトルが表示されることを確認
-    const title = screen.getByRole('heading', { level: 1 })
-    expect(title).toBeInTheDocument()
-    expect(title).toHaveTextContent('TODOアプリ')
-  })
-
-  // メインセクションの存在テスト
-  it('displays main sections', () => {
-    render(<HomePage />)
-
-    // タスクリストセクションが存在することを確認
-    const taskListSection = screen.getByTestId('task-list-section')
-    expect(taskListSection).toBeInTheDocument()
-
-    // タスク作成セクションが存在することを確認
-    const taskFormSection = screen.getByTestId('task-form-section')
-    expect(taskFormSection).toBeInTheDocument()
-
-    // フィルターコントロールセクションが存在することを確認
-    const controlsSection = screen.getByTestId('task-controls-section')
-    expect(controlsSection).toBeInTheDocument()
-  })
-
-  // 実際のコンポーネントがレンダリングされるテスト
-  it('renders TaskControls component', () => {
-    render(<HomePage />)
-
-    // TaskControlsコンポーネントが存在することを確認
-    const taskControls = screen.getByTestId('task-controls')
-    expect(taskControls).toBeInTheDocument()
-  })
-
-  it('renders TaskForm component', () => {
-    render(<HomePage />)
-
-    // TaskFormコンポーネントが存在することを確認
-    const taskForm = screen.getByRole('form', { name: 'タスク作成フォーム' })
-    expect(taskForm).toBeInTheDocument()
-  })
-
-  it('renders TaskList component with empty state', () => {
-    render(<HomePage />)
-
-    // 空の状態のメッセージが表示されることを確認
-    expect(screen.getByText('タスクがありません')).toBeInTheDocument()
-    expect(
-      screen.getByText('新しいタスクを作成してください')
-    ).toBeInTheDocument()
-  })
-
-  it('renders TaskList component with tasks when available', () => {
-    // タスクがある状態をモック
-    const mockTasks = [
-      {
+  describe('レスポンシブ表示', () => {
+    it('should show 3-column layout on desktop', () => {
+      const mockTask = {
         completed: false,
         createdAt: new Date(),
-        id: 'test-task-1',
+        description: 'テスト用のタスクです',
+        id: 'task-1',
         important: false,
         subtasks: [],
         title: 'テストタスク',
         updatedAt: new Date(),
-        userId: 'test-user',
-      },
-    ]
-    mockGetFilteredTasks.mockReturnValue(mockTasks)
-    mockGetFilteredTaskCount.mockReturnValue(1)
+        userId: 'user-1',
+      }
 
-    render(<HomePage />)
-
-    // TaskListコンポーネントのリストが存在することを確認
-    const taskList = screen.getByRole('list', { name: 'タスクリスト' })
-    expect(taskList).toBeInTheDocument()
-    expect(screen.getByText('テストタスク')).toBeInTheDocument()
-  })
-
-  // ページ構造のテスト
-  it('has proper page structure', () => {
-    render(<HomePage />)
-
-    // メインコンテナが存在することを確認
-    const mainContainer = screen.getByRole('main')
-    expect(mainContainer).toBeInTheDocument()
-  })
-
-  // レイアウトクラスのテスト
-  it('applies correct layout classes', () => {
-    render(<HomePage />)
-
-    // メインコンテナに適切なクラスが適用されていることを確認
-    const mainContainer = screen.getByRole('main')
-    expect(mainContainer).toHaveClass('container', 'mx-auto', 'p-4')
-  })
-
-  // 見出しレベルの階層テスト
-  it('has proper heading hierarchy', () => {
-    render(<HomePage />)
-
-    // h1タグが1つだけ存在することを確認
-    const h1Elements = screen.getAllByRole('heading', { level: 1 })
-    expect(h1Elements).toHaveLength(1)
-  })
-
-  // アクセシビリティテスト
-  it('has proper accessibility attributes', () => {
-    render(<HomePage />)
-
-    // メインコンテナにaria-labelが設定されていることを確認
-    const mainContainer = screen.getByRole('main')
-    expect(mainContainer).toHaveAttribute(
-      'aria-label',
-      'TODOアプリメインコンテンツ'
-    )
-  })
-
-  // セクションの順序テスト
-  it('displays sections in correct order', () => {
-    render(<HomePage />)
-
-    const sections = [
-      screen.getByTestId('task-controls-section'),
-      screen.getByTestId('task-form-section'),
-      screen.getByTestId('task-list-section'),
-    ]
-
-    // セクションが正しい順序で配置されていることを確認
-    for (let i = 1; i < sections.length; i++) {
-      const prevSectionRect = sections[i - 1].getBoundingClientRect()
-      // eslint-disable-next-line security/detect-object-injection
-      const currentSectionRect = sections[i].getBoundingClientRect()
-      expect(currentSectionRect.top).toBeGreaterThanOrEqual(
-        prevSectionRect.bottom
+      mockUseUIStore.mockReturnValue(
+        createMockUIStore({
+          isDesktopScreen: () => true,
+          isMobileScreen: () => false,
+          isSidebarOpen: true,
+          isTabletScreen: () => false,
+          isTaskDetailPanelOpen: true,
+          screenSize: 'desktop',
+        })
       )
-    }
+
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          filter: 'all',
+          filteredTaskCount: 1,
+          filteredTasks: [mockTask],
+          getFilteredTaskCount: () => 1,
+          getFilteredTasks: () => [mockTask],
+          selectedTask: mockTask, // タスクが選択されている状態
+        })
+      )
+
+      render(<HomePage />)
+
+      // 3カラム表示の確認
+      expect(screen.getByRole('navigation')).toBeInTheDocument() // 左カラム
+      expect(screen.getByRole('main')).toBeInTheDocument() // 中央カラム
+      expect(screen.getByRole('complementary')).toBeInTheDocument() // 右カラム（詳細パネル）
+    })
+
+    it('should show 2-column layout on tablet', () => {
+      mockUseUIStore.mockReturnValue(
+        createMockUIStore({
+          isDesktopScreen: () => false,
+          isMobileScreen: () => false,
+          isSidebarOpen: true,
+          isTabletScreen: () => true,
+          isTaskDetailPanelOpen: false,
+          screenSize: 'tablet',
+        })
+      )
+
+      // タブレット向けのuseMediaQueryモック
+      mockUseMediaQuery.mockImplementation((query: string) => {
+        if (query.includes('min-width: 1024px')) return false // desktop
+        if (
+          query.includes('min-width: 768px') &&
+          query.includes('max-width: 1023px')
+        )
+          return true // tablet
+        if (query.includes('max-width: 767px')) return false // mobile
+        return false
+      })
+
+      render(<HomePage />)
+
+      // 2カラム表示の確認（詳細パネルは非表示）
+      expect(screen.getByRole('navigation')).toBeInTheDocument() // 左カラム
+      expect(screen.getByRole('main')).toBeInTheDocument() // 中央カラム
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument() // 右カラムは非表示
+    })
+
+    it('should show 1-column layout on mobile', () => {
+      mockUseUIStore.mockReturnValue(
+        createMockUIStore({
+          isDesktopScreen: () => false,
+          isMobileScreen: () => true,
+          isSidebarOpen: false,
+          isTabletScreen: () => false,
+          isTaskDetailPanelOpen: false,
+          screenSize: 'mobile',
+        })
+      )
+
+      // モバイル向けのuseMediaQueryモック
+      mockUseMediaQuery.mockImplementation((query: string) => {
+        if (query.includes('min-width: 1024px')) return false // desktop
+        if (
+          query.includes('min-width: 768px') &&
+          query.includes('max-width: 1023px')
+        )
+          return false // tablet
+        if (query.includes('max-width: 767px')) return true // mobile
+        return false
+      })
+
+      render(<HomePage />)
+
+      // 1カラム表示の確認（サイドバーも詳細パネルも非表示）
+      expect(screen.queryByRole('navigation')).not.toBeInTheDocument() // 左カラムは非表示
+      expect(screen.getByRole('main')).toBeInTheDocument() // 中央カラム
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument() // 右カラムは非表示
+    })
+  })
+
+  describe('タスクリストの表示', () => {
+    it('should render task list with empty state when no tasks', () => {
+      render(<HomePage />)
+
+      // 空の状態のメッセージが表示される
+      expect(screen.getByText('タスクがありません')).toBeInTheDocument()
+      expect(
+        screen.getByText('新しいタスクを作成してください')
+      ).toBeInTheDocument()
+    })
+
+    it('should render task list with tasks when available', () => {
+      const mockTasks = [
+        {
+          completed: false,
+          createdAt: new Date(),
+          description: 'テスト用のタスク1です',
+          id: 'task-1',
+          important: false,
+          subtasks: [],
+          title: 'テストタスク1',
+          updatedAt: new Date(),
+          userId: 'user-1',
+        },
+        {
+          completed: true,
+          createdAt: new Date(),
+          description: 'テスト用のタスク2です',
+          id: 'task-2',
+          important: true,
+          subtasks: [],
+          title: 'テストタスク2',
+          updatedAt: new Date(),
+          userId: 'user-1',
+        },
+      ]
+
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          filter: 'all',
+          filteredTaskCount: 2,
+          filteredTasks: mockTasks,
+          getFilteredTaskCount: () => 2,
+          getFilteredTasks: () => mockTasks,
+          selectedTask: undefined,
+        })
+      )
+
+      render(<HomePage />)
+
+      // タスクリストが表示される
+      expect(
+        screen.getByRole('list', { name: 'タスクリスト' })
+      ).toBeInTheDocument()
+      expect(screen.getByText('テストタスク1')).toBeInTheDocument()
+      expect(screen.getByText('テストタスク2')).toBeInTheDocument()
+      expect(screen.getByText('2件のタスク')).toBeInTheDocument()
+    })
+
+    it('should render task list with loading state', () => {
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          filter: 'all',
+          filteredTaskCount: 0,
+          filteredTasks: [],
+          isLoading: true, // ローディング状態
+          selectedTask: undefined,
+        })
+      )
+
+      render(<HomePage />)
+
+      // ローディングメッセージが表示される
+      expect(screen.getByText('タスクを読み込み中...')).toBeInTheDocument()
+    })
+
+    it('should render task list with error state', () => {
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          error: 'タスクの読み込みに失敗しました',
+          filter: 'all',
+          filteredTaskCount: 0,
+          filteredTasks: [],
+          selectedTask: undefined,
+        })
+      )
+
+      render(<HomePage />)
+
+      // エラーメッセージが表示される
+      expect(
+        screen.getByText('タスクの読み込みに失敗しました')
+      ).toBeInTheDocument()
+    })
+  })
+
+  describe('フィルタ機能', () => {
+    it('should show active filter and task count', () => {
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          filter: 'important', // 重要フィルタが選択されている
+          filteredTaskCount: 3,
+          filteredTasks: [],
+          getFilteredTaskCount: () => 3,
+          getFilteredTasks: () => [],
+          selectedTask: undefined,
+        })
+      )
+
+      render(<HomePage />)
+
+      // 重要フィルタがアクティブで表示されている
+      const importantFilter = screen.getByTestId('filter-important')
+      expect(importantFilter).toBeInTheDocument()
+    })
+  })
+
+  describe('タスク詳細パネル', () => {
+    it('should show task detail panel when task is selected', () => {
+      const mockTask = {
+        completed: false,
+        createdAt: new Date(),
+        description: 'テスト用のタスクです',
+        id: 'task-1',
+        important: false,
+        subtasks: [],
+        title: 'テストタスク',
+        updatedAt: new Date(),
+        userId: 'user-1',
+      }
+
+      mockUseUIStore.mockReturnValue(
+        createMockUIStore({
+          isDesktopScreen: () => true,
+          isMobileScreen: () => false,
+          isSidebarOpen: true,
+          isTabletScreen: () => false,
+          isTaskDetailPanelOpen: true,
+          screenSize: 'desktop',
+        })
+      )
+
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          filter: 'all',
+          filteredTaskCount: 1,
+          filteredTasks: [mockTask],
+          getFilteredTaskCount: () => 1,
+          getFilteredTasks: () => [mockTask],
+          selectedTask: mockTask, // タスクが選択されている
+        })
+      )
+
+      render(<HomePage />)
+
+      // タスク詳細パネルが表示される
+      expect(screen.getByRole('complementary')).toBeInTheDocument()
+      expect(screen.getByText('タスク詳細')).toBeInTheDocument()
+    })
+  })
+
+  describe('モバイルでのハンバーガーメニュー', () => {
+    it('should show burger menu on mobile', () => {
+      mockUseUIStore.mockReturnValue(
+        createMockUIStore({
+          isDesktopScreen: () => false,
+          isMobileScreen: () => true,
+          isSidebarOpen: false,
+          isTabletScreen: () => false,
+          isTaskDetailPanelOpen: false,
+          screenSize: 'mobile',
+        })
+      )
+
+      // モバイル向けのuseMediaQueryモック
+      mockUseMediaQuery.mockImplementation((query: string) => {
+        if (query.includes('min-width: 1024px')) return false // desktop
+        if (
+          query.includes('min-width: 768px') &&
+          query.includes('max-width: 1023px')
+        )
+          return false // tablet
+        if (query.includes('max-width: 767px')) return true // mobile
+        return false
+      })
+
+      render(<HomePage />)
+
+      // ハンバーガーメニューが表示される
+      expect(screen.getByLabelText('メニューを開く')).toBeInTheDocument()
+    })
   })
 })

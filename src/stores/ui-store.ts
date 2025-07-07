@@ -51,9 +51,19 @@ export interface Notification {
 export type NotificationType = 'error' | 'info' | 'success' | 'warning'
 
 /**
+ * 画面サイズの種類
+ */
+export type ScreenSize = 'desktop' | 'mobile' | 'tablet'
+
+/**
  * テーマの種類
  */
 export type Theme = 'dark' | 'light'
+
+/**
+ * UIストアの型定義
+ */
+export type UIStore = UIStoreActions & UIStoreComputed & UIStoreState
 
 /**
  * ビューモードの種類
@@ -69,11 +79,6 @@ type LoadingOperations = Record<string, boolean>
  * モーダル状態の型定義
  */
 type ModalStates = Record<ModalType, boolean>
-
-/**
- * UIストアの型定義
- */
-type UIStore = UIStoreActions & UIStoreComputed & UIStoreState
 
 /**
  * UIストアのアクションの型定義
@@ -143,10 +148,22 @@ interface UIStoreActions {
   setOperationLoading: (operation: string, isLoading: boolean) => void
 
   /**
+   * 画面サイズを設定
+   * @param screenSize 画面サイズ
+   */
+  setScreenSize: (screenSize: ScreenSize) => void
+
+  /**
    * サイドバーの開閉状態を設定
    * @param isOpen 開閉状態
    */
   setSidebarOpen: (isOpen: boolean) => void
+
+  /**
+   * タスク詳細パネルの開閉状態を設定
+   * @param isOpen 開閉状態
+   */
+  setTaskDetailPanelOpen: (isOpen: boolean) => void
 
   /**
    * テーマを設定
@@ -219,6 +236,11 @@ interface UIStoreActions {
   toggleSidebar: () => void
 
   /**
+   * タスク詳細パネルの開閉を切り替え
+   */
+  toggleTaskDetailPanel: () => void
+
+  /**
    * テーマを切り替え
    */
   toggleTheme: () => void
@@ -241,11 +263,29 @@ interface UIStoreComputed {
   isDarkTheme: () => boolean
 
   /**
+   * デスクトップ画面かどうかを確認
+   * @returns デスクトップ画面の場合はtrue
+   */
+  isDesktopScreen: () => boolean
+
+  /**
+   * モバイル画面かどうかを確認
+   * @returns モバイル画面の場合はtrue
+   */
+  isMobileScreen: () => boolean
+
+  /**
    * 指定した操作がローディング中かどうかを確認
    * @param operation 操作名
    * @returns ローディング中の場合はtrue
    */
   isOperationLoading: (operation: string) => boolean
+
+  /**
+   * タブレット画面かどうかを確認
+   * @returns タブレット画面の場合はtrue
+   */
+  isTabletScreen: () => boolean
 }
 
 /**
@@ -268,6 +308,11 @@ interface UIStoreState {
   isSidebarOpen: boolean
 
   /**
+   * タスク詳細パネルの開閉状態
+   */
+  isTaskDetailPanelOpen: boolean
+
+  /**
    * 操作ごとのローディング状態
    */
   loadingOperations: LoadingOperations
@@ -281,6 +326,11 @@ interface UIStoreState {
    * 通知一覧
    */
   notifications: Notification[]
+
+  /**
+   * 現在の画面サイズ
+   */
+  screenSize: ScreenSize
 
   /**
    * 現在のテーマ
@@ -300,6 +350,7 @@ const initialState: UIStoreState = {
   isFilterPanelOpen: false,
   isGlobalLoading: false,
   isSidebarOpen: true,
+  isTaskDetailPanelOpen: false,
   loadingOperations: {},
   modals: {
     createTask: false,
@@ -309,6 +360,7 @@ const initialState: UIStoreState = {
     userProfile: false,
   },
   notifications: [],
+  screenSize: 'desktop',
   theme: 'light',
   viewMode: 'list',
 }
@@ -387,10 +439,25 @@ export const useUIStore = create<UIStore>()(
         return theme === 'dark'
       },
 
+      isDesktopScreen: () => {
+        const { screenSize } = get()
+        return screenSize === 'desktop'
+      },
+
+      isMobileScreen: () => {
+        const { screenSize } = get()
+        return screenSize === 'mobile'
+      },
+
       isOperationLoading: (operation) => {
         const { loadingOperations } = get()
         // eslint-disable-next-line security/detect-object-injection
         return loadingOperations[operation] || false
+      },
+
+      isTabletScreen: () => {
+        const { screenSize } = get()
+        return screenSize === 'tablet'
       },
 
       openModal: (modalType) =>
@@ -436,9 +503,19 @@ export const useUIStore = create<UIStore>()(
           `uiStore/setOperationLoading/${operation}`
         ),
 
+      setScreenSize: (screenSize) =>
+        set({ screenSize }, false, 'uiStore/setScreenSize'),
+
       // アクション
       setSidebarOpen: (isOpen) =>
         set({ isSidebarOpen: isOpen }, false, 'uiStore/setSidebarOpen'),
+
+      setTaskDetailPanelOpen: (isOpen) =>
+        set(
+          { isTaskDetailPanelOpen: isOpen },
+          false,
+          'uiStore/setTaskDetailPanelOpen'
+        ),
 
       setTheme: (theme) => set({ theme }, false, 'uiStore/setTheme'),
 
@@ -501,6 +578,15 @@ export const useUIStore = create<UIStore>()(
           (state) => ({ isSidebarOpen: !state.isSidebarOpen }),
           false,
           'uiStore/toggleSidebar'
+        ),
+
+      toggleTaskDetailPanel: () =>
+        set(
+          (state) => ({
+            isTaskDetailPanelOpen: !state.isTaskDetailPanelOpen,
+          }),
+          false,
+          'uiStore/toggleTaskDetailPanel'
         ),
 
       toggleTheme: () =>

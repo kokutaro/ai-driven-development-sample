@@ -15,7 +15,7 @@ import type {
 /**
  * タスクストアの型定義
  */
-type TaskStore = TaskStoreActions & TaskStoreComputed & TaskStoreState
+export type TaskStore = TaskStoreActions & TaskStoreComputed & TaskStoreState
 
 /**
  * タスクストアのアクションの型定義
