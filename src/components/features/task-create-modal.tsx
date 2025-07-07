@@ -76,7 +76,8 @@ export function TaskCreateModal({
       // 空文字列は undefined に変換
       const submitData: CreateTaskInput = {
         categoryId: values.categoryId,
-        description: values.description ?? undefined,
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        description: values.description || undefined,
         dueDate: values.dueDate,
         important: values.important,
         reminderDate: values.reminderDate,
@@ -107,7 +108,8 @@ export function TaskCreateModal({
     if (opened) {
       form.reset()
     }
-  }, [opened, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened])
 
   return (
     <Modal

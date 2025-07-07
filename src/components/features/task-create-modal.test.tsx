@@ -203,7 +203,12 @@ describe('TaskCreateModal', () => {
     await user.click(createButton)
 
     expect(mockOnTaskCreate).toHaveBeenCalledWith({
+      categoryId: undefined,
+      description: undefined,
+      dueDate: undefined,
       important: false,
+      reminderDate: undefined,
+      repeatPattern: undefined,
       title: '期限付きタスク',
     })
   })
@@ -244,7 +249,12 @@ describe('TaskCreateModal', () => {
     await user.click(createButton)
 
     expect(mockOnTaskCreate).toHaveBeenCalledWith({
+      categoryId: undefined,
+      description: undefined,
+      dueDate: undefined,
       important: false,
+      reminderDate: undefined,
+      repeatPattern: undefined,
       title: '最初のタスク',
     })
 
@@ -289,7 +299,12 @@ describe('TaskCreateModal', () => {
     await user.click(createButton)
 
     expect(mockOnTaskCreate).toHaveBeenCalledWith({
+      categoryId: undefined,
+      description: undefined,
+      dueDate: undefined,
       important: false,
+      reminderDate: undefined,
+      repeatPattern: undefined,
       title: 'シンプルなタスク',
     })
   })
