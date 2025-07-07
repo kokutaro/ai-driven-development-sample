@@ -17,7 +17,9 @@ import '@mantine/dates/styles.css'
 function AllTheProviders({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider>
-      <DatesProvider settings={{ locale: 'ja' }}>{children}</DatesProvider>
+      <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
+        {children}
+      </DatesProvider>
     </MantineProvider>
   )
 }
