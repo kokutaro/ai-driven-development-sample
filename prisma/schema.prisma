@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  todos      Todo[]
+  categories Category[]
+
+  @@map("User")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   // HEX color code
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos Todo[]
+
+  @@map("Category")
+}
+
+model Todo {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  isImportant Boolean   @default(false)
+  isCompleted Boolean   @default(false)
+  order       Int       @default(0)
+  categoryId  String?
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subTasks  SubTask[]
+  reminders Reminder[]
+
+  @@map("Todo")
+}
+
+model SubTask {
+  id          String   @id @default(cuid())
+  title       String
+  isCompleted Boolean  @default(false)
+  order       Int      @default(0)
+  todoId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  todo Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  @@map("SubTask")
+}
+
+model Reminder {
+  id          String   @id @default(cuid())
+  reminderAt  DateTime
+  isTriggered Boolean  @default(false)
+  todoId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  todo Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  @@map("Reminder")
+}

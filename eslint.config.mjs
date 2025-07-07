@@ -38,6 +38,9 @@ const eslintConfig = tseslint.config(
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unused-vars': [
         'warn',
         { argsIgnorePattern: '^_' },
@@ -78,7 +81,7 @@ const eslintConfig = tseslint.config(
   },
   {
     extends: [unicornPlugin.configs.recommended],
-    ignores: ['src/tests/**/*.test.{ts,tsx}', 'src/tests/**/*.spec.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
       'unicorn/prevent-abbreviations': 'off',
     },
@@ -111,8 +114,14 @@ const eslintConfig = tseslint.config(
     extends: [securityPlugin.configs.recommended],
   },
   {
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
-      'func-style': ['error', 'declaration', { allowArrowFunctions: false }],
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
+  {
+    rules: {
+      'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
       'prefer-arrow-callback': ['error', { allowNamedFunctions: false }],
       'prefer-template': 'error',
     },
