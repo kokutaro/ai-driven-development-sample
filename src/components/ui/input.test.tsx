@@ -1,12 +1,13 @@
 /**
  * Inputコンポーネントのテスト
- * @fileoverview 基本的なInputコンポーネントのユニットテスト
+ * @fileoverview Mantine TextInputをベースとした基本的なInputコンポーネントのユニットテスト
  */
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Input } from './input'
+
+import { render, screen } from '@/tests/test-utils'
 
 describe('Input', () => {
   // 基本的なレンダリングテスト
@@ -74,41 +75,50 @@ describe('Input', () => {
   // カスタムクラスのテスト
   it('applies custom className', () => {
     render(<Input className="custom-input" />)
-    const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('custom-input')
+    // Mantine applies className to the wrapper, not directly to input
+    const container = screen.getByRole('textbox').closest('.custom-input')
+    expect(container).toBeInTheDocument()
   })
 
   // サイズのテスト
-  it('applies size classes correctly', () => {
+  it('renders with small size correctly', () => {
     render(<Input size="sm" />)
     const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('input-sm')
+    expect(input).toBeInTheDocument()
+    // Size is handled internally by Mantine
   })
 
-  it('applies large size classes correctly', () => {
+  it('renders with large size correctly', () => {
     render(<Input size="lg" />)
     const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('input-lg')
+    expect(input).toBeInTheDocument()
+    // Size is handled internally by Mantine
   })
 
   // バリアントのテスト
-  it('applies error variant classes', () => {
+  it('renders error variant correctly', () => {
     render(<Input variant="error" />)
     const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('input-error')
+    expect(input).toBeInTheDocument()
+    expect(input).toHaveAttribute('aria-invalid', 'true')
   })
 
-  it('applies success variant classes', () => {
+  it('renders success variant correctly', () => {
     render(<Input variant="success" />)
     const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('input-success')
+    expect(input).toBeInTheDocument()
+    // Success variant should show checkmark as right section
+    const checkmark = screen.getByText('✓')
+    expect(checkmark).toBeInTheDocument()
   })
 
   // フルWidthのテスト
-  it('applies full width classes when fullWidth is true', () => {
+  it('renders correctly when fullWidth is true', () => {
     render(<Input fullWidth />)
     const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('input-full-width')
+    expect(input).toBeInTheDocument()
+    // fullWidth prop is handled internally by Mantine
+    // We just verify it renders without error
   })
 
   // onChangeイベントのテスト

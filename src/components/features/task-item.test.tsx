@@ -2,13 +2,14 @@
  * タスクアイテムコンポーネントのテスト
  * @fileoverview 個別タスクアイテムのユニットテスト
  */
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TaskItem } from './task-item'
 
 import type { Task } from '@/types/task'
+
+import { render, screen } from '@/tests/test-utils'
 
 // テスト用のモックタスクデータ
 const mockTask: Task = {

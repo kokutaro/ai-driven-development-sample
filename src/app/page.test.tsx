@@ -2,10 +2,11 @@
  * メインページのテスト
  * @fileoverview TODOアプリのメインページのユニットテスト
  */
-import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HomePage from './page'
+
+import { render, screen } from '@/tests/test-utils'
 
 // Zustandストアのモック
 const mockGetFilteredTasks = vi.fn()
@@ -181,6 +182,7 @@ describe('HomePage', () => {
     // セクションが正しい順序で配置されていることを確認
     for (let i = 1; i < sections.length; i++) {
       const prevSectionRect = sections[i - 1].getBoundingClientRect()
+      // eslint-disable-next-line security/detect-object-injection
       const currentSectionRect = sections[i].getBoundingClientRect()
       expect(currentSectionRect.top).toBeGreaterThanOrEqual(
         prevSectionRect.bottom
