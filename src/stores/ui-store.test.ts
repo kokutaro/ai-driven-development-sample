@@ -44,6 +44,12 @@ describe('useUIStore', () => {
       // フィルターパネル
       expect(result.current.isFilterPanelOpen).toBe(false)
 
+      // タスク詳細パネル
+      expect(result.current.isTaskDetailPanelOpen).toBe(false)
+
+      // レスポンシブ状態
+      expect(result.current.screenSize).toBe('desktop')
+
       // ローディング状態
       expect(result.current.isGlobalLoading).toBe(false)
       expect(result.current.loadingOperations).toEqual({})
@@ -474,6 +480,139 @@ describe('useUIStore', () => {
     })
   })
 
+  describe('タスク詳細パネル管理', () => {
+    it('should toggle task detail panel correctly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      // 初期状態：閉じている
+      expect(result.current.isTaskDetailPanelOpen).toBe(false)
+
+      // トグル：開く
+      act(() => {
+        result.current.toggleTaskDetailPanel()
+      })
+      expect(result.current.isTaskDetailPanelOpen).toBe(true)
+
+      // トグル：閉じる
+      act(() => {
+        result.current.toggleTaskDetailPanel()
+      })
+      expect(result.current.isTaskDetailPanelOpen).toBe(false)
+    })
+
+    it('should set task detail panel state directly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      act(() => {
+        result.current.setTaskDetailPanelOpen(true)
+      })
+      expect(result.current.isTaskDetailPanelOpen).toBe(true)
+
+      act(() => {
+        result.current.setTaskDetailPanelOpen(false)
+      })
+      expect(result.current.isTaskDetailPanelOpen).toBe(false)
+    })
+  })
+
+  describe('レスポンシブ状態管理', () => {
+    it('should set screen size correctly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      // 初期状態：desktop
+      expect(result.current.screenSize).toBe('desktop')
+
+      act(() => {
+        result.current.setScreenSize('tablet')
+      })
+      expect(result.current.screenSize).toBe('tablet')
+
+      act(() => {
+        result.current.setScreenSize('mobile')
+      })
+      expect(result.current.screenSize).toBe('mobile')
+    })
+
+    it('should check if mobile screen correctly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      expect(result.current.isMobileScreen()).toBe(false)
+
+      act(() => {
+        result.current.setScreenSize('mobile')
+      })
+      expect(result.current.isMobileScreen()).toBe(true)
+
+      act(() => {
+        result.current.setScreenSize('tablet')
+      })
+      expect(result.current.isMobileScreen()).toBe(false)
+    })
+
+    it('should check if tablet screen correctly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      expect(result.current.isTabletScreen()).toBe(false)
+
+      act(() => {
+        result.current.setScreenSize('tablet')
+      })
+      expect(result.current.isTabletScreen()).toBe(true)
+
+      act(() => {
+        result.current.setScreenSize('desktop')
+      })
+      expect(result.current.isTabletScreen()).toBe(false)
+    })
+
+    it('should check if desktop screen correctly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      expect(result.current.isDesktopScreen()).toBe(true)
+
+      act(() => {
+        result.current.setScreenSize('mobile')
+      })
+      expect(result.current.isDesktopScreen()).toBe(false)
+
+      act(() => {
+        result.current.setScreenSize('desktop')
+      })
+      expect(result.current.isDesktopScreen()).toBe(true)
+    })
+  })
+
+  describe('3カラムレイアウト統合テスト', () => {
+    it('should handle responsive layout state changes correctly', () => {
+      const { result } = renderHook(() => useUIStore())
+
+      // デスクトップ：3カラム表示
+      expect(result.current.screenSize).toBe('desktop')
+      expect(result.current.isSidebarOpen).toBe(true)
+      expect(result.current.isTaskDetailPanelOpen).toBe(false)
+
+      // タスク詳細パネルを開く
+      act(() => {
+        result.current.setTaskDetailPanelOpen(true)
+      })
+      expect(result.current.isTaskDetailPanelOpen).toBe(true)
+
+      // タブレット：2カラム表示（詳細パネルは自動で閉じる）
+      act(() => {
+        result.current.setScreenSize('tablet')
+      })
+      expect(result.current.isTabletScreen()).toBe(true)
+      // タブレットでは詳細パネルは表示されない（モーダルになる）
+
+      // モバイル：1カラム表示（サイドバーも自動で閉じる）
+      act(() => {
+        result.current.setScreenSize('mobile')
+      })
+      expect(result.current.isMobileScreen()).toBe(true)
+      // モバイルでは必要に応じてサイドバーが閉じられる
+    })
+  })
+
   describe('ストアリセット', () => {
     it('should reset store to initial state', () => {
       const { result } = renderHook(() => useUIStore())
@@ -487,6 +626,8 @@ describe('useUIStore', () => {
         result.current.setFilterPanelOpen(true)
         result.current.setGlobalLoading(true)
         result.current.setOperationLoading('createTask', true)
+        result.current.setTaskDetailPanelOpen(true)
+        result.current.setScreenSize('mobile')
         result.current.addNotification({
           duration: 5000,
           id: 'test',
@@ -510,6 +651,8 @@ describe('useUIStore', () => {
       expect(result.current.isFilterPanelOpen).toBe(false)
       expect(result.current.isGlobalLoading).toBe(false)
       expect(result.current.loadingOperations).toEqual({})
+      expect(result.current.isTaskDetailPanelOpen).toBe(false)
+      expect(result.current.screenSize).toBe('desktop')
     })
   })
 })
