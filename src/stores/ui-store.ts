@@ -389,6 +389,7 @@ export const useUIStore = create<UIStore>()(
 
       isOperationLoading: (operation) => {
         const { loadingOperations } = get()
+        // eslint-disable-next-line security/detect-object-injection
         return loadingOperations[operation] || false
       },
 

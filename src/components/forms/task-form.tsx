@@ -6,6 +6,8 @@
 
 import { useState } from 'react'
 
+import { Alert, Checkbox, Textarea } from '@mantine/core'
+
 import type { CreateTaskInput } from '@/types/task'
 
 import { Button } from '@/components/ui/button'
@@ -48,9 +50,11 @@ export function TaskForm() {
     }))
 
     // 入力時にエラーをクリア
+    // eslint-disable-next-line security/detect-object-injection
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev }
+        // eslint-disable-next-line security/detect-object-injection
         delete newErrors[field]
         return newErrors
       })
@@ -89,6 +93,7 @@ export function TaskForm() {
       const errors: Record<string, string> = {}
       for (const issue of result.error.issues) {
         const path = issue.path[0] as string
+        // eslint-disable-next-line security/detect-object-injection
         errors[path] = issue.message
       }
       setValidationErrors(errors)
@@ -129,9 +134,9 @@ export function TaskForm() {
     >
       {/* エラーメッセージの表示 */}
       {error && (
-        <div className="text-red-600 text-sm p-2 bg-red-50 rounded">
+        <Alert color="red" title="エラー">
           {error}
-        </div>
+        </Alert>
       )}
 
       {/* タイトル入力フィールド */}
@@ -156,27 +161,18 @@ export function TaskForm() {
       </div>
 
       {/* 説明入力フィールド */}
-      <div className="space-y-1">
-        <label className="block text-sm font-medium" htmlFor="task-description">
-          説明
-        </label>
-        <textarea
-          aria-label="説明"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          id="task-description"
-          onChange={(e) =>
-            updateField('description', e.target.value || undefined)
-          }
-          placeholder="タスクの説明（任意）"
-          rows={3}
-          value={formData.description ?? ''}
-        />
-        {validationErrors.description && (
-          <div className="text-red-600 text-sm">
-            {validationErrors.description}
-          </div>
-        )}
-      </div>
+      <Textarea
+        aria-label="説明"
+        error={validationErrors.description}
+        id="task-description"
+        label="説明"
+        onChange={(e) =>
+          updateField('description', e.target.value || undefined)
+        }
+        placeholder="タスクの説明（任意）"
+        rows={3}
+        value={formData.description ?? ''}
+      />
 
       {/* 期限設定フィールド */}
       <div className="space-y-1">
@@ -203,19 +199,13 @@ export function TaskForm() {
       </div>
 
       {/* 重要度チェックボックス */}
-      <div className="flex items-center space-x-2">
-        <input
-          aria-label="重要"
-          checked={formData.important}
-          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-          id="task-important"
-          onChange={(e) => updateField('important', e.target.checked)}
-          type="checkbox"
-        />
-        <label className="text-sm font-medium" htmlFor="task-important">
-          重要
-        </label>
-      </div>
+      <Checkbox
+        aria-label="重要"
+        checked={formData.important}
+        id="task-important"
+        label="重要"
+        onChange={(e) => updateField('important', e.target.checked)}
+      />
 
       {/* 送信ボタン */}
       <Button className="w-full" disabled={isLoading} type="submit">

@@ -1,20 +1,18 @@
 /**
  * Cardコンポーネント
- * @fileoverview 基本的なCardコンポーネント
+ * @fileoverview Mantine Cardをベースとした基本的なCardコンポーネント
  */
 import React from 'react'
 
-import { cn } from '@/lib/utils'
+import { Card as MantineCard } from '@mantine/core'
+
+import type { CardProps as MantineCardProps } from '@mantine/core'
 
 /**
  * Cardコンポーネントのプロパティの型定義
  */
-export interface CardProps {
-  /**
-   * レンダリングするHTML要素
-   */
-  as?: React.ElementType
-
+export interface CardProps
+  extends Omit<MantineCardProps, 'component' | 'onClick'> {
   /**
    * 子要素
    */
@@ -58,7 +56,7 @@ export interface CardProps {
   /**
    * クリックハンドラー
    */
-  onClick?: (event: React.MouseEvent<HTMLElement>) => void
+  onClick?: (event: React.MouseEvent<HTMLDivElement>) => void
 
   /**
    * Cardのパディング
@@ -87,7 +85,6 @@ export interface CardProps {
  * @returns Cardコンポーネント
  */
 export function Card({
-  as: Component = 'div',
   children,
   className,
   clickable,
@@ -98,119 +95,74 @@ export function Card({
   hoverable = false,
   onClick,
   padding = 'md',
-  size = 'md',
+  size: _size = 'md',
   variant = 'default',
   withAnimation = true,
   ...props
 }: CardProps) {
   const isClickable = clickable ?? onClick !== undefined
+  const variantProps = getMantinePropsForVariant(variant)
 
   /**
    * カードクリックハンドラー
    * @param event - クリックイベント
    */
-  function handleClick(event: React.MouseEvent<HTMLElement>) {
+  function handleClick(event: React.MouseEvent<HTMLDivElement>) {
     if (disabled) {
       event.preventDefault()
       return
     }
-    onClick?.(event)
+    if (onClick) {
+      onClick(event)
+    }
   }
 
-  const baseClasses = cn(
-    'card',
-    getVariantClass(variant),
-    getSizeClass(size),
-    getPaddingClass(padding),
-    {
-      'card-clickable': isClickable,
-      'card-disabled': disabled,
-      'card-full-width': fullWidth,
-      'card-hoverable': hoverable,
-      'card-no-animation': !withAnimation,
-    },
-    className
-  )
-
-  const cardProps = {
-    className: baseClasses,
-    onClick: isClickable ? handleClick : undefined,
-    ...props,
+  const cardStyles = {
+    cursor: isClickable ? 'pointer' : undefined,
+    opacity: disabled ? 0.6 : undefined,
+    pointerEvents: disabled ? ('none' as const) : undefined,
+    transition: withAnimation ? 'all 0.2s ease' : undefined,
+    width: fullWidth ? '100%' : undefined,
+    ...(hoverable && {
+      '&:hover': {
+        transform: 'translateY(-2px)',
+      },
+    }),
   }
 
   return (
-    <Component {...cardProps}>
-      {header && <div className="card-header">{header}</div>}
+    <MantineCard
+      className={className}
+      onClick={isClickable ? handleClick : undefined}
+      padding={padding}
+      style={cardStyles}
+      {...variantProps}
+      {...props}
+    >
+      {header && <MantineCard.Section>{header}</MantineCard.Section>}
 
-      <div className="card-body">{children}</div>
+      {children}
 
-      {footer && <div className="card-footer">{footer}</div>}
-    </Component>
+      {footer && <MantineCard.Section>{footer}</MantineCard.Section>}
+    </MantineCard>
   )
 }
 
 /**
- * パディングに応じたクラス名を取得
- * @param padding - Cardのパディング
- * @returns パディングクラス名
+ * カスタムバリアントをMantineのpropsにマッピング
+ * @param variant - カスタムバリアント
+ * @returns Mantineのprops
  */
-function getPaddingClass(padding: CardProps['padding']) {
-  switch (padding) {
-    case 'lg': {
-      return 'card-padding-lg'
-    }
-    case 'md': {
-      return 'card-padding-md'
-    }
-    case 'sm': {
-      return 'card-padding-sm'
-    }
-    default: {
-      return 'card-padding-md'
-    }
-  }
-}
-
-/**
- * サイズに応じたクラス名を取得
- * @param size - Cardのサイズ
- * @returns サイズクラス名
- */
-function getSizeClass(size: CardProps['size']) {
-  switch (size) {
-    case 'lg': {
-      return 'card-lg'
-    }
-    case 'md': {
-      return 'card-md'
-    }
-    case 'sm': {
-      return 'card-sm'
-    }
-    default: {
-      return 'card-md'
-    }
-  }
-}
-
-/**
- * バリアントに応じたクラス名を取得
- * @param variant - Cardのバリアント
- * @returns バリアントクラス名
- */
-function getVariantClass(variant: CardProps['variant']) {
+function getMantinePropsForVariant(variant: CardProps['variant']) {
   switch (variant) {
-    case 'default': {
-      return 'card-default'
-    }
     case 'elevated': {
-      return 'card-elevated'
+      return { shadow: 'md', withBorder: false }
     }
     case 'outlined': {
-      return 'card-outlined'
+      return { shadow: 'none', withBorder: true }
     }
     default: {
-      return 'card-default'
+      return { shadow: 'sm', withBorder: true }
     }
   }
 }

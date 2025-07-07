@@ -2,13 +2,14 @@
  * タスクリストコンポーネントのテスト
  * @fileoverview タスクリストのユニットテスト
  */
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TaskList } from './task-list'
 
 import type { Task } from '@/types/task'
+
+import { render, screen } from '@/tests/test-utils'
 
 // テスト用のモックタスクデータ
 const mockTasks: Task[] = [

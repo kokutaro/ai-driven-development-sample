@@ -1,16 +1,18 @@
 /**
  * Buttonコンポーネント
- * @fileoverview 基本的なButtonコンポーネント
+ * @fileoverview Mantine Buttonをベースとした基本的なButtonコンポーネント
  */
 import React from 'react'
 
-import { cn } from '@/lib/utils'
+import { Button as MantineButton } from '@mantine/core'
+
+import type { ButtonProps as MantineButtonProps } from '@mantine/core'
 
 /**
  * Buttonコンポーネントのプロパティの型定義
  */
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends Omit<MantineButtonProps, 'loading' | 'variant'> {
   /**
    * 子要素
    */
@@ -32,6 +34,11 @@ export interface ButtonProps
   isLoading?: boolean
 
   /**
+   * クリックハンドラー
+   */
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
+
+  /**
    * ボタンのサイズ
    */
   size?: 'lg' | 'md' | 'sm'
@@ -48,78 +55,28 @@ export interface ButtonProps
 }
 
 /**
- * サイズに応じたクラス名を取得
- * @param size - ボタンのサイズ
- * @returns サイズクラス名
+ * カスタムバリアントをMantineのバリアントにマッピング
+ * @param variant - カスタムバリアント
+ * @returns Mantineバリアントとcolor
  */
-function getSizeClass(size: ButtonProps['size']) {
-  switch (size) {
-    case 'lg': {
-      return 'btn-lg'
-    }
-    case 'md': {
-      return 'btn-md'
-    }
-    case 'sm': {
-      return 'btn-sm'
-    }
-    default: {
-      return 'btn-md'
-    }
-  }
-}
-
-/**
- * バリアントに応じたクラス名を取得
- * @param variant - ボタンのバリアント
- * @returns バリアントクラス名
- */
-function getVariantClass(variant: ButtonProps['variant']) {
+function getMantineVariantAndColor(variant: ButtonProps['variant']) {
   switch (variant) {
     case 'danger': {
-      return 'btn-danger'
+      return { color: 'red', variant: 'filled' as const }
     }
     case 'outline': {
-      return 'btn-outline'
+      return { color: 'gray', variant: 'outline' as const }
     }
     case 'primary': {
-      return 'btn-primary'
+      return { color: 'blue', variant: 'filled' as const }
     }
     case 'secondary': {
-      return 'btn-secondary'
+      return { color: 'gray', variant: 'filled' as const }
     }
     default: {
-      return 'btn-primary'
+      return { color: 'blue', variant: 'filled' as const }
     }
   }
-}
-
-/**
- * ローディングスピナーコンポーネント
- */
-function LoadingSpinner() {
-  return (
-    <svg
-      className="animate-spin h-4 w-4 mr-2"
-      fill="none"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        fill="currentColor"
-      />
-    </svg>
-  )
 }
 
 /**
@@ -143,6 +100,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+    const { color, variant: mantineVariant } =
+      getMantineVariantAndColor(variant)
+
     /**
      * ボタンのクリックハンドラー
      * @param event - クリックイベント
@@ -152,32 +112,27 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         event.preventDefault()
         return
       }
-      onClick?.(event)
+      if (onClick) {
+        onClick(event)
+      }
     }
 
-    const baseClasses = cn(
-      'btn',
-      getVariantClass(variant),
-      getSizeClass(size),
-      {
-        'btn-full-width': fullWidth,
-        'btn-loading': isLoading,
-      },
-      className
-    )
-
     return (
-      <button
-        className={baseClasses}
+      <MantineButton
+        className={className}
+        color={color}
         disabled={Boolean(disabled) || Boolean(isLoading)}
+        fullWidth={fullWidth}
+        loading={isLoading}
         onClick={handleClick}
         ref={ref}
+        size={size}
         type={type}
+        variant={mantineVariant}
         {...props}
       >
-        {isLoading && <LoadingSpinner />}
         {children}
-      </button>
+      </MantineButton>
     )
   }
 )

@@ -2,11 +2,12 @@
  * タスクコントロールコンポーネントのテスト
  * @fileoverview タスクのフィルター・ソート制御のユニットテスト
  */
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TaskControls } from './task-controls'
+
+import { render, screen } from '@/tests/test-utils'
 
 // Zustandストアのモック
 const mockSetFilter = vi.fn()

@@ -1,16 +1,17 @@
 /**
  * Inputコンポーネント
- * @fileoverview 基本的なInputコンポーネント
+ * @fileoverview Mantine TextInputをベースとした基本的なInputコンポーネント
  */
 import React from 'react'
 
-import { cn } from '@/lib/utils'
+import { TextInput } from '@mantine/core'
+
+import type { TextInputProps } from '@mantine/core'
 
 /**
  * Inputコンポーネントのプロパティの型定義
  */
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<TextInputProps, 'error' | 'variant'> {
   /**
    * カスタムクラス名
    */
@@ -33,45 +34,20 @@ export interface InputProps
 }
 
 /**
- * サイズに応じたクラス名を取得
- * @param size - Inputのサイズ
- * @returns サイズクラス名
+ * カスタムバリアントをMantineのpropsにマッピング
+ * @param variant - カスタムバリアント
+ * @returns Mantineのprops
  */
-function getSizeClass(size: InputProps['size']) {
-  switch (size) {
-    case 'lg': {
-      return 'input-lg'
-    }
-    case 'md': {
-      return 'input-md'
-    }
-    case 'sm': {
-      return 'input-sm'
-    }
-    default: {
-      return 'input-md'
-    }
-  }
-}
-
-/**
- * バリアントに応じたクラス名を取得
- * @param variant - Inputのバリアント
- * @returns バリアントクラス名
- */
-function getVariantClass(variant: InputProps['variant']) {
+function getMantinePropsForVariant(variant: InputProps['variant']) {
   switch (variant) {
-    case 'default': {
-      return 'input-default'
-    }
     case 'error': {
-      return 'input-error'
+      return { error: true }
     }
     case 'success': {
-      return 'input-success'
+      return { rightSection: '✓', rightSectionPointerEvents: 'none' as const }
     }
     default: {
-      return 'input-default'
+      return {}
     }
   }
 }
@@ -93,17 +69,19 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const baseClasses = cn(
-      'input',
-      getVariantClass(variant),
-      getSizeClass(size),
-      {
-        'input-full-width': fullWidth,
-      },
-      className
-    )
+    const variantProps = getMantinePropsForVariant(variant)
 
-    return <input className={baseClasses} ref={ref} type={type} {...props} />
+    return (
+      <TextInput
+        className={className}
+        ref={ref}
+        size={size}
+        type={type}
+        w={fullWidth ? '100%' : undefined}
+        {...variantProps}
+        {...props}
+      />
+    )
   }
 )
 

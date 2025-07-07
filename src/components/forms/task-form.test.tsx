@@ -1,12 +1,13 @@
 /**
  * タスク作成フォームコンポーネントのテスト
- * @fileoverview タスク作成フォームのユニットテスト
+ * @fileoverview タスク作成フォームのユニットテスト（Mantineコンポーネント使用）
  */
-import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TaskForm } from './task-form'
+
+import { render, screen, waitFor } from '@/tests/test-utils'
 
 // Zustandストアのモック
 const mockAddTask = vi.fn()
