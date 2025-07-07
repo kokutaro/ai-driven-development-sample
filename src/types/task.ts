@@ -85,12 +85,11 @@ export type TaskSortOrder =
  * タスク更新の入力型
  */
 export interface UpdateTaskInput {
-  categoryId?: null | string
+  categoryId?: string
   completed?: boolean
   description?: string
-  dueDate?: Date | null
-  important?: boolean
-  reminderDate?: Date | null
-  repeatPattern?: null | string
+  dueDate?: Date
+  reminderDate?: Date
+  repeatPattern?: string
   title?: string
 }
