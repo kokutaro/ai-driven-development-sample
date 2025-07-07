@@ -4,6 +4,14 @@
  */
 'use client'
 
+import { useState } from 'react'
+
+import { v4 as uuidv4 } from 'uuid'
+
+import { TaskCreateModal } from './task-create-modal'
+
+import type { CreateTaskInput, Task } from '@/types/task'
+
 import { Button } from '@/components/ui/button'
 import { useTaskStore } from '@/stores'
 
@@ -12,7 +20,10 @@ import { useTaskStore } from '@/stores'
  * @returns タスクリスト
  */
 export function TaskList() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
   const {
+    addTask,
     error,
     filter,
     getFilteredTasks,
@@ -24,6 +35,39 @@ export function TaskList() {
   } = useTaskStore()
 
   const tasks = getFilteredTasks()
+
+  /**
+   * タスク作成処理
+   * @param taskData 作成するタスクデータ
+   */
+  async function handleTaskCreate(taskData: CreateTaskInput) {
+    try {
+      // TODO: 実際のAPIコールに置き換える
+      // 現在は仮実装としてローカル状態に追加
+      const now = new Date()
+      const newTask: Task = {
+        categoryId: taskData.categoryId,
+        completed: false,
+        createdAt: now,
+        description: taskData.description,
+        dueDate: taskData.dueDate,
+        id: uuidv4(),
+        important: taskData.important ?? false,
+        reminderDate: taskData.reminderDate,
+        repeatPattern: taskData.repeatPattern,
+        subtasks: [],
+        title: taskData.title,
+        updatedAt: now,
+        userId: 'mock-user-id', // TODO: 実際のユーザーIDに置き換える
+      }
+
+      addTask(newTask)
+      setIsCreateModalOpen(false)
+    } catch (error) {
+      console.error('タスク作成エラー:', error)
+      // TODO: エラー通知をユーザーに表示
+    }
+  }
 
   // ローディング状態
   if (isLoading) {
@@ -63,6 +107,17 @@ export function TaskList() {
           {getFilterDisplayName(filter)}
         </h2>
         <div className="text-sm text-gray-600">{tasks.length}件のタスク</div>
+      </div>
+
+      {/* タスクの追加ボタン */}
+      <div className="mb-4">
+        <Button
+          className="w-full"
+          onClick={() => setIsCreateModalOpen(true)}
+          variant="primary"
+        >
+          ＋ タスクの追加
+        </Button>
       </div>
 
       {/* タスクリスト */}
@@ -157,6 +212,13 @@ export function TaskList() {
           </li>
         ))}
       </ul>
+
+      {/* タスク作成モーダル */}
+      <TaskCreateModal
+        onClose={() => setIsCreateModalOpen(false)}
+        onTaskCreate={handleTaskCreate}
+        opened={isCreateModalOpen}
+      />
     </div>
   )
 }
