@@ -171,7 +171,7 @@ describe('TodoDetailPanel', () => {
       expect(mockUpdateTodo).toHaveBeenCalledWith('todo-1', {
         categoryId: 'category-1',
         description: 'テスト用の説明',
-        dueDate: expect.any(Date),
+        dueDate: '2024-01-15T00:00:00.000Z',
         isImportant: false,
         title: '更新されたタスク',
       })
@@ -190,7 +190,7 @@ describe('TodoDetailPanel', () => {
       expect(mockUpdateTodo).toHaveBeenCalledWith('todo-1', {
         categoryId: 'category-1',
         description: '更新された説明',
-        dueDate: expect.any(Date),
+        dueDate: '2024-01-15T00:00:00.000Z',
         isImportant: false,
         title: 'テストタスク',
       })
@@ -209,7 +209,7 @@ describe('TodoDetailPanel', () => {
       expect(mockUpdateTodo).toHaveBeenCalledWith('todo-1', {
         categoryId: 'category-1',
         description: 'テスト用の説明',
-        dueDate: expect.any(Date),
+        dueDate: '2024-01-15T00:00:00.000Z',
         isImportant: true,
         title: 'テストタスク',
       })

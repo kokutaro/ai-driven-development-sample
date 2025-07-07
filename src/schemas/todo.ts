@@ -4,12 +4,18 @@ import { z } from 'zod'
  * TODOバリデーションスキーマ
  */
 export const todoSchema = z.object({
-  categoryId: z.string().uuid().optional(),
+  categoryId: z
+    .union([z.string().uuid(), z.literal(''), z.null()])
+    .optional()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
   description: z
     .string()
     .max(1000, '説明は1000文字以内で入力してください')
     .optional(),
-  dueDate: z.string().datetime().optional(),
+  dueDate: z
+    .union([z.string().datetime(), z.null()])
+    .optional()
+    .transform((val) => (val === null ? undefined : val)),
   isImportant: z.boolean().default(false),
   title: z
     .string()

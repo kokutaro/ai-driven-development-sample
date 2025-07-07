@@ -40,11 +40,18 @@ const mockStats = {
   upcomingCount: 8,
 }
 
+const mockUseTodoStats = {
+  error: undefined,
+  isLoading: false,
+  refetch: vi.fn(),
+  stats: mockStats,
+}
+
 describe('TodoSidebar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useUiStore).mockReturnValue(mockUiStore)
-    vi.mocked(useTodoStats).mockReturnValue({ stats: mockStats })
+    vi.mocked(useTodoStats).mockReturnValue(mockUseTodoStats)
   })
 
   it('すべてのフィルタ項目が正しく表示される', () => {
@@ -91,7 +98,12 @@ describe('TodoSidebar', () => {
   it('タスク数が0の場合はバッジが表示されない', () => {
     // Arrange
     const statsWithZero = { ...mockStats, todayCount: 0 }
-    vi.mocked(useTodoStats).mockReturnValue({ stats: statsWithZero })
+    vi.mocked(useTodoStats).mockReturnValue({
+      error: undefined,
+      isLoading: false,
+      refetch: vi.fn(),
+      stats: statsWithZero,
+    })
 
     // Act
     render(<TodoSidebar />)

@@ -141,7 +141,18 @@ export interface TodoStats {
 }
 
 /**
- * TODO更新時のデータ型
+ * TODO更新時のAPIリクエストデータ型
+ */
+export interface UpdateTodoApiData {
+  categoryId?: string | undefined
+  description?: string | undefined
+  dueDate?: string | undefined
+  isImportant?: boolean
+  title?: string
+}
+
+/**
+ * TODO更新時のデータ型（フロントエンド内部）
  */
 export interface UpdateTodoData {
   categoryId?: string | undefined

@@ -151,9 +151,7 @@ export async function PUT(
         ...validatedData,
         dueDate: validatedData.dueDate
           ? new Date(validatedData.dueDate)
-          : validatedData.dueDate === undefined
-            ? undefined
-            : undefined,
+          : undefined,
       },
       include: {
         category: {

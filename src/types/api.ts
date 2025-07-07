@@ -25,3 +25,12 @@ export interface PaginatedResponse<T> {
     totalPages: number
   }
 }
+
+export interface TodoStats {
+  assignedCount: number
+  completedCount: number
+  importantCount: number
+  todayCount: number
+  totalCount: number
+  upcomingCount: number
+}

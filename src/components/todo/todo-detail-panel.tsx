@@ -71,30 +71,77 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
   ])
 
   /**
+   * 値を安全にISO文字列に変換する
+   * Date、string、null、undefinedを適切に処理します
+   */
+  const toISOStringSafe = (value: unknown): string | undefined => {
+    // null、undefined、空文字列の場合はundefinedを返す
+    if (value === null || value === undefined || value === '') {
+      return undefined
+    }
+
+    // Date オブジェクトの場合
+    if (value instanceof Date) {
+      // 無効な日付でないかチェック
+      if (Number.isNaN(value.getTime())) {
+        console.warn('無効な日付オブジェクト:', value)
+        return undefined
+      }
+      return value.toISOString()
+    }
+
+    // 文字列の場合
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const date = new Date(value)
+        // 無効な日付でないかチェック
+        if (Number.isNaN(date.getTime())) {
+          console.warn('無効な日付文字列:', value)
+          return undefined
+        }
+        return date.toISOString()
+      } catch (error) {
+        console.warn('日付変換エラー:', value, error)
+        return undefined
+      }
+    }
+
+    // その他の場合は警告を出してundefinedを返す
+    console.warn('予期しない日付値の型:', typeof value, value)
+    return undefined
+  }
+
+  /**
    * フィールド変更時のハンドラー
    * リアルタイムでタスクを更新します
    */
   const handleFieldChange = async (
     field: string,
-    value: boolean | Date | string | undefined
+    value: boolean | Date | null | string | undefined
   ) => {
     form.setFieldValue(field, value)
 
     // 現在のフォーム値を取得して更新
     const currentValues = form.values
+
+    // APIに送信するためのデータを正しい形式に変換
     const updateData = {
       categoryId:
         field === 'categoryId'
-          ? (value as string | undefined)
-          : currentValues.categoryId,
+          ? value === '' || value === null || value === undefined
+            ? undefined
+            : (value as string)
+          : currentValues.categoryId === '' || currentValues.categoryId === null
+            ? undefined
+            : currentValues.categoryId,
       description:
         field === 'description'
           ? (value as string | undefined)
           : currentValues.description,
       dueDate:
         field === 'dueDate'
-          ? (value as Date | undefined)
-          : currentValues.dueDate,
+          ? toISOStringSafe(value)
+          : toISOStringSafe(currentValues.dueDate),
       isImportant:
         field === 'isImportant'
           ? (value as boolean)
@@ -106,6 +153,35 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
       await updateTodo(todo.id, updateData)
     } catch (error) {
       console.error('タスク更新エラー:', error)
+      // フィールドの値を元に戻す（型安全）
+      switch (field) {
+        case 'categoryId': {
+          form.setFieldValue(field, todo.categoryId ?? '')
+          break
+        }
+        case 'description': {
+          form.setFieldValue(field, todo.description ?? '')
+          break
+        }
+        case 'dueDate': {
+          form.setFieldValue(
+            field,
+            todo.dueDate ? new Date(todo.dueDate) : undefined
+          )
+          break
+        }
+        case 'isImportant': {
+          form.setFieldValue(field, todo.isImportant)
+          break
+        }
+        case 'title': {
+          form.setFieldValue(field, todo.title)
+          break
+        }
+        default: {
+          console.warn('未知のフィールド:', field)
+        }
+      }
     }
   }
 

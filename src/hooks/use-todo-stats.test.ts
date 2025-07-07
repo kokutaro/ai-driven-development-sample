@@ -1,109 +1,104 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTodoStats } from './use-todo-stats'
 
+import type { ApiResponse, TodoStats } from '@/types/api'
+
+import { useClientOnly } from '@/hooks/use-client-only'
+import { statsClient } from '@/lib/api/stats-client'
 import { useTodoStore } from '@/stores/todo-store'
 
-// TodoStoreのモック
-vi.mock('@/stores/todo-store', () => ({
-  useTodoStore: vi.fn(),
-}))
-
-const mockTodos = [
-  {
-    categoryId: undefined,
-    createdAt: new Date(),
-    description: 'Description 1',
-    dueDate: new Date(),
-    id: 'todo-1',
-    isCompleted: false,
-    isImportant: true,
-    order: 0,
-    title: 'Task 1',
-    updatedAt: new Date(),
-    userId: 'user-1',
-  },
-  {
-    categoryId: undefined,
-    createdAt: new Date(),
-    description: 'Description 2',
-    dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 明日
-    id: 'todo-2',
-    isCompleted: false,
-    isImportant: false,
-    order: 1,
-    title: 'Task 2',
-    updatedAt: new Date(),
-    userId: 'user-1',
-  },
-  {
-    categoryId: undefined,
-    createdAt: new Date(),
-    description: 'Description 3',
-    dueDate: undefined,
-    id: 'todo-3',
-    isCompleted: true,
-    isImportant: true,
-    order: 2,
-    title: 'Task 3',
-    updatedAt: new Date(),
-    userId: 'user-1',
-  },
-  {
-    categoryId: undefined,
-    createdAt: new Date(),
-    description: 'Description 4',
-    dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // 昨日（期限切れ）
-    id: 'todo-4',
-    isCompleted: false,
-    isImportant: false,
-    order: 3,
-    title: 'Task 4',
-    updatedAt: new Date(),
-    userId: 'user-1',
-  },
-]
+// モックの設定
+vi.mock('@/lib/api/stats-client')
+vi.mock('@/hooks/use-client-only')
+vi.mock('@/stores/todo-store')
 
 describe('useTodoStats', () => {
+  const mockStats: TodoStats = {
+    assignedCount: 5,
+    completedCount: 3,
+    importantCount: 2,
+    todayCount: 1,
+    totalCount: 10,
+    upcomingCount: 4,
+  }
+
+  const mockSuccessResponse: ApiResponse<TodoStats> = {
+    data: mockStats,
+    success: true,
+    timestamp: '2024-01-01T00:00:00.000Z',
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  it('正しい統計データを返す', () => {
-    // Arrange
+    vi.mocked(useClientOnly).mockReturnValue(true)
+    // デフォルトのTodoStoreモック
     vi.mocked(useTodoStore).mockReturnValue({
+      clearError: vi.fn(),
+      createTodo: vi.fn(),
+      deleteTodo: vi.fn(),
       error: undefined,
+      fetchTodos: vi.fn(),
       isLoading: false,
-      todos: mockTodos,
-      // その他のプロパティはundefineにするか省略
-    } as ReturnType<typeof useTodoStore>)
-
-    // Act
-    const { result } = renderHook(() => useTodoStats())
-
-    // Assert
-    expect(result.current.stats).toEqual({
-      assignedCount: 3, // 未完了のタスク数
-      completedCount: 1, // 完了済みタスク数
-      importantCount: 1, // 重要で未完了のタスク
-      todayCount: 1, // 今日が期限のタスク
-      totalCount: 4, // 全タスク数
-      upcomingCount: 2, // 期限が今日以降の未完了タスク
-    })
-  })
-
-  it('空のtodos配列の場合は全て0を返す', () => {
-    // Arrange
-    vi.mocked(useTodoStore).mockReturnValue({
-      error: undefined,
-      isLoading: false,
+      reset: vi.fn(),
       todos: [],
-    } as ReturnType<typeof useTodoStore>)
+      toggleTodo: vi.fn(),
+      updateTodo: vi.fn(),
+    })
+  })
 
-    // Act
+  afterEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('正常に統計情報を取得する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
+
     const { result } = renderHook(() => useTodoStats())
 
-    // Assert
+    // 初期状態はローディング
+    expect(result.current.isLoading).toBe(true)
+    expect(result.current.stats).toEqual({
+      assignedCount: 0,
+      completedCount: 0,
+      importantCount: 0,
+      todayCount: 0,
+      totalCount: 0,
+      upcomingCount: 0,
+    })
+
+    // データ取得完了を待つ
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.stats).toEqual(mockStats)
+    expect(result.current.error).toBeUndefined()
+    // 初回読み込み + todos配列の監視で2回呼ばれる
+    expect(statsClient.getTodoStats).toHaveBeenCalledTimes(2)
+  })
+
+  it('APIエラーを適切に処理する', async () => {
+    const mockErrorResponse: ApiResponse<never> = {
+      data: null as never,
+      error: {
+        code: 'UNAUTHORIZED',
+        message: '認証が必要です',
+      },
+      success: false,
+      timestamp: '2024-01-01T00:00:00.000Z',
+    }
+
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockErrorResponse)
+
+    const { result } = renderHook(() => useTodoStats())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.error).toBe('認証が必要です')
     expect(result.current.stats).toEqual({
       assignedCount: 0,
       completedCount: 0,
@@ -114,18 +109,18 @@ describe('useTodoStats', () => {
     })
   })
 
-  it('todosがundefinedの場合は全て0を返す', () => {
-    // Arrange
-    vi.mocked(useTodoStore).mockReturnValue({
-      error: undefined,
-      isLoading: false,
-      todos: undefined,
-    } as ReturnType<typeof useTodoStore>)
+  it('ネットワークエラーを適切に処理する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockRejectedValue(
+      new Error('Network error')
+    )
 
-    // Act
     const { result } = renderHook(() => useTodoStats())
 
-    // Assert
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.error).toBe('統計情報の取得に失敗しました')
     expect(result.current.stats).toEqual({
       assignedCount: 0,
       completedCount: 0,
@@ -136,147 +131,235 @@ describe('useTodoStats', () => {
     })
   })
 
-  it('todayCountの計算が正しい', () => {
-    // Arrange
-    const today = new Date()
-    const todayTodos = [
-      { ...mockTodos[0], dueDate: today, isCompleted: false },
-      { ...mockTodos[1], dueDate: today, isCompleted: false },
-      { ...mockTodos[2], dueDate: today, isCompleted: true }, // 完了済みは除外
-      {
-        ...mockTodos[3],
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        isCompleted: false,
-      }, // 明日は除外
-    ]
+  it('クライアントサイドでない場合は何もしない', async () => {
+    // useClientOnly を false にモック
+    vi.mocked(useClientOnly).mockReturnValue(false)
 
-    vi.mocked(useTodoStore).mockReturnValue({
-      error: undefined,
-      isLoading: false,
-      todos: todayTodos,
-    } as ReturnType<typeof useTodoStore>)
-
-    // Act
     const { result } = renderHook(() => useTodoStats())
 
-    // Assert
-    expect(result.current.stats.todayCount).toBe(2)
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.stats).toEqual({
+      assignedCount: 0,
+      completedCount: 0,
+      importantCount: 0,
+      todayCount: 0,
+      totalCount: 0,
+      upcomingCount: 0,
+    })
+    expect(result.current.error).toBeUndefined()
+    expect(statsClient.getTodoStats).not.toHaveBeenCalled()
   })
 
-  it('importantCountの計算が正しい', () => {
-    // Arrange
-    const importantTodos = [
-      { ...mockTodos[0], isCompleted: false, isImportant: true },
-      { ...mockTodos[1], isCompleted: false, isImportant: true },
-      { ...mockTodos[2], isCompleted: true, isImportant: true }, // 完了済みは除外
-      { ...mockTodos[3], isCompleted: false, isImportant: false }, // 重要でないものは除外
-    ]
+  it('統計情報を再取得する機能を提供する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
 
-    vi.mocked(useTodoStore).mockReturnValue({
-      error: undefined,
-      isLoading: false,
-      todos: importantTodos,
-    } as ReturnType<typeof useTodoStore>)
-
-    // Act
     const { result } = renderHook(() => useTodoStats())
 
-    // Assert
-    expect(result.current.stats.importantCount).toBe(2)
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    // 再取得を実行
+    result.current.refetch()
+
+    await waitFor(() => {
+      // 初回(2回) + 手動refetch(1回) = 3回
+      expect(statsClient.getTodoStats).toHaveBeenCalledTimes(3)
+    })
   })
 
-  it('upcomingCountの計算が正しい', () => {
-    // Arrange
-    const now = new Date()
-    const upcomingTodos = [
-      { ...mockTodos[0], dueDate: now, isCompleted: false },
+  it('TODO操作時に統計情報を自動更新する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
+
+    let todoList: {
+      createdAt: Date
+      id: string
+      isCompleted: boolean
+      isImportant: boolean
+      order: number
+      title: string
+      updatedAt: Date
+      userId: string
+    }[] = []
+
+    const todoLoading = false
+
+    // 動的にtodosを変更できるモック
+    vi.mocked(useTodoStore).mockImplementation(() => ({
+      clearError: vi.fn(),
+      createTodo: vi.fn(),
+      deleteTodo: vi.fn(),
+      error: undefined,
+      fetchTodos: vi.fn(),
+      isLoading: todoLoading,
+      reset: vi.fn(),
+      todos: todoList,
+      toggleTodo: vi.fn(),
+      updateTodo: vi.fn(),
+    }))
+
+    const { rerender, result } = renderHook(() => useTodoStats())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    // 初回取得確認 (初回読み込み + todos配列の監視で2回呼ばれる)
+    expect(statsClient.getTodoStats).toHaveBeenCalledTimes(2)
+
+    // TODO操作をシミュレート（新しいTODOを追加）
+    todoList = [
       {
-        ...mockTodos[1],
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        id: 'todo1',
         isCompleted: false,
+        isImportant: false,
+        order: 0,
+        title: 'Test Todo',
+        updatedAt: new Date(),
+        userId: 'user1',
+      },
+    ]
+
+    // rerenderでtodosの変更を反映
+    rerender()
+
+    await waitFor(() => {
+      expect(statsClient.getTodoStats).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  it('TODO削除時に統計情報を自動更新する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
+
+    let todoList = [
+      {
+        createdAt: new Date(),
+        id: 'todo1',
+        isCompleted: false,
+        isImportant: false,
+        order: 0,
+        title: 'Test Todo 1',
+        updatedAt: new Date(),
+        userId: 'user1',
       },
       {
-        ...mockTodos[2],
-        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        id: 'todo2',
+        isCompleted: true,
+        isImportant: true,
+        order: 1,
+        title: 'Test Todo 2',
+        updatedAt: new Date(),
+        userId: 'user1',
+      },
+    ]
+
+    vi.mocked(useTodoStore).mockImplementation(() => ({
+      clearError: vi.fn(),
+      createTodo: vi.fn(),
+      deleteTodo: vi.fn(),
+      error: undefined,
+      fetchTodos: vi.fn(),
+      isLoading: false,
+      reset: vi.fn(),
+      todos: todoList,
+      toggleTodo: vi.fn(),
+      updateTodo: vi.fn(),
+    }))
+
+    const { rerender, result } = renderHook(() => useTodoStats())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    // 初回取得確認
+    expect(statsClient.getTodoStats).toHaveBeenCalledTimes(2)
+
+    // TODO削除をシミュレート
+    todoList = todoList.filter((todo) => todo.id !== 'todo1')
+    rerender()
+
+    await waitFor(() => {
+      expect(statsClient.getTodoStats).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  it('TODO完了状態切り替え時に統計情報を自動更新する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
+
+    let todoList = [
+      {
+        createdAt: new Date(),
+        id: 'todo1',
         isCompleted: false,
-      }, // 過去は除外
-      { ...mockTodos[3], dueDate: undefined, isCompleted: false }, // 期限なしは除外
+        isImportant: false,
+        order: 0,
+        title: 'Test Todo',
+        updatedAt: new Date(),
+        userId: 'user1',
+      },
     ]
 
-    vi.mocked(useTodoStore).mockReturnValue({
+    vi.mocked(useTodoStore).mockImplementation(() => ({
+      clearError: vi.fn(),
+      createTodo: vi.fn(),
+      deleteTodo: vi.fn(),
       error: undefined,
+      fetchTodos: vi.fn(),
       isLoading: false,
-      todos: upcomingTodos,
-    } as ReturnType<typeof useTodoStore>)
+      reset: vi.fn(),
+      todos: todoList,
+      toggleTodo: vi.fn(),
+      updateTodo: vi.fn(),
+    }))
 
-    // Act
-    const { result } = renderHook(() => useTodoStats())
+    const { rerender, result } = renderHook(() => useTodoStats())
 
-    // Assert
-    expect(result.current.stats.upcomingCount).toBe(2)
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    // 初回取得確認
+    expect(statsClient.getTodoStats).toHaveBeenCalledTimes(2)
+
+    // TODO完了状態切り替えをシミュレート（新しい配列として作成）
+    todoList = [{ ...todoList[0], isCompleted: true }]
+    rerender()
+
+    await waitFor(() => {
+      expect(statsClient.getTodoStats).toHaveBeenCalledTimes(3)
+    })
   })
 
-  it('assignedCountの計算が正しい（全ての未完了タスク）', () => {
-    // Arrange
-    const todos = [
-      { ...mockTodos[0], isCompleted: false },
-      { ...mockTodos[1], isCompleted: false },
-      { ...mockTodos[2], isCompleted: true }, // 完了済みは除外
-    ]
+  it('TODO読み込み完了時に統計情報を更新する', async () => {
+    vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
 
-    vi.mocked(useTodoStore).mockReturnValue({
+    let todoLoading = true
+
+    vi.mocked(useTodoStore).mockImplementation(() => ({
+      clearError: vi.fn(),
+      createTodo: vi.fn(),
+      deleteTodo: vi.fn(),
       error: undefined,
-      isLoading: false,
-      todos,
-    } as ReturnType<typeof useTodoStore>)
+      fetchTodos: vi.fn(),
+      isLoading: todoLoading,
+      reset: vi.fn(),
+      todos: [],
+      toggleTodo: vi.fn(),
+      updateTodo: vi.fn(),
+    }))
 
-    // Act
-    const { result } = renderHook(() => useTodoStats())
+    const { rerender } = renderHook(() => useTodoStats())
 
-    // Assert
-    expect(result.current.stats.assignedCount).toBe(2)
-  })
+    // TODO読み込み完了をシミュレート
+    todoLoading = false
+    rerender()
 
-  it('completedCountの計算が正しい', () => {
-    // Arrange
-    const todos = [
-      { ...mockTodos[0], isCompleted: true },
-      { ...mockTodos[1], isCompleted: true },
-      { ...mockTodos[2], isCompleted: false }, // 未完了は除外
-    ]
-
-    vi.mocked(useTodoStore).mockReturnValue({
-      error: undefined,
-      isLoading: false,
-      todos,
-    } as ReturnType<typeof useTodoStore>)
-
-    // Act
-    const { result } = renderHook(() => useTodoStats())
-
-    // Assert
-    expect(result.current.stats.completedCount).toBe(2)
-  })
-
-  it('dueDateがundefinedのタスクは適切に処理される', () => {
-    // Arrange
-    const todosWithundefinedDates = [
-      { ...mockTodos[0], dueDate: undefined, isCompleted: false },
-      { ...mockTodos[1], dueDate: undefined, isCompleted: false },
-    ]
-
-    vi.mocked(useTodoStore).mockReturnValue({
-      error: undefined,
-      isLoading: false,
-      todos: todosWithundefinedDates,
-    } as ReturnType<typeof useTodoStore>)
-
-    // Act
-    const { result } = renderHook(() => useTodoStats())
-
-    // Assert
-    expect(result.current.stats.todayCount).toBe(0) // 期限なしは今日の予定に含まれない
-    expect(result.current.stats.upcomingCount).toBe(0) // 期限なしは今後の予定に含まれない
-    expect(result.current.stats.assignedCount).toBe(2) // 未完了なので割り当てに含まれる
+    // 読み込み完了後に統計情報が更新されることを確認
+    await waitFor(() => {
+      expect(statsClient.getTodoStats).toHaveBeenCalled()
+    })
   })
 })

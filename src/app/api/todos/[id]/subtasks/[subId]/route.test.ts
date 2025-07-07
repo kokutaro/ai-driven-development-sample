@@ -53,6 +53,7 @@ describe('/api/todos/[id]/subtasks/[subId]', () => {
     isCompleted: false,
     order: 0,
     title: 'テストサブタスク',
+    todo: mockTodo, // include the todo relation
     todoId: 'todo-1',
     updatedAt: new Date(),
   }
@@ -172,8 +173,9 @@ describe('/api/todos/[id]/subtasks/[subId]', () => {
     it('他のユーザーのサブタスクの場合403を返す', async () => {
       // Arrange
       const updateData = { title: '更新されたサブタスク' }
-      const _otherUserTodo = { ...mockTodo, userId: 'other-user' }
-      mockSubTaskFindUnique.mockResolvedValue(mockSubTask)
+      const otherUserTodo = { ...mockTodo, userId: 'other-user' }
+      const otherUserSubTask = { ...mockSubTask, todo: otherUserTodo }
+      mockSubTaskFindUnique.mockResolvedValue(otherUserSubTask)
 
       const request = new NextRequest(
         'http://localhost:3000/api/todos/todo-1/subtasks/subtask-1',
@@ -316,8 +318,9 @@ describe('/api/todos/[id]/subtasks/[subId]', () => {
 
     it('他のユーザーのサブタスクの場合403を返す', async () => {
       // Arrange
-      const _otherUserTodo = { ...mockTodo, userId: 'other-user' }
-      mockSubTaskFindUnique.mockResolvedValue(mockSubTask)
+      const otherUserTodo = { ...mockTodo, userId: 'other-user' }
+      const otherUserSubTask = { ...mockSubTask, todo: otherUserTodo }
+      mockSubTaskFindUnique.mockResolvedValue(otherUserSubTask)
 
       const request = new NextRequest(
         'http://localhost:3000/api/todos/todo-1/subtasks/subtask-1',

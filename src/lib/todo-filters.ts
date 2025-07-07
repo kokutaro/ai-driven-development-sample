@@ -8,9 +8,20 @@ export function buildFilterConditions(filter: string) {
   tomorrow.setDate(tomorrow.getDate() + 1)
 
   switch (filter) {
+    case 'assigned': {
+      return {
+        isCompleted: false,
+      }
+    }
     case 'completed': {
       return {
         isCompleted: true,
+      }
+    }
+    case 'flagged': {
+      // 将来の実装用：メール連携機能
+      return {
+        isCompleted: false,
       }
     }
     case 'important': {

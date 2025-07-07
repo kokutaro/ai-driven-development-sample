@@ -69,19 +69,15 @@ describe('useTodoStore', () => {
         },
       ]
       mockTodoClient.getTodos.mockResolvedValue({
-        data: {
-          pagination: {
-            hasNext: false,
-            hasPrev: false,
-            limit: 50,
-            page: 1,
-            total: 1,
-            totalPages: 1,
-          },
-          todos: mockTodos,
+        pagination: {
+          hasNext: false,
+          hasPrev: false,
+          limit: 50,
+          page: 1,
+          total: 1,
+          totalPages: 1,
         },
-        success: true,
-        timestamp: new Date().toISOString(),
+        todos: mockTodos,
       })
       const { result } = renderHook(() => useTodoStore())
 
@@ -109,25 +105,21 @@ describe('useTodoStore', () => {
       // Assert
       expect(result.current.isLoading).toBe(false)
       expect(result.current.todos).toEqual([])
-      expect(result.current.error).toBe('タスクの取得に失敗しました')
+      expect(result.current.error).toBe('API Error')
     })
 
     it('フィルタパラメータをAPIに渡す', async () => {
       // Arrange
       mockTodoClient.getTodos.mockResolvedValue({
-        data: {
-          pagination: {
-            hasNext: false,
-            hasPrev: false,
-            limit: 50,
-            page: 1,
-            total: 0,
-            totalPages: 0,
-          },
-          todos: [],
+        pagination: {
+          hasNext: false,
+          hasPrev: false,
+          limit: 50,
+          page: 1,
+          total: 0,
+          totalPages: 0,
         },
-        success: true,
-        timestamp: new Date().toISOString(),
+        todos: [],
       })
       const { result } = renderHook(() => useTodoStore())
 
@@ -162,11 +154,7 @@ describe('useTodoStore', () => {
         updatedAt: new Date(),
         userId: 'user-1',
       }
-      mockTodoClient.createTodo.mockResolvedValue({
-        data: createdTodo,
-        success: true,
-        timestamp: new Date().toISOString(),
-      })
+      mockTodoClient.createTodo.mockResolvedValue(createdTodo)
       const { result } = renderHook(() => useTodoStore())
 
       // Act
@@ -190,7 +178,7 @@ describe('useTodoStore', () => {
       })
 
       // Assert
-      expect(result.current.error).toBe('タスクの作成に失敗しました')
+      expect(result.current.error).toBe('API Error')
     })
   })
 
@@ -212,11 +200,7 @@ describe('useTodoStore', () => {
         isImportant: true,
         title: '更新されたタスク',
       }
-      mockTodoClient.updateTodo.mockResolvedValue({
-        data: updatedTodo,
-        success: true,
-        timestamp: new Date().toISOString(),
-      })
+      mockTodoClient.updateTodo.mockResolvedValue(updatedTodo)
       const { result } = renderHook(() => useTodoStore())
 
       // 初期データを設定
@@ -252,9 +236,8 @@ describe('useTodoStore', () => {
         userId: 'user-1',
       }
       mockTodoClient.deleteTodo.mockResolvedValue({
-        data: { deleted: true, id: 'todo-1' },
-        success: true,
-        timestamp: new Date().toISOString(),
+        deleted: true,
+        id: 'todo-1',
       })
       const { result } = renderHook(() => useTodoStore())
 
@@ -287,11 +270,7 @@ describe('useTodoStore', () => {
         userId: 'user-1',
       }
       const toggledTodo = { ...todoToToggle, isCompleted: true }
-      mockTodoClient.toggleTodo.mockResolvedValue({
-        data: toggledTodo,
-        success: true,
-        timestamp: new Date().toISOString(),
-      })
+      mockTodoClient.toggleTodo.mockResolvedValue(toggledTodo)
       const { result } = renderHook(() => useTodoStore())
 
       // 初期データを設定

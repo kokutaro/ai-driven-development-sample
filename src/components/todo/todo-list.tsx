@@ -20,39 +20,67 @@ interface TodoListProps {
  * - ローディング状態の表示
  * - 空状態の表示
  * - 各タスクアイテムの表示
+ * - 無効なtodoオブジェクトの防御的フィルタリング
  */
 export function TodoList({ isLoading, sortBy, todos }: TodoListProps) {
   const sortedTodos = useMemo(() => {
     if (!todos || !Array.isArray(todos)) return []
 
-    return [...todos].sort((a, b) => {
-      switch (sortBy) {
-        case 'dueDate': {
-          // 期限日でソート（期限なしは最後）
-          if (!a.dueDate && !b.dueDate) return 0
-          if (!a.dueDate) return 1
-          if (!b.dueDate) return -1
-          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-        }
+    // 無効なtodoオブジェクトをフィルタリング
+    const validTodos = todos.filter((todo) => isValidTodo(todo))
 
-        case 'importance': {
-          // 重要度でソート（重要なタスクが先頭）
-          if (a.isImportant && !b.isImportant) return -1
-          if (!a.isImportant && b.isImportant) return 1
-          return 0
-        }
+    return validTodos.sort((a, b) => {
+      try {
+        switch (sortBy) {
+          case 'dueDate': {
+            // 期限日でソート（期限なしは最後）
+            if (!a.dueDate && !b.dueDate) return 0
+            if (!a.dueDate) return 1
+            if (!b.dueDate) return -1
 
-        case 'title': {
-          // タイトルでアルファベット順ソート
-          return a.title.localeCompare(b.title)
-        }
+            const dateA = new Date(a.dueDate)
+            const dateB = new Date(b.dueDate)
 
-        default: {
-          // 作成日時でソート（新しい順）
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
+            // 無効な日付の場合は0を返す
+            if (Number.isNaN(dateA.getTime()) || Number.isNaN(dateB.getTime()))
+              return 0
+
+            return dateA.getTime() - dateB.getTime()
+          }
+
+          case 'importance': {
+            // 重要度でソート（重要なタスクが先頭）
+            const aImportant = Boolean(a.isImportant)
+            const bImportant = Boolean(b.isImportant)
+
+            if (aImportant && !bImportant) return -1
+            if (!aImportant && bImportant) return 1
+            return 0
+          }
+
+          case 'title': {
+            // タイトルでアルファベット順ソート
+            const titleA = String(a.title || '')
+            const titleB = String(b.title || '')
+            return titleA.localeCompare(titleB)
+          }
+
+          default: {
+            // 作成日時でソート（新しい順）
+            const dateA = new Date(a.createdAt || 0)
+            const dateB = new Date(b.createdAt || 0)
+
+            // 無効な日付の場合は0を返す
+            if (Number.isNaN(dateA.getTime()) || Number.isNaN(dateB.getTime()))
+              return 0
+
+            return dateB.getTime() - dateA.getTime()
+          }
         }
+      } catch (error) {
+        // ソート中にエラーが発生した場合は順序を変更しない
+        console.warn('ソート中にエラーが発生しました:', error)
+        return 0
       }
     })
   }, [todos, sortBy])
@@ -80,9 +108,30 @@ export function TodoList({ isLoading, sortBy, todos }: TodoListProps) {
   // タスク一覧表示
   return (
     <Stack gap="xs">
-      {sortedTodos.map((todo) => (
-        <TodoItem key={todo.id} todo={todo} />
-      ))}
+      {sortedTodos.map((todo) => {
+        // 最終的な防御チェック：無効なtodoオブジェクトをスキップ
+        if (!isValidTodo(todo)) {
+          console.warn('無効なtodoオブジェクトが検出されました:', todo)
+          return
+        }
+
+        return <TodoItem key={todo.id} todo={todo} />
+      })}
     </Stack>
+  )
+}
+
+/**
+ * TODOオブジェクトの妥当性を検証する
+ */
+function isValidTodo(todo: unknown): todo is Todo {
+  return (
+    todo !== null &&
+    typeof todo === 'object' &&
+    'id' in todo &&
+    'title' in todo &&
+    typeof (todo as Record<string, unknown>).id === 'string' &&
+    typeof (todo as Record<string, unknown>).title === 'string' &&
+    ((todo as Record<string, unknown>).title as string).length > 0
   )
 }

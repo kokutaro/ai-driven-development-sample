@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-import type { Todo } from '@/types/todo'
+import type { Todo, UpdateTodoApiData } from '@/types/todo'
 
 import { todoClient } from '@/lib/api/todo-client'
 
@@ -16,7 +16,7 @@ interface TodoStore {
   reset: () => void
   todos: Todo[]
   toggleTodo: (id: string) => Promise<void>
-  updateTodo: (id: string, data: Partial<Todo>) => Promise<void>
+  updateTodo: (id: string, data: UpdateTodoApiData) => Promise<void>
 }
 
 /**
@@ -33,14 +33,21 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   createTodo: async (data) => {
     set({ error: undefined, isLoading: true })
     try {
-      const response = await todoClient.createTodo(data)
-      const newTodo = response.data
+      const newTodo = await todoClient.createTodo(data)
+
+      // 新しいtodoの妥当性を検証
+      if (!newTodo || typeof newTodo.id !== 'string' || !newTodo.title) {
+        throw new Error('APIから無効なtodoデータが返されました')
+      }
+
       set((state) => ({
         isLoading: false,
         todos: [newTodo, ...state.todos],
       }))
-    } catch {
-      set({ error: 'タスクの作成に失敗しました', isLoading: false })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'タスクの作成に失敗しました'
+      set({ error: errorMessage, isLoading: false })
     }
   },
   deleteTodo: async (id) => {
@@ -51,8 +58,10 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
         isLoading: false,
         todos: state.todos.filter((todo) => todo.id !== id),
       }))
-    } catch {
-      set({ error: 'タスクの削除に失敗しました', isLoading: false })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'タスクの削除に失敗しました'
+      set({ error: errorMessage, isLoading: false })
     }
   },
 
@@ -62,10 +71,18 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     set({ error: undefined, isLoading: true })
     try {
       const response = await todoClient.getTodos({ filter })
-      const todos = response.data.todos
-      set({ isLoading: false, todos })
-    } catch {
-      set({ error: 'タスクの取得に失敗しました', isLoading: false })
+      const todos = response.todos || []
+
+      // todos配列の各要素の妥当性を検証
+      const validTodos = todos.filter(
+        (todo) => todo && typeof todo.id === 'string' && todo.title
+      )
+
+      set({ isLoading: false, todos: validTodos })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'タスクの取得に失敗しました'
+      set({ error: errorMessage, isLoading: false })
     }
   },
 
@@ -91,22 +108,37 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
           t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
         ),
       }))
-    } catch {
-      set({ error: 'タスクの状態更新に失敗しました' })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'タスクの状態更新に失敗しました'
+      set({ error: errorMessage })
     }
   },
 
   updateTodo: async (id, data) => {
     try {
-      const response = await todoClient.updateTodo(id, data)
-      const updatedTodo = response.data
+      const updatedTodo = await todoClient.updateTodo(id, data)
+
+      // 更新されたtodoの妥当性を検証
+      if (
+        !updatedTodo ||
+        typeof updatedTodo.id !== 'string' ||
+        !updatedTodo.title
+      ) {
+        throw new Error('APIから無効なtodoデータが返されました')
+      }
+
       set((state) => ({
         todos: state.todos.map((todo) =>
           todo.id === id ? { ...todo, ...updatedTodo } : todo
         ),
       }))
-    } catch {
-      set({ error: 'タスクの更新に失敗しました' })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'タスクの更新に失敗しました'
+      set({ error: errorMessage })
     }
   },
 }))
