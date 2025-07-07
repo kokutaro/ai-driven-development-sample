@@ -87,18 +87,6 @@ export function TaskList() {
     )
   }
 
-  // 空の状態
-  if (tasks.length === 0) {
-    return (
-      <div className="p-8 text-center">
-        <div className="text-gray-600">
-          <div className="text-lg font-medium mb-2">タスクがありません</div>
-          <div className="text-sm">新しいタスクを作成してください</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div>
       {/* フィルター情報とタスク数 */}
@@ -119,6 +107,16 @@ export function TaskList() {
           ＋ タスクの追加
         </Button>
       </div>
+
+      {/* 空の状態 */}
+      {tasks.length === 0 && (
+        <div className="p-8 text-center">
+          <div className="text-gray-600">
+            <div className="text-lg font-medium mb-2">タスクがありません</div>
+            <div className="text-sm">新しいタスクを作成してください</div>
+          </div>
+        </div>
+      )}
 
       {/* タスクリスト */}
       <ul aria-label="タスクリスト" className="space-y-2" role="list">

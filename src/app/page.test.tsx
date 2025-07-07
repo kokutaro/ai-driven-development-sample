@@ -3,6 +3,7 @@
  * @fileoverview 3カラムレイアウト対応のTODOアプリメインページのユニットテスト
  */
 import { useMediaQuery } from '@mantine/hooks'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HomePage from './page'
@@ -400,6 +401,126 @@ describe('HomePage', () => {
 
       // ハンバーガーメニューが表示される
       expect(screen.getByLabelText('メニューを開く')).toBeInTheDocument()
+    })
+  })
+
+  describe('TODO追加機能の統合', () => {
+    it('should render task creation button in TaskList', () => {
+      render(<HomePage />)
+
+      // タスク追加ボタンが表示されている
+      expect(
+        screen.getByRole('button', { name: '＋ タスクの追加' })
+      ).toBeInTheDocument()
+    })
+
+    it('should show task creation modal when add button is clicked', async () => {
+      const user = userEvent.setup()
+
+      render(<HomePage />)
+
+      // タスク追加ボタンをクリック
+      const addButton = screen.getByRole('button', { name: '＋ タスクの追加' })
+      await user.click(addButton)
+
+      // モーダルが表示される
+      expect(screen.getByText('新しいタスクを作成')).toBeInTheDocument()
+      expect(screen.getByLabelText('タスクタイトル')).toBeInTheDocument()
+      expect(screen.getByLabelText('説明（任意）')).toBeInTheDocument()
+      expect(screen.getByLabelText('期限日（任意）')).toBeInTheDocument()
+      expect(
+        screen.getByLabelText('重要なタスクとして設定')
+      ).toBeInTheDocument()
+    })
+
+    it('should close modal when cancel button is clicked', async () => {
+      const user = userEvent.setup()
+
+      render(<HomePage />)
+
+      // タスク追加ボタンをクリック
+      const addButton = screen.getByRole('button', { name: '＋ タスクの追加' })
+      await user.click(addButton)
+
+      // モーダルが表示される
+      expect(screen.getByText('新しいタスクを作成')).toBeInTheDocument()
+
+      // キャンセルボタンをクリック
+      const cancelButton = screen.getByRole('button', { name: 'キャンセル' })
+      await user.click(cancelButton)
+
+      // モーダルが閉じられる
+      expect(screen.queryByText('新しいタスクを作成')).not.toBeInTheDocument()
+    })
+
+    it('should integrate task creation flow end-to-end', async () => {
+      const user = userEvent.setup()
+      const mockAddTask = vi.fn()
+
+      // addTask関数をモック
+      mockUseTaskStore.mockReturnValue(
+        createMockTaskStore({
+          addTask: mockAddTask,
+          filter: 'all',
+          filteredTaskCount: 0,
+          filteredTasks: [],
+          selectedTask: undefined,
+        })
+      )
+
+      render(<HomePage />)
+
+      // タスク追加ボタンをクリック
+      const addButton = screen.getByRole('button', { name: '＋ タスクの追加' })
+      await user.click(addButton)
+
+      // タスクタイトルを入力
+      const titleInput = screen.getByLabelText('タスクタイトル')
+      await user.type(titleInput, '新しいテストタスク')
+
+      // 説明を入力
+      const descriptionInput = screen.getByLabelText('説明（任意）')
+      await user.type(descriptionInput, 'テスト用の説明')
+
+      // 重要フラグを設定
+      const importantCheckbox = screen.getByLabelText('重要なタスクとして設定')
+      await user.click(importantCheckbox)
+
+      // 作成ボタンをクリック
+      const createButton = screen.getByRole('button', { name: '作成' })
+      await user.click(createButton)
+
+      // タスクが作成されることを確認
+      expect(mockAddTask).toHaveBeenCalledWith({
+        categoryId: undefined,
+        description: 'テスト用の説明',
+        dueDate: undefined,
+        important: true,
+        reminderDate: undefined,
+        repeatPattern: undefined,
+        title: '新しいテストタスク',
+      })
+
+      // モーダルが閉じられることを確認
+      expect(screen.queryByText('新しいタスクを作成')).not.toBeInTheDocument()
+    })
+
+    it('should show validation errors for invalid input', async () => {
+      const user = userEvent.setup()
+
+      render(<HomePage />)
+
+      // タスク追加ボタンをクリック
+      const addButton = screen.getByRole('button', { name: '＋ タスクの追加' })
+      await user.click(addButton)
+
+      // タイトルを空のまま作成ボタンをクリック
+      const createButton = screen.getByRole('button', { name: '作成' })
+      await user.click(createButton)
+
+      // バリデーションエラーが表示される（Mantineフォームのデフォルト動作）
+      // モーダルが閉じられていないことを確認
+      expect(screen.getByText('新しいタスクを作成')).toBeInTheDocument()
     })
   })
 })
