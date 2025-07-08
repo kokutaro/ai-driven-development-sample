@@ -9,7 +9,7 @@
 1. Checkout the branch named `feat/<branch name>`
 2. Discover the current codebase to know how to implment the feature
 3. Plan to implement the feature
-4. Before coding, refer the @eslint.config.mjs and use MCP:context7 to refer the detail of relevant rules expecially 'unicorn' which is written in @eslint.config.mjs
+4. For the coding, follow the @ai-rules/coding-guidelines.md to write the robust and well structured code.
 5. Show implementation plan to user
 6. When user approve, do the task
 7. Do `yarn format`, `yarn lint`, `yarn typecheck`, `yarn test`
