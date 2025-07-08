@@ -8,7 +8,7 @@
 
 1. Create the branch `test/<branch name>`
 2. Think hard to plan the test which covers normal and error pattern and edge case
-3. Before coding, refer the @eslint.config.mjs and use MCP:context7 to refer the detail of relevant rues which is written in @eslint.config.mjs
+3. Before coding, refer the @eslint.config.mjs and use MCP:context7 to refer the detail of relevant rules expecially 'unicorn' which is written in @eslint.config.mjs
 4. Show test plan to user
 5. When user approve, do the task
 6. Do `yarn format`, `yarn lint`, `yarn typecheck`, `yarn test`
