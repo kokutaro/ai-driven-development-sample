@@ -12,6 +12,7 @@ import {
   TextInput,
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
+import { openConfirmModal } from '@mantine/modals'
 import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react'
 
 import type { Category } from '@/types/todo'
@@ -98,15 +99,24 @@ export function CategoryList() {
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!globalThis.confirm('このカテゴリを削除しますか？')) {
-      return
-    }
-
-    try {
-      await deleteCategory(categoryId)
-    } catch (error) {
-      console.error('カテゴリ削除エラー:', error)
-    }
+    openConfirmModal({
+      children: (
+        <Text size="sm">
+          このカテゴリを削除しますか？この操作は取り消せません。
+        </Text>
+      ),
+      confirmProps: { color: 'red' },
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteCategory(categoryId)
+          } catch (error) {
+            console.error('カテゴリ削除エラー:', error)
+          }
+        })()
+      },
+      title: '削除の確認',
+    })
   }
 
   const handleStartEdit = (category: Category) => {

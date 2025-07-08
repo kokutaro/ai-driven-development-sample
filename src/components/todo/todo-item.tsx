@@ -7,6 +7,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
+import { openConfirmModal } from '@mantine/modals'
 import { IconCalendar, IconStar, IconTrash } from '@tabler/icons-react'
 
 import { formatDate } from '@/lib/utils'
@@ -41,9 +42,18 @@ export function TodoItem({ todo }: TodoItemProps) {
 
   const handleDelete = async (event: React.MouseEvent) => {
     event.stopPropagation()
-    if (globalThis.confirm('このタスクを削除しますか？')) {
-      await deleteTodo(todo.id)
-    }
+    openConfirmModal({
+      children: (
+        <Text size="sm">
+          このタスクを削除しますか？この操作は取り消せません。
+        </Text>
+      ),
+      confirmProps: { color: 'red' },
+      onConfirm: () => {
+        void deleteTodo(todo.id)
+      },
+      title: '削除の確認',
+    })
   }
 
   const handleClick = () => {
