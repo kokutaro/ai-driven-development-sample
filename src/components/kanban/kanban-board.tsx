@@ -102,9 +102,13 @@ export function KanbanBoard() {
       const targetColumnId = overId
 
       if (task.kanbanColumnId !== targetColumnId) {
-        await moveToKanbanColumn(task.id, targetColumnId)
-        // カラムデータを再取得
-        void fetchKanbanColumns()
+        try {
+          await moveToKanbanColumn(task.id, targetColumnId)
+          // カラムデータを再取得
+          void fetchKanbanColumns()
+        } catch (error) {
+          console.error('タスクの移動に失敗しました:', error)
+        }
       }
     }
   }
