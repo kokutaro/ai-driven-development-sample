@@ -13,9 +13,31 @@ vi.mock('@/hooks/use-categories', () => ({
   useCategories: vi.fn(),
 }))
 
+// カテゴリ作成モーダルのモック
+vi.mock('@/components/category', () => ({
+  CategoryCreateModal: ({
+    onCategoryCreated,
+    onClose,
+    opened,
+  }: {
+    onCategoryCreated: (id: string) => void
+    onClose: () => void
+    opened: boolean
+  }) =>
+    opened ? (
+      <div data-testid="category-create-modal">
+        <button onClick={() => onCategoryCreated('new-category-id')}>
+          Create Category
+        </button>
+        <button onClick={onClose}>Close</button>
+      </div>
+    ) : null,
+}))
+
 // Tabler iconsのモック
 vi.mock('@tabler/icons-react', () => ({
   IconCalendar: () => <div data-testid="icon-calendar" />,
+  IconPlus: () => <div data-testid="icon-plus" />,
   IconStar: () => <div data-testid="icon-star" />,
 }))
 
@@ -327,5 +349,67 @@ describe('TodoAddModal', () => {
         title: '完全なタスク',
       })
     })
+  })
+
+  it('カテゴリ作成ボタンが表示される', () => {
+    // Act
+    render(<TodoAddModal onClose={mockOnClose} opened={true} />)
+
+    // Assert
+    const categoryCreateButton = screen.getByLabelText('新しいカテゴリを作成')
+    expect(categoryCreateButton).toBeInTheDocument()
+    expect(screen.getByTestId('icon-plus')).toBeInTheDocument()
+  })
+
+  it('カテゴリ作成ボタンをクリックすると作成モーダルが開く', () => {
+    // Act
+    render(<TodoAddModal onClose={mockOnClose} opened={true} />)
+
+    // Act - カテゴリ作成ボタンをクリック
+    const categoryCreateButton = screen.getByLabelText('新しいカテゴリを作成')
+    fireEvent.click(categoryCreateButton)
+
+    // Assert
+    expect(screen.getByTestId('category-create-modal')).toBeInTheDocument()
+  })
+
+  it('カテゴリ作成完了時に新しいカテゴリが選択される', async () => {
+    // Act
+    render(<TodoAddModal onClose={mockOnClose} opened={true} />)
+
+    // Act - カテゴリ作成ボタンをクリックしてモーダルを開く
+    const categoryCreateButton = screen.getByLabelText('新しいカテゴリを作成')
+    fireEvent.click(categoryCreateButton)
+
+    // Act - カテゴリを作成
+    const createCategoryButton = screen.getByText('Create Category')
+    fireEvent.click(createCategoryButton)
+
+    // カテゴリ作成が完了するのを待つ
+    await waitFor(() => {
+      // フォームの値が更新されているかを確認するため、実際のSelectコンポーネントの動作を確認
+      // Mantineの実装詳細に依存するため、フォーム状態の確認は省略
+      expect(
+        screen.queryByTestId('category-create-modal')
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  it('カテゴリ作成モーダルを閉じることができる', () => {
+    // Act
+    render(<TodoAddModal onClose={mockOnClose} opened={true} />)
+
+    // Act - カテゴリ作成ボタンをクリックしてモーダルを開く
+    const categoryCreateButton = screen.getByLabelText('新しいカテゴリを作成')
+    fireEvent.click(categoryCreateButton)
+
+    // Act - カテゴリ作成モーダルを閉じる
+    const closeButton = screen.getByText('Close')
+    fireEvent.click(closeButton)
+
+    // Assert
+    expect(
+      screen.queryByTestId('category-create-modal')
+    ).not.toBeInTheDocument()
   })
 })

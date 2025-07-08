@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
+  ActionIcon,
   Button,
   Divider,
   Group,
@@ -16,6 +17,7 @@ import { IconCalendar, IconPlus, IconStar } from '@tabler/icons-react'
 
 import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
+import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
 import { type Todo } from '@/types/todo'
@@ -36,6 +38,7 @@ interface TodoDetailPanelProps {
 export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
   const { updateTodo } = useTodoStore()
   const { categories } = useCategories()
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
 
   const form = useForm({
     initialValues: {
@@ -186,6 +189,10 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
     }
   }
 
+  const handleCategoryCreated = (categoryId: string) => {
+    void handleFieldChange('categoryId', categoryId)
+  }
+
   const categoryOptions = categories.map((category) => ({
     label: category.name,
     value: category.id,
@@ -234,16 +241,27 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         thumbIcon={<IconStar size={12} />}
       />
 
-      <Select
-        clearable
-        data={categoryOptions}
-        label="カテゴリ"
-        onChange={(value) =>
-          handleFieldChange('categoryId', value ?? undefined)
-        }
-        placeholder="カテゴリを選択..."
-        value={form.values.categoryId}
-      />
+      <Group align="end" gap="xs">
+        <Select
+          clearable
+          data={categoryOptions}
+          label="カテゴリ"
+          onChange={(value) =>
+            handleFieldChange('categoryId', value ?? undefined)
+          }
+          placeholder="カテゴリを選択..."
+          style={{ flex: 1 }}
+          value={form.values.categoryId}
+        />
+        <ActionIcon
+          aria-label="新しいカテゴリを作成"
+          onClick={() => setIsCategoryModalOpen(true)}
+          size="lg"
+          variant="light"
+        >
+          <IconPlus size={16} />
+        </ActionIcon>
+      </Group>
 
       <Divider />
 
@@ -260,6 +278,12 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         </Group>
         {/* サブタスクリストは後で実装 */}
       </Stack>
+
+      <CategoryCreateModal
+        onCategoryCreated={handleCategoryCreated}
+        onClose={() => setIsCategoryModalOpen(false)}
+        opened={isCategoryModalOpen}
+      />
     </Stack>
   )
 }

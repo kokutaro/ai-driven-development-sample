@@ -7,7 +7,7 @@ interface UseCategoriesReturn {
   categories: Category[]
   clearError: () => void
   // Actions
-  createCategory: (data: { color: string; name: string }) => Promise<void>
+  createCategory: (data: { color: string; name: string }) => Promise<Category>
 
   deleteCategory: (id: string) => Promise<void>
   error: string | undefined
@@ -56,14 +56,16 @@ export function useCategories(): UseCategoriesReturn {
 
   // 新しいカテゴリを作成
   const createCategory = useCallback(
-    async (data: { color: string; name: string }) => {
+    async (data: { color: string; name: string }): Promise<Category> => {
       setError(undefined)
 
       try {
         const response = await categoryClient.createCategory(data)
         setCategories((prev) => [...prev, response.data])
+        return response.data
       } catch {
         setError('カテゴリの作成に失敗しました')
+        throw new Error('カテゴリの作成に失敗しました')
       }
     },
     []

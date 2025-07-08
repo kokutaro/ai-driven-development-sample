@@ -1,4 +1,7 @@
+import { useState } from 'react'
+
 import {
+  ActionIcon,
   Button,
   Group,
   Modal,
@@ -9,10 +12,11 @@ import {
   TextInput,
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { IconCalendar, IconStar } from '@tabler/icons-react'
+import { IconCalendar, IconPlus, IconStar } from '@tabler/icons-react'
 
 import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
+import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
 
@@ -33,6 +37,7 @@ interface TodoAddModalProps {
 export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
   const { createTodo } = useTodoStore()
   const { categories } = useCategories()
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
 
   const form = useForm({
     initialValues: {
@@ -61,6 +66,10 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
     } catch (error) {
       console.error('タスク作成エラー:', error)
     }
+  }
+
+  const handleCategoryCreated = (categoryId: string) => {
+    form.setFieldValue('categoryId', categoryId)
   }
 
   const categoryOptions = categories.map((category) => ({
@@ -107,13 +116,24 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
             {...form.getInputProps('isImportant')}
           />
 
-          <Select
-            clearable
-            data={categoryOptions}
-            label="カテゴリ"
-            placeholder="カテゴリを選択..."
-            {...form.getInputProps('categoryId')}
-          />
+          <Group align="end" gap="xs">
+            <Select
+              clearable
+              data={categoryOptions}
+              label="カテゴリ"
+              placeholder="カテゴリを選択..."
+              style={{ flex: 1 }}
+              {...form.getInputProps('categoryId')}
+            />
+            <ActionIcon
+              aria-label="新しいカテゴリを作成"
+              onClick={() => setIsCategoryModalOpen(true)}
+              size="lg"
+              variant="light"
+            >
+              <IconPlus size={16} />
+            </ActionIcon>
+          </Group>
 
           <Group justify="flex-end" mt="md">
             <Button onClick={onClose} variant="subtle">
@@ -123,6 +143,12 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
           </Group>
         </Stack>
       </form>
+
+      <CategoryCreateModal
+        onCategoryCreated={handleCategoryCreated}
+        onClose={() => setIsCategoryModalOpen(false)}
+        opened={isCategoryModalOpen}
+      />
     </Modal>
   )
 }
