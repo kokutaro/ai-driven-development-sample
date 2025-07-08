@@ -330,7 +330,9 @@ describe('CategoryCreateModal', () => {
     })
 
     // モーダルは開いたまま
-    expect(mockOnClose).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(mockOnClose).not.toHaveBeenCalled()
+    })
 
     consoleSpy.mockRestore()
   })
