@@ -144,6 +144,7 @@ const eslintConfig = tseslint.config(
       '**/out/**',
       '**/public/**',
       '**/coverage/**',
+      '**/mcp-server/**',
     ],
   }
 )

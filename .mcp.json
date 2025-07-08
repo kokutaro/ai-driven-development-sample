@@ -5,6 +5,11 @@
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@latest"],
       "env": {}
+    },
+    "todo": {
+      "command": "npx",
+      "args": ["tsx", "mcp-server/server.ts"],
+      "cwd": "/workspace"
     }
   }
 }
