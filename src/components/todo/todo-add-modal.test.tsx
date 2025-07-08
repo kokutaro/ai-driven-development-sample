@@ -72,6 +72,7 @@ const mockUseCategories = {
   deleteCategory: vi.fn(),
   error: undefined,
   isLoading: false,
+  setCategories: vi.fn(),
   updateCategory: vi.fn(),
 }
 

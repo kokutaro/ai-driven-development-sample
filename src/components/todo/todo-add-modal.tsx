@@ -16,6 +16,8 @@ import { IconCalendar, IconPlus, IconStar } from '@tabler/icons-react'
 
 import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
+import type { Category } from '@/types/todo'
+
 import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
@@ -36,7 +38,7 @@ interface TodoAddModalProps {
  */
 export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
   const { createTodo } = useTodoStore()
-  const { categories } = useCategories()
+  const { categories, setCategories } = useCategories()
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [selectKey, setSelectKey] = useState(0)
 
@@ -69,11 +71,15 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
     }
   }
 
-  const handleCategoryCreated = async (categoryId: string) => {
-    // Selectコンポーネントを強制再レンダリング
+  const handleCategoryCreated = async (newCategory: Category) => {
+    // 1. categories 配列に新しいカテゴリを直接追加
+    setCategories((prev) => [...prev, newCategory])
+
+    // 2. フォームに選択値を設定
+    form.setFieldValue('categoryId', newCategory.id)
+
+    // 3. Select を強制再レンダリング
     setSelectKey((prev) => prev + 1)
-    // 状態を即座に更新
-    form.setFieldValue('categoryId', categoryId)
   }
 
   const categoryOptions = useMemo(

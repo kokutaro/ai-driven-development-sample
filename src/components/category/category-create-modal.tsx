@@ -15,7 +15,7 @@ import { useCategories } from '@/hooks/use-categories'
 import { categorySchema } from '@/schemas/category'
 
 interface CategoryCreateModalProps {
-  onCategoryCreated: (categoryId: string) => void
+  onCategoryCreated: (category: Category) => void
   onClose: () => void
   opened: boolean
 }
@@ -66,7 +66,7 @@ export function CategoryCreateModal({
         name: values.name,
       })
       form.reset()
-      onCategoryCreated(newCategory.id)
+      onCategoryCreated(newCategory)
       onClose()
     } catch (error) {
       console.error('カテゴリ作成エラー:', error)

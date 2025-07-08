@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { categoryClient } from '@/lib/api/category-client'
@@ -12,6 +13,7 @@ interface UseCategoriesReturn {
   deleteCategory: (id: string) => Promise<void>
   error: string | undefined
   isLoading: boolean
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>
   updateCategory: (
     id: string,
     data: { color?: string; name?: string }
@@ -114,6 +116,7 @@ export function useCategories(): UseCategoriesReturn {
     deleteCategory,
     error,
     isLoading,
+    setCategories,
     updateCategory,
   }
 }
