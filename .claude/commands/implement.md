@@ -1,4 +1,4 @@
-# Implement the feature described in below
+# Think hard to implement the feature described in below
 
 ## Features
 
