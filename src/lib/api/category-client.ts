@@ -1,68 +1,49 @@
-import { type ApiResponse, type Category } from '@/types/todo'
+import { apiClient } from './api-client'
+
+import type { ApiResponse, Category } from '@/types/todo'
 
 /**
  * カテゴリAPIクライアント
  *
  * カテゴリに関するAPI操作を提供します。
+ * 401エラー時の自動サインインページリダイレクトと
+ * 統一されたエラーハンドリングを提供します。
  */
 export const categoryClient = {
   /**
    * カテゴリを作成
    *
-   * @param categoryData カテゴリ作成データ
+   * @param categoryData - カテゴリ作成データ
    * @returns 作成されたカテゴリのAPIレスポンス
    */
   async createCategory(categoryData: {
     color: string
     name: string
   }): Promise<ApiResponse<Category>> {
-    try {
-      const response = await fetch('/api/categories', {
-        body: JSON.stringify(categoryData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return response.json() as Promise<ApiResponse<Category>>
-    } catch (error) {
-      console.error('カテゴリ作成API呼び出しエラー:', error)
-      throw error
+    const data = await apiClient.post<Category>('/api/categories', categoryData)
+    return {
+      data,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
   },
 
   /**
    * カテゴリを削除
    *
-   * @param id カテゴリID
+   * @param id - カテゴリID
    * @returns 削除結果のAPIレスポンス
    */
   async deleteCategory(
     id: string
   ): Promise<ApiResponse<{ deleted: boolean; id: string }>> {
-    try {
-      const response = await fetch(`/api/categories/${id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return response.json() as Promise<
-        ApiResponse<{ deleted: boolean; id: string }>
-      >
-    } catch (error) {
-      console.error('カテゴリ削除API呼び出しエラー:', error)
-      throw error
+    const data = await apiClient.delete<{ deleted: boolean; id: string }>(
+      `/api/categories/${id}`
+    )
+    return {
+      data,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
   },
 
@@ -72,53 +53,33 @@ export const categoryClient = {
    * @returns カテゴリ一覧のAPIレスポンス
    */
   async getCategories(): Promise<ApiResponse<Category[]>> {
-    try {
-      const response = await fetch('/api/categories', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'GET',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return response.json() as Promise<ApiResponse<Category[]>>
-    } catch (error) {
-      console.error('カテゴリ取得API呼び出しエラー:', error)
-      throw error
+    const data = await apiClient.get<Category[]>('/api/categories')
+    return {
+      data,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
   },
 
   /**
    * カテゴリを更新
    *
-   * @param id カテゴリID
-   * @param categoryData カテゴリ更新データ
+   * @param id - カテゴリID
+   * @param categoryData - カテゴリ更新データ
    * @returns 更新されたカテゴリのAPIレスポンス
    */
   async updateCategory(
     id: string,
     categoryData: { color?: string; name?: string }
   ): Promise<ApiResponse<Category>> {
-    try {
-      const response = await fetch(`/api/categories/${id}`, {
-        body: JSON.stringify(categoryData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'PUT',
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return response.json() as Promise<ApiResponse<Category>>
-    } catch (error) {
-      console.error('カテゴリ更新API呼び出しエラー:', error)
-      throw error
+    const data = await apiClient.put<Category>(
+      `/api/categories/${id}`,
+      categoryData
+    )
+    return {
+      data,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
   },
 }
