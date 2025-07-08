@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import { createTodoInputSchema, listTodosInputSchema } from './schemas/todo-mcp'
 import { createTodo, listTodos } from './tools'
+import { initializeDatabase, closeDatabase } from './lib/db'
 
 /**
  * TODO アプリケーション用 MCP サーバー
@@ -73,9 +74,35 @@ export class TodoMcpServer {
    * サーバーを開始
    */
   async start(): Promise<void> {
-    const transport = new StdioServerTransport()
-    await this.server.connect(transport)
-    console.error('TODO MCP Server started on stdio')
+    try {
+      // データベース接続の初期化
+      await initializeDatabase()
+      
+      const transport = new StdioServerTransport()
+      await this.server.connect(transport)
+      console.error('TODO MCP Server started on stdio')
+
+      // プロセス終了時のクリーンアップ設定
+      process.on('SIGINT', this.gracefulShutdown.bind(this))
+      process.on('SIGTERM', this.gracefulShutdown.bind(this))
+    } catch (error) {
+      console.error('Failed to start MCP server:', error)
+      throw error
+    }
+  }
+
+  /**
+   * サーバーの優雅な終了
+   */
+  private async gracefulShutdown(): Promise<void> {
+    console.error('Shutting down MCP server...')
+    try {
+      await closeDatabase()
+      console.error('MCP server shutdown complete')
+    } catch (error) {
+      console.error('Error during shutdown:', error)
+    }
+    process.exit(0)
   }
 
   /**

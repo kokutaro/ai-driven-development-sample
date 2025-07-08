@@ -1,52 +1,96 @@
 import type { CreateTodoInput } from '../schemas/todo-mcp'
+import { mcpPrisma } from '../lib/db'
+import { getUserId } from '../lib/auth'
 
 /**
- * TODO作成ツール（簡略版）
+ * TODO作成ツール
  * 
- * 実際の本番環境では、データベース接続と認証を実装する必要があります。
- * このバージョンはパフォーマンス問題の解決のためのMock実装です。
+ * データベースを使用して実際のTODOを作成します。
+ * Webアプリケーションと同じデータベースを共有し、一貫性のあるデータ管理を実現します。
  */
 export async function createTodo(params: CreateTodoInput) {
   try {
-    // Mock TODO作成
-    const mockTodo = {
-      id: `todo_${Date.now()}`,
+    // 認証チェック
+    const userId = await getUserId()
+
+    // TODO作成データの準備
+    const createData = {
       title: params.title,
-      description: params.description || undefined,
-      dueDate: params.dueDate || undefined,
+      description: params.description || null,
+      dueDate: params.dueDate ? new Date(params.dueDate) : null,
       isImportant: params.isImportant || false,
       isCompleted: false,
-      categoryId: params.categoryId || undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      categoryId: params.categoryId || null,
+      userId,
+      order: 0,
     }
 
+    // データベースにTODOを作成
+    const newTodo = await mcpPrisma.todo.create({
+      data: createData,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        subTasks: {
+          select: {
+            id: true,
+            title: true,
+            isCompleted: true,
+          },
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+    })
+
+    // 成功レスポンス
     return {
       content: [
         {
           text: `# TODO作成完了
 
-新しいTODOが作成されました（Mock）:
+新しいTODOが正常に作成されました:
 
-**タイトル**: ${mockTodo.title}
-**説明**: ${mockTodo.description || 'なし'}
-**期限日**: ${mockTodo.dueDate ? new Date(mockTodo.dueDate).toLocaleDateString('ja-JP') : 'なし'}
-**重要度**: ${mockTodo.isImportant ? '重要' : '通常'}
-**作成日時**: ${new Date(mockTodo.createdAt).toLocaleString('ja-JP')}
+**タイトル**: ${newTodo.title}
+**説明**: ${newTodo.description || 'なし'}
+**期限日**: ${newTodo.dueDate ? new Date(newTodo.dueDate).toLocaleDateString('ja-JP') : 'なし'}
+**重要度**: ${newTodo.isImportant ? '重要' : '通常'}
+**カテゴリ**: ${newTodo.category?.name || 'なし'}
+**作成日時**: ${new Date(newTodo.createdAt).toLocaleString('ja-JP')}
 
-ID: ${mockTodo.id}
+ID: ${newTodo.id}
 
-**注意**: これはMock実装です。実際のデータベース統合が必要です。`,
+TODOが正常にデータベースに保存されました。Webアプリケーションでも確認できます。`,
           type: 'text' as const,
         },
       ],
     }
   } catch (error) {
     console.error('TODO作成エラー:', error)
+    
+    // エラーの種類に応じたメッセージ
+    let errorMessage = 'TODOの作成に失敗しました。'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('認証が必要です')) {
+        errorMessage = '認証エラー: ユーザー認証に失敗しました。'
+      } else if (error.message.includes('Foreign key constraint')) {
+        errorMessage = 'カテゴリIDが無効です。存在するカテゴリを指定してください。'
+      } else {
+        errorMessage = `エラー: ${error.message}`
+      }
+    }
+
     return {
       content: [
         {
-          text: `エラー: TODOの作成に失敗しました。${error instanceof Error ? error.message : '不明なエラー'}`,
+          text: errorMessage,
           type: 'text' as const,
         },
       ],

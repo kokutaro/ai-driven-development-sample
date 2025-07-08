@@ -1,96 +1,138 @@
 import type { ListTodosInput } from '../schemas/todo-mcp'
+import { mcpPrisma } from '../lib/db'
+import { getUserId } from '../lib/auth'
+import { buildFilterConditions, getFilterDisplayName } from '../lib/todo-filters'
 
 /**
- * TODO一覧取得ツール（簡略版）
+ * TODO一覧取得ツール
  * 
- * 実際の本番環境では、データベース接続と認証を実装する必要があります。
- * このバージョンはパフォーマンス問題の解決のためのMock実装です。
+ * データベースから実際のTODOを取得します。
+ * フィルタリング、ソート、ページネーション機能を提供し、
+ * Webアプリケーションと同じ機能を実現します。
  */
 export async function listTodos(params: ListTodosInput) {
   try {
-    // Mock データを返す
-    const mockTodos = [
-      {
-        id: 'todo_1',
-        title: 'サンプルタスク1',
-        description: 'これはサンプルタスクです',
-        isCompleted: false,
-        isImportant: true,
-        category: 'work',
-        dueDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: 'todo_2', 
-        title: 'サンプルタスク2',
-        description: '別のサンプルタスクです',
-        isCompleted: true,
-        isImportant: false,
-        category: 'personal',
-        dueDate: undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ]
+    // 認証チェック
+    const userId = await getUserId()
 
-    // フィルター適用
-    let filteredTodos = mockTodos
-    if (params.filter === 'completed') {
-      filteredTodos = mockTodos.filter(todo => todo.isCompleted)
-    } else if (params.filter === 'important') {
-      filteredTodos = mockTodos.filter(todo => todo.isImportant && !todo.isCompleted)
-    } else if (params.filter === 'today') {
-      filteredTodos = mockTodos.filter(todo => todo.dueDate && !todo.isCompleted)
+    // フィルタ条件を構築
+    const filterConditions = buildFilterConditions(params.filter)
+    
+    // WHERE句を構築
+    const where = {
+      userId,
+      ...filterConditions,
+      ...(params.categoryId && { categoryId: params.categoryId }),
     }
 
-    const filterDisplayNames = {
-      all: 'すべて',
-      assigned: '自分に割り当て',
-      completed: '完了済み',
-      flagged: 'フラグ付き',
-      important: '重要',
-      today: '今日',
-      upcoming: '今後の予定',
+    // ソート条件を構築
+    const orderBy = {
+      [params.sortBy]: params.sortOrder,
     }
 
-    const filter = filterDisplayNames[params.filter] || params.filter
-    const total = filteredTodos.length
+    // データベースからTODOを取得
+    const [todos, total] = await Promise.all([
+      mcpPrisma.todo.findMany({
+        where,
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+          subTasks: {
+            select: {
+              id: true,
+              title: true,
+              isCompleted: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy,
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+      }),
+      mcpPrisma.todo.count({ where }),
+    ])
+
+    // ページネーション情報
+    const pagination = {
+      page: params.page,
+      limit: params.limit,
+      total,
+      totalPages: Math.ceil(total / params.limit),
+      hasNext: params.page * params.limit < total,
+      hasPrev: params.page > 1,
+    }
+
+    const filterDisplayName = getFilterDisplayName(params.filter)
+
+    // レスポンス作成
+    const todoList = todos
+      .map((todo) => {
+        const statusIcon = todo.isCompleted ? '✅' : '⬜'
+        const importantIcon = todo.isImportant ? '⭐' : ''
+        const dueDateText = todo.dueDate
+          ? `期限: ${new Date(todo.dueDate).toLocaleDateString('ja-JP')}`
+          : ''
+        const categoryText = todo.category ? `[${todo.category.name}]` : ''
+        const subTasksText = todo.subTasks.length > 0 
+          ? `サブタスク: ${todo.subTasks.filter(st => st.isCompleted).length}/${todo.subTasks.length}完了`
+          : ''
+
+        return `${statusIcon} **${todo.title}** ${importantIcon} ${categoryText}
+${todo.description ? `   ${todo.description}` : ''}
+${dueDateText ? `   ${dueDateText}` : ''}
+${subTasksText ? `   ${subTasksText}` : ''}
+   ID: ${todo.id}
+---`
+      })
+      .join('\n')
 
     return {
       content: [
         {
-          text: `# TODO一覧 (フィルター: ${filter})
+          text: `# TODO一覧 (フィルター: ${filterDisplayName})
 
-**合計: ${total}件** (Mock データ)
+**合計: ${total}件** | **ページ: ${pagination.page}/${pagination.totalPages}**
 
-${filteredTodos
-  .map((todo) => {
-    const statusIcon = todo.isCompleted ? '✅' : '⬜'
-    const importantIcon = todo.isImportant ? '⭐' : ''
-    const dueDateText = todo.dueDate
-      ? `期限: ${new Date(todo.dueDate).toLocaleDateString('ja-JP')}`
-      : ''
-    const categoryText = `[${todo.category}]`
+${todoList || 'TODOが見つかりませんでした。'}
 
-    return `${statusIcon} **${todo.title}** ${importantIcon} ${categoryText}
-${todo.description ? `   ${todo.description}` : ''}
-${dueDateText ? `   ${dueDateText}` : ''}
----`
-  })
-  .join('\n')}
+${pagination.totalPages > 1 ? `
+**ページネーション**:
+- 現在: ${pagination.page}/${pagination.totalPages}ページ
+- 前のページ: ${pagination.hasPrev ? '有' : '無'}
+- 次のページ: ${pagination.hasNext ? '有' : '無'}
+` : ''}
 
-**注意**: これはMock実装です。実際のデータベース統合が必要です。`,
+データベースから取得した実際のTODOデータです。`,
           type: 'text' as const,
         },
       ],
     }
   } catch (error) {
     console.error('TODO一覧取得エラー:', error)
+    
+    // エラーの種類に応じたメッセージ
+    let errorMessage = 'TODO一覧の取得に失敗しました。'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('認証が必要です')) {
+        errorMessage = '認証エラー: ユーザー認証に失敗しました。'
+      } else {
+        errorMessage = `エラー: ${error.message}`
+      }
+    }
+
     return {
       content: [
         {
-          text: `エラー: TODO一覧の取得に失敗しました。${error instanceof Error ? error.message : '不明なエラー'}`,
+          text: errorMessage,
           type: 'text' as const,
         },
       ],
