@@ -246,11 +246,14 @@ async function main() {
   console.log('シーディング完了！')
 }
 
-try {
-  await main()
-} catch (error) {
-  console.error('シーディングエラー:', error)
-  throw error
-} finally {
-  await prisma.$disconnect()
-}
+main()
+  .then(async () => {
+    await prisma.$disconnect()
+  })
+  // eslint-disable-next-line unicorn/prefer-top-level-await
+  .catch(async (error) => {
+    console.error(error)
+    await prisma.$disconnect()
+    // eslint-disable-next-line unicorn/no-process-exit
+    process.exit(1)
+  })

@@ -8,9 +8,10 @@ import {
   Textarea,
   TextInput,
 } from '@mantine/core'
-import { DatePickerInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
 import { IconCalendar, IconStar } from '@tabler/icons-react'
+
+import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
@@ -91,7 +92,7 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
             {...form.getInputProps('description')}
           />
 
-          <DatePickerInput
+          <DatePickerWithQuickSelect
             clearable
             label="期限日"
             leftSection={<IconCalendar size={16} />}

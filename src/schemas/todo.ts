@@ -13,9 +13,21 @@ export const todoSchema = z.object({
     .max(1000, '説明は1000文字以内で入力してください')
     .optional(),
   dueDate: z
-    .union([z.string().datetime(), z.null()])
+    .union([z.string(), z.null(), z.undefined()])
     .optional()
-    .transform((val) => (val === null ? undefined : val)),
+    .transform((val) => {
+      if (val === null || val === undefined) return
+      if (typeof val === 'string' && val.trim() === '') return
+      try {
+        const date = new Date(val)
+        if (Number.isNaN(date.getTime())) {
+          throw new TypeError('Invalid date')
+        }
+        return date
+      } catch {
+        throw new TypeError('Invalid date format')
+      }
+    }),
   isImportant: z.boolean().default(false),
   title: z
     .string()
