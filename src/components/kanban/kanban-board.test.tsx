@@ -13,7 +13,7 @@ global.PointerEvent = class PointerEvent extends Event {
   constructor(type: string, options?: PointerEventInit) {
     super(type, options)
   }
-} as typeof PointerEvent
+} as unknown as typeof PointerEvent
 
 // ストアのモック
 const mockFetchKanbanColumns = vi.fn()
