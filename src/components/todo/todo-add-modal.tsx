@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
   ActionIcon,
@@ -38,6 +38,7 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
   const { createTodo } = useTodoStore()
   const { categories } = useCategories()
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [selectKey, setSelectKey] = useState(0)
 
   const form = useForm({
     initialValues: {
@@ -68,14 +69,21 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
     }
   }
 
-  const handleCategoryCreated = (categoryId: string) => {
+  const handleCategoryCreated = async (categoryId: string) => {
+    // Selectコンポーネントを強制再レンダリング
+    setSelectKey((prev) => prev + 1)
+    // 状態を即座に更新
     form.setFieldValue('categoryId', categoryId)
   }
 
-  const categoryOptions = categories.map((category) => ({
-    label: category.name,
-    value: category.id,
-  }))
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        label: category.name,
+        value: category.id,
+      })),
+    [categories]
+  )
 
   return (
     <Modal
@@ -120,6 +128,7 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
             <Select
               clearable
               data={categoryOptions}
+              key={`categories-${selectKey}-${categories.length}-${form.values.categoryId}`}
               label="カテゴリ"
               placeholder="カテゴリを選択..."
               style={{ flex: 1 }}

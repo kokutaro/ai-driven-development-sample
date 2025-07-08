@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   ActionIcon,
@@ -39,6 +39,7 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
   const { updateTodo } = useTodoStore()
   const { categories } = useCategories()
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [selectKey, setSelectKey] = useState(0)
 
   const form = useForm({
     initialValues: {
@@ -189,14 +190,23 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
     }
   }
 
-  const handleCategoryCreated = (categoryId: string) => {
+  const handleCategoryCreated = async (categoryId: string) => {
+    // Selectコンポーネントを強制再レンダリング
+    setSelectKey((prev) => prev + 1)
+    // 状態を即座に更新
+    form.setFieldValue('categoryId', categoryId)
+    // 実際のTODO更新も実行
     void handleFieldChange('categoryId', categoryId)
   }
 
-  const categoryOptions = categories.map((category) => ({
-    label: category.name,
-    value: category.id,
-  }))
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        label: category.name,
+        value: category.id,
+      })),
+    [categories]
+  )
 
   return (
     <Stack gap="md" p="md">
@@ -245,6 +255,7 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         <Select
           clearable
           data={categoryOptions}
+          key={`categories-${selectKey}-${categories.length}-${form.values.categoryId}`}
           label="カテゴリ"
           onChange={(value) =>
             handleFieldChange('categoryId', value ?? undefined)
