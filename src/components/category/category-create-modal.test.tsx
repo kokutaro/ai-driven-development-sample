@@ -1,5 +1,4 @@
-import { CategoryCreateModal } from './category-create-modal'
-
+/* eslint-disable import/order */
 import { useCategories } from '@/hooks/use-categories'
 import { fireEvent, render, screen, waitFor } from '@/test-utils'
 
@@ -12,6 +11,8 @@ vi.mock('@/hooks/use-categories', () => ({
 vi.mock('@tabler/icons-react', () => ({
   IconPalette: () => <div data-testid="icon-palette" />,
 }))
+
+import { CategoryCreateModal } from './category-create-modal'
 
 const mockCreateCategory = vi.fn()
 const mockUseCategories = {
@@ -178,7 +179,14 @@ describe('CategoryCreateModal', () => {
 
     // Assert
     await waitFor(() => {
-      expect(mockOnCategoryCreated).toHaveBeenCalledWith('new-category-id')
+      expect(mockOnCategoryCreated).toHaveBeenCalledWith({
+        color: '#FF6B6B',
+        createdAt: expect.any(Date),
+        id: 'new-category-id',
+        name: '新しいカテゴリ',
+        updatedAt: expect.any(Date),
+        userId: 'user-1',
+      })
     })
   })
 
