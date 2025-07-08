@@ -15,8 +15,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  todos      Todo[]
-  categories Category[]
+  todos         Todo[]
+  categories    Category[]
+  kanbanColumns KanbanColumn[]
 
   @@map("User")
 }
@@ -37,23 +38,25 @@ model Category {
 }
 
 model Todo {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  dueDate     DateTime?
-  isImportant Boolean   @default(false)
-  isCompleted Boolean   @default(false)
-  order       Int       @default(0)
-  categoryId  String?
-  userId      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  isImportant     Boolean   @default(false)
+  isCompleted     Boolean   @default(false)
+  order           Int       @default(0)
+  categoryId      String?
+  kanbanColumnId  String?
+  userId          String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category  Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  subTasks  SubTask[]
-  reminders Reminder[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  kanbanColumn  KanbanColumn?  @relation(fields: [kanbanColumnId], references: [id], onDelete: SetNull)
+  subTasks      SubTask[]
+  reminders     Reminder[]
 
   @@map("Todo")
 }
@@ -85,4 +88,20 @@ model Reminder {
   todo Todo @relation(fields: [todoId], references: [id], onDelete: Cascade)
 
   @@map("Reminder")
+}
+
+model KanbanColumn {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   // HEX color code
+  order     Int      @default(0)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos Todo[]
+
+  @@map("KanbanColumn")
 }

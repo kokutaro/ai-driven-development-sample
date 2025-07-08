@@ -19,6 +19,7 @@ async function main() {
   await prisma.subTask.deleteMany()
   await prisma.todo.deleteMany()
   await prisma.category.deleteMany()
+  await prisma.kanbanColumn.deleteMany()
   await prisma.user.deleteMany()
 
   // デフォルトユーザー作成
@@ -66,6 +67,36 @@ async function main() {
 
   console.log('カテゴリ作成完了:', categories.length, '件')
 
+  // デフォルトKanbanカラム作成
+  const kanbanColumns = await Promise.all([
+    prisma.kanbanColumn.create({
+      data: {
+        color: '#E3F2FD',
+        name: 'To Do',
+        order: 1,
+        userId: user.id,
+      },
+    }),
+    prisma.kanbanColumn.create({
+      data: {
+        color: '#FFF3E0',
+        name: 'In Progress',
+        order: 2,
+        userId: user.id,
+      },
+    }),
+    prisma.kanbanColumn.create({
+      data: {
+        color: '#E8F5E8',
+        name: 'Done',
+        order: 3,
+        userId: user.id,
+      },
+    }),
+  ])
+
+  console.log('Kanbanカラム作成完了:', kanbanColumns.length, '件')
+
   // 今日の日付
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -84,7 +115,7 @@ async function main() {
 
   // サンプルタスク作成
   const todos = await Promise.all([
-    // 今日のタスク
+    // 今日のタスク (To Do カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[0].id,
@@ -92,12 +123,13 @@ async function main() {
           'Q1のプロジェクト企画書を作成する。市場調査と競合分析を含める。',
         dueDate: today,
         isImportant: true,
+        kanbanColumnId: kanbanColumns[0].id,
         order: 1,
         title: 'プロジェクトの企画書作成',
         userId: user.id,
       },
     }),
-    // 重要なタスク
+    // 重要なタスク (In Progress カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[0].id,
@@ -105,62 +137,68 @@ async function main() {
           'クライアントとの重要な商談に向けて、プレゼン資料を準備する。',
         dueDate: tomorrow,
         isImportant: true,
+        kanbanColumnId: kanbanColumns[1].id,
         order: 2,
         title: 'クライアントミーティングの準備',
         userId: user.id,
       },
     }),
-    // 学習タスク
+    // 学習タスク (To Do カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[2].id,
         description:
           'Next.js App Router について学習する。公式ドキュメントを読む。',
         dueDate: nextWeek,
+        kanbanColumnId: kanbanColumns[0].id,
         order: 3,
         title: 'Next.js の学習',
         userId: user.id,
       },
     }),
-    // 個人タスク
+    // 個人タスク (To Do カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[1].id,
         description: '定期的な運動を習慣化する。週3回のジョギングから始める。',
+        kanbanColumnId: kanbanColumns[0].id,
         order: 4,
         title: '運動習慣をつける',
         userId: user.id,
       },
     }),
-    // 買い物タスク
+    // 買い物タスク (To Do カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[3].id,
         dueDate: today,
+        kanbanColumnId: kanbanColumns[0].id,
         order: 5,
         title: '食材の買い出し',
         userId: user.id,
       },
     }),
-    // 完了済みタスク
+    // 完了済みタスク (Done カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[0].id,
         description: '月次レポートの作成と提出を完了した。',
         dueDate: yesterday,
         isCompleted: true,
+        kanbanColumnId: kanbanColumns[2].id,
         order: 6,
         title: '月次レポート提出',
         userId: user.id,
       },
     }),
-    // 期限切れタスク
+    // 期限切れタスク (In Progress カラム)
     prisma.todo.create({
       data: {
         categoryId: categories[1].id,
         description: '歯科検診の予約を入れる。',
         dueDate: yesterday,
         isImportant: true,
+        kanbanColumnId: kanbanColumns[1].id,
         order: 7,
         title: '歯医者の予約',
         userId: user.id,

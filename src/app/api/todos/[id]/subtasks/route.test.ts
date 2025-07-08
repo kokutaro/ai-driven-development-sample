@@ -41,6 +41,7 @@ describe('/api/todos/[id]/subtasks', () => {
     id: 'todo-1',
     isCompleted: false,
     isImportant: false,
+    kanbanColumnId: null,
     order: 0,
     title: 'テストタスク',
     updatedAt: new Date(),

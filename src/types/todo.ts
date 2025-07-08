@@ -15,6 +15,15 @@ export interface Category {
 }
 
 /**
+ * Kanbanカラム作成時のデータ型
+ */
+export interface CreateKanbanColumnData {
+  color: string
+  name: string
+  order?: number
+}
+
+/**
  * TODO作成時のデータ型
  */
 export interface CreateTodoData {
@@ -22,7 +31,31 @@ export interface CreateTodoData {
   description?: string
   dueDate?: Date
   isImportant?: boolean
+  kanbanColumnId?: string
   title: string
+}
+
+/**
+ * Kanbanカラムの型定義
+ */
+export interface KanbanColumn {
+  color: string
+  createdAt: Date
+  id: string
+  name: string
+  order: number
+  // Relations
+  todos?: Todo[]
+  updatedAt: Date
+
+  userId: string
+}
+
+/**
+ * Kanbanカラム一覧取得レスポンスの型定義
+ */
+export interface KanbanColumnListResponse {
+  kanbanColumns: KanbanColumn[]
 }
 
 /**
@@ -75,6 +108,8 @@ export interface Todo {
   id: string
   isCompleted: boolean
   isImportant: boolean
+  kanbanColumn?: KanbanColumn | undefined
+  kanbanColumnId?: string | undefined
   order: number
   reminders?: Reminder[]
   subTasks?: SubTask[]
@@ -141,6 +176,15 @@ export interface TodoStats {
 }
 
 /**
+ * Kanbanカラム更新時のデータ型
+ */
+export interface UpdateKanbanColumnData {
+  color?: string
+  name?: string
+  order?: number
+}
+
+/**
  * TODO更新時のAPIリクエストデータ型
  */
 export interface UpdateTodoApiData {
@@ -148,6 +192,7 @@ export interface UpdateTodoApiData {
   description?: string | undefined
   dueDate?: string | undefined
   isImportant?: boolean
+  kanbanColumnId?: string | undefined
   title?: string
 }
 
@@ -159,6 +204,7 @@ export interface UpdateTodoData {
   description?: string | undefined
   dueDate?: Date | undefined
   isImportant?: boolean
+  kanbanColumnId?: string | undefined
   title?: string
 }
 
@@ -170,6 +216,7 @@ export interface User {
   createdAt: Date
   email: string
   id: string
+  kanbanColumns?: KanbanColumn[]
   name: string
 
   // Relations

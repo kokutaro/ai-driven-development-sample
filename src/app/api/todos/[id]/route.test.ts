@@ -40,6 +40,7 @@ describe('/api/todos/[id]', () => {
     id: 'todo-1',
     isCompleted: false,
     isImportant: false,
+    kanbanColumnId: null,
     order: 0,
     reminders: [],
     subTasks: [],

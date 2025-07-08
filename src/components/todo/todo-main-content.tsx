@@ -6,6 +6,8 @@ import { IconPlus, IconSortDescending } from '@tabler/icons-react'
 import { TodoAddModal } from './todo-add-modal'
 import { TodoList } from './todo-list'
 
+import { KanbanBoard } from '@/components/kanban/kanban-board'
+import { ViewToggle } from '@/components/ui/view-toggle'
 import { useTodos } from '@/hooks/use-todos'
 import { useUiStore } from '@/stores/ui-store'
 
@@ -14,13 +16,14 @@ import { useUiStore } from '@/stores/ui-store'
  *
  * 中央カラムのメインコンテンツを表示します。
  * - 動的タイトル（選択されたフィルタに応じて変更）
+ * - ビュー切り替え（リスト/Kanban）
  * - タスク追加ボタン
  * - 並び替えオプション
- * - タスク一覧の表示
+ * - タスク一覧またはKanbanボードの表示
  * - 新規タスク追加モーダルの管理
  */
 export function TodoMainContent() {
-  const { selectedFilter } = useUiStore()
+  const { selectedFilter, viewMode } = useUiStore()
   const { isLoading, todos } = useTodos(selectedFilter)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [sortBy, setSortBy] = useState('createdAt')
@@ -79,34 +82,43 @@ export function TodoMainContent() {
           )}
         </Stack>
         <Group>
-          <Select
-            data={[
-              { label: '作成日時', value: 'createdAt' },
-              { label: '期限日', value: 'dueDate' },
-              { label: 'タイトル', value: 'title' },
-              { label: '重要度', value: 'importance' },
-            ]}
-            leftSection={<IconSortDescending size={16} />}
-            onChange={(value) => setSortBy(value ?? 'createdAt')}
-            placeholder="並び替え"
-            value={sortBy}
-            w={150}
-          />
+          <ViewToggle />
+          {viewMode === 'list' && (
+            <Select
+              data={[
+                { label: '作成日時', value: 'createdAt' },
+                { label: '期限日', value: 'dueDate' },
+                { label: 'タイトル', value: 'title' },
+                { label: '重要度', value: 'importance' },
+              ]}
+              leftSection={<IconSortDescending size={16} />}
+              onChange={(value) => setSortBy(value ?? 'createdAt')}
+              placeholder="並び替え"
+              value={sortBy}
+              w={150}
+            />
+          )}
         </Group>
       </Group>
 
       {/* タスク追加ボタン */}
-      <Button
-        leftSection={<IconPlus size={16} />}
-        onClick={() => setIsAddModalOpen(true)}
-        size="lg"
-        variant="light"
-      >
-        タスクの追加
-      </Button>
+      {viewMode === 'list' && (
+        <Button
+          leftSection={<IconPlus size={16} />}
+          onClick={() => setIsAddModalOpen(true)}
+          size="lg"
+          variant="light"
+        >
+          タスクの追加
+        </Button>
+      )}
 
-      {/* タスク一覧 */}
-      <TodoList isLoading={isLoading} sortBy={sortBy} todos={todos} />
+      {/* メインコンテンツ */}
+      {viewMode === 'list' ? (
+        <TodoList isLoading={isLoading} sortBy={sortBy} todos={todos} />
+      ) : (
+        <KanbanBoard />
+      )}
 
       {/* タスク追加モーダル */}
       <TodoAddModal
