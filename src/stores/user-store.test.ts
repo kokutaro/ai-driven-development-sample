@@ -1,8 +1,19 @@
 import { act, renderHook } from '@testing-library/react'
+import { vi } from 'vitest'
 
 import { useUserStore } from './user-store'
 
 import type { User } from '@/types/todo'
+
+// 認証ライブラリをモック
+vi.mock('@/lib/auth', () => ({
+  getCurrentUser: vi.fn(),
+  isAuthenticated: vi.fn(),
+}))
+
+const { getCurrentUser, isAuthenticated } = await import('@/lib/auth')
+const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockIsAuthenticated = vi.mocked(isAuthenticated)
 
 describe('useUserStore', () => {
   beforeEach(() => {
@@ -148,6 +159,96 @@ describe('useUserStore', () => {
       })
 
       // Assert
+      expect(result.current.isAuthenticated).toBe(false)
+    })
+
+    it('初期状態ではisLoadingがtrueに設定されている', () => {
+      // Arrange & Act
+      const { result } = renderHook(() => useUserStore())
+
+      // Assert
+      expect(result.current.isLoading).toBe(true)
+    })
+  })
+
+  describe('initializeAuth', () => {
+    it('認証が成功した場合、ユーザー情報が設定される', async () => {
+      // Arrange
+      const mockUser: User = {
+        createdAt: new Date(),
+        email: 'test@example.com',
+        id: 'user-1',
+        name: 'テストユーザー',
+        updatedAt: new Date(),
+      }
+      mockGetCurrentUser.mockResolvedValue(mockUser)
+      mockIsAuthenticated.mockResolvedValue(true)
+      const { result } = renderHook(() => useUserStore())
+
+      // Act
+      await act(async () => {
+        await result.current.initializeAuth()
+      })
+
+      // Assert
+      expect(result.current.user).toEqual(mockUser)
+      expect(result.current.isAuthenticated).toBe(true)
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    it('認証が失敗した場合、認証状態がクリアされる', async () => {
+      // Arrange
+      mockGetCurrentUser.mockRejectedValue(new Error('認証エラー'))
+      const { result } = renderHook(() => useUserStore())
+
+      // Act
+      await act(async () => {
+        await result.current.initializeAuth()
+      })
+
+      // Assert
+      expect(result.current.user).toBeUndefined()
+      expect(result.current.isAuthenticated).toBe(false)
+      expect(result.current.isLoading).toBe(false)
+    })
+  })
+
+  describe('refreshUser', () => {
+    it('ユーザー情報の更新が成功した場合、最新情報が設定される', async () => {
+      // Arrange
+      const updatedUser: User = {
+        createdAt: new Date(),
+        email: 'updated@example.com',
+        id: 'user-1',
+        name: '更新されたユーザー',
+        updatedAt: new Date(),
+      }
+      mockGetCurrentUser.mockResolvedValue(updatedUser)
+      mockIsAuthenticated.mockResolvedValue(true)
+      const { result } = renderHook(() => useUserStore())
+
+      // Act
+      await act(async () => {
+        await result.current.refreshUser()
+      })
+
+      // Assert
+      expect(result.current.user).toEqual(updatedUser)
+      expect(result.current.isAuthenticated).toBe(true)
+    })
+
+    it('ユーザー情報の更新が失敗した場合、認証状態がクリアされる', async () => {
+      // Arrange
+      mockGetCurrentUser.mockRejectedValue(new Error('更新エラー'))
+      const { result } = renderHook(() => useUserStore())
+
+      // Act
+      await act(async () => {
+        await result.current.refreshUser()
+      })
+
+      // Assert
+      expect(result.current.user).toBeUndefined()
       expect(result.current.isAuthenticated).toBe(false)
     })
   })

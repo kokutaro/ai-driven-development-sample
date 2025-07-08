@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GET } from './route'
 
@@ -7,6 +7,9 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 // モックの設定
+vi.mock('@/auth', () => ({
+  auth: vi.fn(),
+}))
 vi.mock('@/lib/auth')
 vi.mock('@/lib/db', () => ({
   prisma: {
