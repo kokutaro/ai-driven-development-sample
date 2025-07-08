@@ -2,7 +2,7 @@ import { TodoAddModal } from './todo-add-modal'
 
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
-import { fireEvent, render, screen, waitFor } from '@/test-utils'
+import { act, fireEvent, render, screen, waitFor } from '@/test-utils'
 
 // ストアとフックのモック
 vi.mock('@/stores/todo-store', () => ({
@@ -379,12 +379,16 @@ describe('TodoAddModal', () => {
     render(<TodoAddModal onClose={mockOnClose} opened={true} />)
 
     // Act - カテゴリ作成ボタンをクリックしてモーダルを開く
-    const categoryCreateButton = screen.getByLabelText('新しいカテゴリを作成')
-    fireEvent.click(categoryCreateButton)
+    act(() => {
+      const categoryCreateButton = screen.getByLabelText('新しいカテゴリを作成')
+      fireEvent.click(categoryCreateButton)
+    })
 
     // Act - カテゴリを作成
-    const createCategoryButton = screen.getByText('Create Category')
-    fireEvent.click(createCategoryButton)
+    act(() => {
+      const createCategoryButton = screen.getByText('Create Category')
+      fireEvent.click(createCategoryButton)
+    })
 
     // カテゴリ作成が完了するのを待つ
     await waitFor(() => {
