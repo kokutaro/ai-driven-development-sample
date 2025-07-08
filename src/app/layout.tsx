@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { ColorSchemeScript, MantineProvider } from '@mantine/core'
+import { DatesProvider } from '@mantine/dates'
 
 import type { Metadata } from 'next'
 
@@ -36,7 +37,9 @@ export default function RootLayout({
       </head>
       <body>
         <MantineProvider>
-          <AppProvider>{children}</AppProvider>
+          <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
+            <AppProvider>{children}</AppProvider>
+          </DatesProvider>
         </MantineProvider>
       </body>
     </html>
