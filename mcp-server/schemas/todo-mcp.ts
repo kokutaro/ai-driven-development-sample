@@ -47,7 +47,15 @@ export const createTodoInputSchema = z.object({
 })
 
 /**
+ * TODO完了切り替えツールの入力スキーマ
+ */
+export const completeTodoInputSchema = z.object({
+  id: z.string().min(1).describe('完了状態を切り替えるTODOのID（必須）'),
+})
+
+/**
  * 型エクスポート
  */
 export type ListTodosInput = z.infer<typeof listTodosInputSchema>
 export type CreateTodoInput = z.infer<typeof createTodoInputSchema>
+export type CompleteTodoInput = z.infer<typeof completeTodoInputSchema>

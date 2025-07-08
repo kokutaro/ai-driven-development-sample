@@ -2,14 +2,14 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { pathToFileURL } from 'node:url'
 
-import { createTodoInputSchema, listTodosInputSchema } from './schemas/todo-mcp'
-import { createTodo, listTodos } from './tools'
+import { createTodoInputSchema, listTodosInputSchema, completeTodoInputSchema } from './schemas/todo-mcp'
+import { createTodo, listTodos, completeTodo } from './tools'
 import { initializeDatabase, closeDatabase } from './lib/db'
 
 /**
  * TODO アプリケーション用 MCP サーバー
  *
- * LLMがTODOの作成・一覧取得を実行できるツールを提供します。
+ * LLMがTODOの作成・一覧取得・完了状態切り替えを実行できるツールを提供します。
  */
 export class TodoMcpServer {
   private server: McpServer
@@ -67,6 +67,23 @@ export class TodoMcpServer {
       async (params) => {
         const validatedParams = createTodoInputSchema.parse(params)
         return await createTodo(validatedParams)
+      }
+    )
+
+    // TODO完了切り替えツール
+    this.server.registerTool(
+      'complete-todo',
+      {
+        description:
+          'TODOの完了状態を切り替えます。未完了のTODOは完了に、完了済みのTODOは未完了に変更されます。',
+        inputSchema: {
+          id: completeTodoInputSchema.shape.id,
+        },
+        title: 'TODO完了切り替え',
+      },
+      async (params) => {
+        const validatedParams = completeTodoInputSchema.parse(params)
+        return await completeTodo(validatedParams)
       }
     )
   }
