@@ -76,10 +76,19 @@ describe('APIClient', () => {
       })
 
       // Act & Assert
-      await expect(apiClient.get('/api/test')).rejects.toThrow(APIClientError)
-      await expect(apiClient.get('/api/test')).rejects.toThrow(
-        '認証が必要です。サインインページにリダイレクトしています。'
-      )
+      try {
+        await apiClient.get('/api/test')
+        // Should not reach here
+        expect.fail('Expected an error to be thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(APIClientError)
+        const apiError = error as APIClientError
+        expect(apiError.message).toBe(
+          '認証が必要です。サインインページにリダイレクトしています。'
+        )
+        expect(apiError.status).toBe(401)
+        expect(apiError.response).toEqual(mockResponse)
+      }
 
       // リダイレクトが実行されることを確認
       expect(mockLocation.href).toBe('/auth/signin')
@@ -236,20 +245,26 @@ describe('APIClient', () => {
         timestamp: '2024-01-01T00:00:00Z',
       }
 
+      const mockJsonFn = vi.fn().mockResolvedValue(mockResponse)
       mockFetch.mockResolvedValueOnce({
-        json: vi.fn().mockResolvedValue(mockResponse),
+        json: mockJsonFn,
         ok: false,
         status: 400,
         url: '/api/test',
       })
 
       // Act & Assert
-      await expect(apiClient.post('/api/test', {})).rejects.toThrow(
-        APIClientError
-      )
-      await expect(apiClient.post('/api/test', {})).rejects.toThrow(
-        'Invalid input data'
-      )
+      try {
+        await apiClient.post('/api/test', {})
+        // Should not reach here
+        expect.fail('Expected an error to be thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(APIClientError)
+        const apiError = error as APIClientError
+        expect(apiError.message).toBe('Invalid input data')
+        expect(apiError.status).toBe(400)
+        expect(apiError.response).toEqual(mockResponse)
+      }
 
       // 401以外のエラーではリダイレクトしないことを確認
       expect(mockLocation.href).toBe('')
@@ -312,18 +327,25 @@ describe('APIClient', () => {
   describe('JSONパースエラー処理', () => {
     it('should throw APIClientError on JSON parse error', async () => {
       // Arrange
+      const mockJsonFn = vi.fn().mockRejectedValue(new Error('Invalid JSON'))
       mockFetch.mockResolvedValueOnce({
-        json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
+        json: mockJsonFn,
         ok: true,
         status: 200,
         url: '/api/test',
       })
 
       // Act & Assert
-      await expect(apiClient.get('/api/test')).rejects.toThrow(APIClientError)
-      await expect(apiClient.get('/api/test')).rejects.toThrow(
-        'サーバーレスポンスの解析に失敗しました'
-      )
+      try {
+        await apiClient.get('/api/test')
+        // Should not reach here
+        expect.fail('Expected an error to be thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(APIClientError)
+        const apiError = error as APIClientError
+        expect(apiError.message).toBe('サーバーレスポンスの解析に失敗しました')
+        expect(apiError.status).toBe(200)
+      }
 
       expect(mockConsoleError).toHaveBeenCalledWith(
         'APIレスポンスのJSONパースに失敗しました:',

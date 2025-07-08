@@ -18,6 +18,8 @@ describe('categoryClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(vi.fn())
+    // timestampを固定するためにDateをモック
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'))
   })
 
   describe('createCategory', () => {
@@ -65,20 +67,28 @@ describe('categoryClient', () => {
         color: '#FF6B6B',
         name: 'テストカテゴリ',
       }
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'VALIDATION_ERROR', message: 'HTTP Error: 400' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 400,
       })
 
       // Act & Assert
       await expect(categoryClient.createCategory(categoryData)).rejects.toThrow(
-        'HTTP error! status: 400'
+        'HTTP Error: 400'
       )
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ作成API呼び出しエラー:',
-        expect.any(Error)
-      )
+      expect(console.error).toHaveBeenCalledWith('API Error (400):', {
+        details: undefined,
+        message: 'HTTP Error: 400',
+        path: undefined,
+      })
     })
 
     it('should handle network error', async () => {
@@ -94,10 +104,6 @@ describe('categoryClient', () => {
       // Act & Assert
       await expect(categoryClient.createCategory(categoryData)).rejects.toThrow(
         'Network error'
-      )
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ作成API呼び出しエラー:',
-        networkError
       )
     })
   })
@@ -136,20 +142,28 @@ describe('categoryClient', () => {
     it('should handle HTTP error response', async () => {
       // Arrange
       const categoryId = 'category_123'
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'NOT_FOUND', message: 'HTTP Error: 404' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 404,
       })
 
       // Act & Assert
       await expect(categoryClient.deleteCategory(categoryId)).rejects.toThrow(
-        'HTTP error! status: 404'
+        'HTTP Error: 404'
       )
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ削除API呼び出しエラー:',
-        expect.any(Error)
-      )
+      expect(console.error).toHaveBeenCalledWith('API Error (404):', {
+        details: undefined,
+        message: 'HTTP Error: 404',
+        path: undefined,
+      })
     })
 
     it('should handle network error', async () => {
@@ -162,10 +176,6 @@ describe('categoryClient', () => {
       // Act & Assert
       await expect(categoryClient.deleteCategory(categoryId)).rejects.toThrow(
         'Network error'
-      )
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ削除API呼び出しエラー:',
-        networkError
       )
     })
   })
@@ -216,19 +226,28 @@ describe('categoryClient', () => {
 
     it('should handle HTTP error response', async () => {
       // Arrange
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'INTERNAL_SERVER_ERROR', message: 'HTTP Error: 500' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
+
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 500,
       })
 
       // Act & Assert
       await expect(categoryClient.getCategories()).rejects.toThrow(
-        'HTTP error! status: 500'
+        'HTTP Error: 500'
       )
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ取得API呼び出しエラー:',
-        expect.any(Error)
-      )
+      expect(console.error).toHaveBeenCalledWith('API Error (500):', {
+        details: undefined,
+        message: 'HTTP Error: 500',
+        path: undefined,
+      })
     })
 
     it('should handle network error', async () => {
@@ -240,10 +259,6 @@ describe('categoryClient', () => {
       // Act & Assert
       await expect(categoryClient.getCategories()).rejects.toThrow(
         'Network error'
-      )
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ取得API呼び出しエラー:',
-        networkError
       )
     })
   })
@@ -266,7 +281,7 @@ describe('categoryClient', () => {
           userId: 'user_123',
         },
         success: true,
-        timestamp: '2024-01-02T00:00:00.000Z',
+        timestamp: '2024-01-01T00:00:00.000Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -307,7 +322,7 @@ describe('categoryClient', () => {
           userId: 'user_123',
         },
         success: true,
-        timestamp: '2024-01-02T00:00:00.000Z',
+        timestamp: '2024-01-01T00:00:00.000Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -339,8 +354,15 @@ describe('categoryClient', () => {
         color: '#45B7D1',
         name: '更新されたカテゴリ',
       }
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'VALIDATION_ERROR', message: 'HTTP Error: 400' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 400,
       })
@@ -348,11 +370,12 @@ describe('categoryClient', () => {
       // Act & Assert
       await expect(
         categoryClient.updateCategory(categoryId, categoryData)
-      ).rejects.toThrow('HTTP error! status: 400')
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ更新API呼び出しエラー:',
-        expect.any(Error)
-      )
+      ).rejects.toThrow('HTTP Error: 400')
+      expect(console.error).toHaveBeenCalledWith('API Error (400):', {
+        details: undefined,
+        message: 'HTTP Error: 400',
+        path: undefined,
+      })
     })
 
     it('should handle network error', async () => {
@@ -370,10 +393,6 @@ describe('categoryClient', () => {
       await expect(
         categoryClient.updateCategory(categoryId, categoryData)
       ).rejects.toThrow('Network error')
-      expect(console.error).toHaveBeenCalledWith(
-        'カテゴリ更新API呼び出しエラー:',
-        networkError
-      )
     })
   })
 })

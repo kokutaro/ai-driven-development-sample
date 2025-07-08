@@ -8,9 +8,23 @@ import type { ApiResponse, TodoStats } from '@/types/api'
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
+// window.location のモック
+const mockLocation = {
+  href: '',
+}
+Object.defineProperty(globalThis, 'window', {
+  configurable: true,
+  value: {
+    location: mockLocation,
+  },
+  writable: true,
+})
+
 describe('statsClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // timestampを固定するためにDateをモック
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'))
   })
 
   afterEach(() => {
@@ -42,7 +56,12 @@ describe('statsClient', () => {
 
       const result = await statsClient.getTodoStats()
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/stats/todos')
+      expect(mockFetch).toHaveBeenCalledWith('/api/stats/todos', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'GET',
+      })
       expect(result).toEqual(mockResponse)
     })
 
@@ -69,9 +88,9 @@ describe('statsClient', () => {
         status: 401,
       })
 
-      const result = await statsClient.getTodoStats()
-
-      expect(result).toEqual(mockErrorResponse)
+      await expect(statsClient.getTodoStats()).rejects.toThrow(
+        '認証が必要です。サインインページにリダイレクトしています。'
+      )
     })
 
     it('JSON解析エラーを適切に処理する', async () => {
@@ -81,7 +100,9 @@ describe('statsClient', () => {
         status: 200,
       })
 
-      await expect(statsClient.getTodoStats()).rejects.toThrow('Invalid JSON')
+      await expect(statsClient.getTodoStats()).rejects.toThrow(
+        'サーバーレスポンスの解析に失敗しました'
+      )
     })
   })
 })
