@@ -54,8 +54,16 @@ export const completeTodoInputSchema = z.object({
 })
 
 /**
+ * TODO削除ツールの入力スキーマ
+ */
+export const deleteTodoInputSchema = z.object({
+  id: z.string().min(1).describe('削除するTODOのID（必須）'),
+})
+
+/**
  * 型エクスポート
  */
 export type ListTodosInput = z.infer<typeof listTodosInputSchema>
 export type CreateTodoInput = z.infer<typeof createTodoInputSchema>
 export type CompleteTodoInput = z.infer<typeof completeTodoInputSchema>
+export type DeleteTodoInput = z.infer<typeof deleteTodoInputSchema>

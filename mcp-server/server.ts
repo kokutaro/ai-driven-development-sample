@@ -2,14 +2,14 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { pathToFileURL } from 'node:url'
 
-import { createTodoInputSchema, listTodosInputSchema, completeTodoInputSchema } from './schemas/todo-mcp'
-import { createTodo, listTodos, completeTodo } from './tools'
+import { createTodoInputSchema, listTodosInputSchema, completeTodoInputSchema, deleteTodoInputSchema } from './schemas/todo-mcp'
+import { createTodo, listTodos, completeTodo, deleteTodo } from './tools'
 import { initializeDatabase, closeDatabase } from './lib/db'
 
 /**
  * TODO アプリケーション用 MCP サーバー
  *
- * LLMがTODOの作成・一覧取得・完了状態切り替えを実行できるツールを提供します。
+ * LLMがTODOの作成・一覧取得・完了状態切り替え・削除を実行できるツールを提供します。
  */
 export class TodoMcpServer {
   private server: McpServer
@@ -84,6 +84,23 @@ export class TodoMcpServer {
       async (params) => {
         const validatedParams = completeTodoInputSchema.parse(params)
         return await completeTodo(validatedParams)
+      }
+    )
+
+    // TODO削除ツール
+    this.server.registerTool(
+      'delete-todo',
+      {
+        description:
+          'TODOを削除します。削除されたTODOは復元できません。関連するサブタスクやリマインダーも同時に削除されます。',
+        inputSchema: {
+          id: deleteTodoInputSchema.shape.id,
+        },
+        title: 'TODO削除',
+      },
+      async (params) => {
+        const validatedParams = deleteTodoInputSchema.parse(params)
+        return await deleteTodo(validatedParams)
       }
     )
   }
