@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { ColorSchemeScript, MantineProvider } from '@mantine/core'
 import { DatesProvider } from '@mantine/dates'
+import { ModalsProvider } from '@mantine/modals'
 
 import type { Metadata } from 'next'
 
@@ -37,9 +38,16 @@ export default function RootLayout({
       </head>
       <body>
         <MantineProvider>
-          <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
-            <AppProvider>{children}</AppProvider>
-          </DatesProvider>
+          <ModalsProvider
+            labels={{
+              cancel: 'キャンセル',
+              confirm: '削除',
+            }}
+          >
+            <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
+              <AppProvider>{children}</AppProvider>
+            </DatesProvider>
+          </ModalsProvider>
         </MantineProvider>
       </body>
     </html>

@@ -1,3 +1,5 @@
+import { openConfirmModal } from '@mantine/modals'
+
 import { TodoItem } from './todo-item'
 
 import { formatDate } from '@/lib/utils'
@@ -26,11 +28,14 @@ vi.mock('@tabler/icons-react', () => ({
   IconTrash: () => <div data-testid="icon-trash" />,
 }))
 
-// window.confirmのモック
-const mockConfirm = vi.fn()
-Object.defineProperty(globalThis, 'confirm', {
-  value: mockConfirm,
-  writable: true,
+// Mantine modalsのモック
+vi.mock('@mantine/modals', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  const actual = await importOriginal<typeof import('@mantine/modals')>()
+  return {
+    ...actual,
+    openConfirmModal: vi.fn(),
+  }
 })
 
 const mockToggleTodo = vi.fn()
@@ -75,7 +80,6 @@ describe('TodoItem', () => {
     vi.mocked(useTodoStore).mockReturnValue(mockTodoStore)
     vi.mocked(useUiStore).mockReturnValue(mockUiStore)
     vi.mocked(formatDate).mockReturnValue('2024年1月15日')
-    mockConfirm.mockReturnValue(true)
   })
 
   it('基本的なタスク情報が正しく表示される', () => {
@@ -193,7 +197,7 @@ describe('TodoItem', () => {
     expect(mockToggleTodo).toHaveBeenCalledWith('todo-1')
   })
 
-  it('削除ボタンをクリックして確認すると削除される', () => {
+  it('削除ボタンをクリックすると確認ダイアログが表示される', () => {
     // Act
     render(<TodoItem todo={mockTodo} />)
 
@@ -202,14 +206,15 @@ describe('TodoItem', () => {
     fireEvent.click(deleteButton)
 
     // Assert
-    expect(mockConfirm).toHaveBeenCalledWith('このタスクを削除しますか？')
-    expect(mockDeleteTodo).toHaveBeenCalledWith('todo-1')
+    expect(openConfirmModal).toHaveBeenCalledWith({
+      children: expect.any(Object),
+      confirmProps: { color: 'red' },
+      onConfirm: expect.any(Function),
+      title: '削除の確認',
+    })
   })
 
-  it('削除ボタンをクリックしてキャンセルすると削除されない', () => {
-    // Arrange
-    mockConfirm.mockReturnValue(false)
-
+  it('削除確認ダイアログでonConfirmが呼ばれるとdeleteTodoが実行される', () => {
     // Act
     render(<TodoItem todo={mockTodo} />)
 
@@ -217,9 +222,16 @@ describe('TodoItem', () => {
     const deleteButton = screen.getByTestId('icon-trash')
     fireEvent.click(deleteButton)
 
+    // onConfirmコールバックを取得して実行
+    const mockedOpenConfirmModal = vi.mocked(openConfirmModal)
+    const onConfirmCallback = mockedOpenConfirmModal.mock.calls[0][0].onConfirm
+    if (!onConfirmCallback) {
+      throw new Error('onConfirm callback is not defined')
+    }
+    onConfirmCallback()
+
     // Assert
-    expect(mockConfirm).toHaveBeenCalledWith('このタスクを削除しますか？')
-    expect(mockDeleteTodo).not.toHaveBeenCalled()
+    expect(mockDeleteTodo).toHaveBeenCalledWith('todo-1')
   })
 
   it('タスクカードをクリックするとsetSelectedTodoが呼ばれる', () => {

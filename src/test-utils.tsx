@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 
 import { MantineProvider } from '@mantine/core'
 import { DatesProvider } from '@mantine/dates'
+import { ModalsProvider } from '@mantine/modals'
 import { render } from '@testing-library/react'
 
 import type { RenderOptions } from '@testing-library/react'
@@ -17,9 +18,11 @@ import '@mantine/dates/styles.css'
 function AllTheProviders({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider>
-      <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
-        {children}
-      </DatesProvider>
+      <ModalsProvider>
+        <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
+          {children}
+        </DatesProvider>
+      </ModalsProvider>
     </MantineProvider>
   )
 }

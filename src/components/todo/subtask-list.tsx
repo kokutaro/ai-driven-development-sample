@@ -12,6 +12,7 @@ import {
   TextInput,
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
+import { openConfirmModal } from '@mantine/modals'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
 
 import { useSubTasks } from '@/hooks/use-subtasks'
@@ -70,15 +71,24 @@ export function SubTaskList({ todoId }: SubTaskListProps) {
   }
 
   const handleDeleteSubTask = async (subTaskId: string) => {
-    if (!globalThis.confirm('このサブタスクを削除しますか？')) {
-      return
-    }
-
-    try {
-      await deleteSubTask(subTaskId)
-    } catch (error) {
-      console.error('サブタスク削除エラー:', error)
-    }
+    openConfirmModal({
+      children: (
+        <Text size="sm">
+          このサブタスクを削除しますか？この操作は取り消せません。
+        </Text>
+      ),
+      confirmProps: { color: 'red' },
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteSubTask(subTaskId)
+          } catch (error) {
+            console.error('サブタスク削除エラー:', error)
+          }
+        })()
+      },
+      title: '削除の確認',
+    })
   }
 
   const handleCancel = () => {
