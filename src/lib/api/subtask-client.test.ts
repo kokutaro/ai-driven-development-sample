@@ -17,6 +17,8 @@ global.fetch = mockFetch
 describe('subTaskClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // timestampを固定するためにDateをモック
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'))
   })
 
   describe('createSubTask', () => {
@@ -61,15 +63,22 @@ describe('subTaskClient', () => {
       // Arrange
       const todoId = 'todo_123'
       const data = { title: 'テストサブタスク' }
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid data' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 400,
       })
 
       // Act & Assert
       await expect(subTaskClient.createSubTask(todoId, data)).rejects.toThrow(
-        'サブタスクの作成に失敗しました: 400'
+        'Invalid data'
       )
     })
 
@@ -127,8 +136,15 @@ describe('subTaskClient', () => {
       // Arrange
       const todoId = 'todo_123'
       const subTaskId = 'subtask_123'
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'NOT_FOUND', message: 'Subtask not found' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 404,
       })
@@ -136,7 +152,7 @@ describe('subTaskClient', () => {
       // Act & Assert
       await expect(
         subTaskClient.deleteSubTask(todoId, subTaskId)
-      ).rejects.toThrow('サブタスクの削除に失敗しました: 404')
+      ).rejects.toThrow('Subtask not found')
     })
 
     it('should handle network error', async () => {
@@ -204,15 +220,22 @@ describe('subTaskClient', () => {
     it('should handle HTTP error response', async () => {
       // Arrange
       const todoId = 'todo_123'
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'INTERNAL_SERVER_ERROR', message: 'Server error' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 500,
       })
 
       // Act & Assert
       await expect(subTaskClient.getSubTasks(todoId)).rejects.toThrow(
-        'サブタスクの取得に失敗しました: 500'
+        'Server error'
       )
     })
 
@@ -246,7 +269,7 @@ describe('subTaskClient', () => {
           updatedAt: new Date('2024-01-02'),
         },
         success: true,
-        timestamp: '2024-01-02T00:00:00.000Z',
+        timestamp: '2024-01-01T00:00:00.000Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -274,8 +297,15 @@ describe('subTaskClient', () => {
       // Arrange
       const todoId = 'todo_123'
       const subTaskId = 'subtask_123'
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'NOT_FOUND', message: 'Subtask not found' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 404,
       })
@@ -283,7 +313,7 @@ describe('subTaskClient', () => {
       // Act & Assert
       await expect(
         subTaskClient.toggleSubTask(todoId, subTaskId)
-      ).rejects.toThrow('サブタスクの切り替えに失敗しました: 404')
+      ).rejects.toThrow('Subtask not found')
     })
 
     it('should handle network error', async () => {
@@ -321,7 +351,7 @@ describe('subTaskClient', () => {
           updatedAt: new Date('2024-01-02'),
         },
         success: true,
-        timestamp: '2024-01-02T00:00:00.000Z',
+        timestamp: '2024-01-01T00:00:00.000Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -364,7 +394,7 @@ describe('subTaskClient', () => {
           updatedAt: new Date('2024-01-02'),
         },
         success: true,
-        timestamp: '2024-01-02T00:00:00.000Z',
+        timestamp: '2024-01-01T00:00:00.000Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -397,8 +427,15 @@ describe('subTaskClient', () => {
         isCompleted: true,
         title: '更新されたサブタスク',
       }
+      const mockErrorResponse = {
+        data: null,
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid update data' },
+        success: false,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }
 
       mockFetch.mockResolvedValueOnce({
+        json: vi.fn().mockResolvedValue(mockErrorResponse),
         ok: false,
         status: 400,
       })
@@ -406,7 +443,7 @@ describe('subTaskClient', () => {
       // Act & Assert
       await expect(
         subTaskClient.updateSubTask(todoId, subTaskId, data)
-      ).rejects.toThrow('サブタスクの更新に失敗しました: 400')
+      ).rejects.toThrow('Invalid update data')
     })
 
     it('should handle network error', async () => {

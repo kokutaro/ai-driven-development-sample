@@ -20,12 +20,15 @@ async function main() {
   await prisma.todo.deleteMany()
   await prisma.category.deleteMany()
   await prisma.kanbanColumn.deleteMany()
+  await prisma.session.deleteMany()
+  await prisma.account.deleteMany()
   await prisma.user.deleteMany()
 
   // デフォルトユーザー作成
   const user = await prisma.user.create({
     data: {
       email: 'demo@example.com',
+      emailVerified: new Date(),
       id: 'user-1',
       name: 'デモユーザー',
     },

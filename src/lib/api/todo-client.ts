@@ -1,11 +1,9 @@
-import type {
-  ApiResponse,
-  Todo,
-  TodoListResponse,
-  UpdateTodoApiData,
-} from '@/types/todo'
+import { apiClient } from './api-client'
+
+import type { Todo, TodoListResponse, UpdateTodoApiData } from '@/types/todo'
 
 export interface GetTodosParams {
+  [key: string]: boolean | number | string | undefined
   categoryId?: string
   filter?: string
   limit?: number
@@ -15,95 +13,63 @@ export interface GetTodosParams {
 }
 
 /**
- * APIレスポンスを処理し、エラーレスポンスの場合は例外を投げる
- */
-async function handleApiResponse<T>(response: Response): Promise<T> {
-  const result = (await response.json()) as ApiResponse<T>
-
-  if (!response.ok || !result.success) {
-    const errorMessage =
-      result.error?.message ?? `HTTP Error: ${response.status}`
-    const error = new Error(errorMessage)
-    // エラーオブジェクトにAPIレスポンスの詳細を追加
-    ;(error as Error & { response: ApiResponse<T>; status: number }).response =
-      result
-    ;(error as Error & { response: ApiResponse<T>; status: number }).status =
-      response.status
-    throw error
-  }
-
-  return result.data
-}
-
-/**
  * TODO API クライアント
  *
  * TODOに関するAPI通信を行うクライアントです。
- * HTTPエラーレスポンスを適切に処理し、エラー時は例外を投げます。
+ * 401エラー時の自動サインインページリダイレクトと
+ * 統一されたエラーハンドリングを提供します。
  */
 export const todoClient = {
   /**
    * 新しいTODOを作成する
+   *
+   * @param data - TODO作成データ
+   * @returns 作成されたTODO
    */
   async createTodo(data: Partial<Todo>): Promise<Todo> {
-    const response = await fetch('/api/todos', {
-      body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    })
-    return handleApiResponse<Todo>(response)
+    return apiClient.post<Todo>('/api/todos', data)
   },
 
   /**
    * TODOを削除する
+   *
+   * @param id - TODO ID
+   * @returns 削除結果
    */
   async deleteTodo(id: string): Promise<{ deleted: boolean; id: string }> {
-    const response = await fetch(`/api/todos/${id}`, {
-      method: 'DELETE',
-    })
-    return handleApiResponse<{ deleted: boolean; id: string }>(response)
+    return apiClient.delete<{ deleted: boolean; id: string }>(
+      `/api/todos/${id}`
+    )
   },
 
   /**
    * TODOリストを取得する
+   *
+   * @param params - 検索・フィルタパラメータ
+   * @returns TODOリストレスポンス
    */
   async getTodos(params: GetTodosParams = {}): Promise<TodoListResponse> {
-    const searchParams = new URLSearchParams()
-
-    if (params.filter) searchParams.set('filter', params.filter)
-    if (params.categoryId) searchParams.set('categoryId', params.categoryId)
-    if (params.page) searchParams.set('page', params.page.toString())
-    if (params.limit) searchParams.set('limit', params.limit.toString())
-    if (params.sortBy) searchParams.set('sortBy', params.sortBy)
-    if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder)
-
-    const response = await fetch(`/api/todos?${searchParams.toString()}`)
-    return handleApiResponse<TodoListResponse>(response)
+    return apiClient.get<TodoListResponse>('/api/todos', params)
   },
 
   /**
    * TODOの完了状態を切り替える
+   *
+   * @param id - TODO ID
+   * @returns 更新されたTODO
    */
   async toggleTodo(id: string): Promise<Todo> {
-    const response = await fetch(`/api/todos/${id}/toggle`, {
-      method: 'PATCH',
-    })
-    return handleApiResponse<Todo>(response)
+    return apiClient.patch<Todo>(`/api/todos/${id}/toggle`)
   },
 
   /**
    * TODOを更新する
+   *
+   * @param id - TODO ID
+   * @param data - 更新データ
+   * @returns 更新されたTODO
    */
   async updateTodo(id: string, data: UpdateTodoApiData): Promise<Todo> {
-    const response = await fetch(`/api/todos/${id}`, {
-      body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'PUT',
-    })
-    return handleApiResponse<Todo>(response)
+    return apiClient.put<Todo>(`/api/todos/${id}`, data)
   },
 }

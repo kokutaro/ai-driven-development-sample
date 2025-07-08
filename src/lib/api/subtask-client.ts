@@ -1,9 +1,13 @@
-import { type ApiResponse, type SubTask } from '@/types/todo'
+import { apiClient } from './api-client'
+
+import type { ApiResponse, SubTask } from '@/types/todo'
 
 /**
  * サブタスクAPI クライアント
  *
  * サブタスクのCRUD操作を提供します。
+ * 401エラー時の自動サインインページリダイレクトと
+ * 統一されたエラーハンドリングを提供します。
  */
 export const subTaskClient = {
   /**
@@ -11,25 +15,21 @@ export const subTaskClient = {
    *
    * @param todoId - TODO ID
    * @param data - サブタスクデータ
-   * @returns 作成されたサブタスク
+   * @returns 作成されたサブタスクのAPIレスポンス
    */
   async createSubTask(
     todoId: string,
     data: { title: string }
   ): Promise<ApiResponse<SubTask>> {
-    const response = await fetch(`/api/todos/${todoId}/subtasks`, {
-      body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-    })
-
-    if (!response.ok) {
-      throw new Error(`サブタスクの作成に失敗しました: ${response.status}`)
+    const result = await apiClient.post<SubTask>(
+      `/api/todos/${todoId}/subtasks`,
+      data
+    )
+    return {
+      data: result,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
-
-    return response.json() as Promise<ApiResponse<SubTask>>
   },
 
   /**
@@ -37,47 +37,37 @@ export const subTaskClient = {
    *
    * @param todoId - TODO ID
    * @param subTaskId - サブタスク ID
-   * @returns 削除結果
+   * @returns 削除結果のAPIレスポンス
    */
   async deleteSubTask(
     todoId: string,
     subTaskId: string
   ): Promise<ApiResponse<{ deleted: boolean; id: string }>> {
-    const response = await fetch(`/api/todos/${todoId}/subtasks/${subTaskId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'DELETE',
-    })
-
-    if (!response.ok) {
-      throw new Error(`サブタスクの削除に失敗しました: ${response.status}`)
+    const result = await apiClient.delete<{ deleted: boolean; id: string }>(
+      `/api/todos/${todoId}/subtasks/${subTaskId}`
+    )
+    return {
+      data: result,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
-
-    return response.json() as Promise<
-      ApiResponse<{ deleted: boolean; id: string }>
-    >
   },
 
   /**
    * 指定されたTODOのサブタスク一覧を取得
    *
    * @param todoId - TODO ID
-   * @returns サブタスク一覧
+   * @returns サブタスク一覧のAPIレスポンス
    */
   async getSubTasks(todoId: string): Promise<ApiResponse<SubTask[]>> {
-    const response = await fetch(`/api/todos/${todoId}/subtasks`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'GET',
-    })
-
-    if (!response.ok) {
-      throw new Error(`サブタスクの取得に失敗しました: ${response.status}`)
+    const result = await apiClient.get<SubTask[]>(
+      `/api/todos/${todoId}/subtasks`
+    )
+    return {
+      data: result,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
-
-    return response.json() as Promise<ApiResponse<SubTask[]>>
   },
 
   /**
@@ -85,24 +75,20 @@ export const subTaskClient = {
    *
    * @param todoId - TODO ID
    * @param subTaskId - サブタスク ID
-   * @returns 更新されたサブタスク
+   * @returns 更新されたサブタスクのAPIレスポンス
    */
   async toggleSubTask(
     todoId: string,
     subTaskId: string
   ): Promise<ApiResponse<SubTask>> {
-    const response = await fetch(`/api/todos/${todoId}/subtasks/${subTaskId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'PATCH',
-    })
-
-    if (!response.ok) {
-      throw new Error(`サブタスクの切り替えに失敗しました: ${response.status}`)
+    const result = await apiClient.patch<SubTask>(
+      `/api/todos/${todoId}/subtasks/${subTaskId}`
+    )
+    return {
+      data: result,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
-
-    return response.json() as Promise<ApiResponse<SubTask>>
   },
 
   /**
@@ -111,25 +97,21 @@ export const subTaskClient = {
    * @param todoId - TODO ID
    * @param subTaskId - サブタスク ID
    * @param data - 更新データ
-   * @returns 更新されたサブタスク
+   * @returns 更新されたサブタスクのAPIレスポンス
    */
   async updateSubTask(
     todoId: string,
     subTaskId: string,
     data: Partial<SubTask>
   ): Promise<ApiResponse<SubTask>> {
-    const response = await fetch(`/api/todos/${todoId}/subtasks/${subTaskId}`, {
-      body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'PUT',
-    })
-
-    if (!response.ok) {
-      throw new Error(`サブタスクの更新に失敗しました: ${response.status}`)
+    const result = await apiClient.put<SubTask>(
+      `/api/todos/${todoId}/subtasks/${subTaskId}`,
+      data
+    )
+    return {
+      data: result,
+      success: true,
+      timestamp: new Date().toISOString(),
     }
-
-    return response.json() as Promise<ApiResponse<SubTask>>
   },
 }
