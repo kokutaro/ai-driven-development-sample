@@ -7,7 +7,6 @@ import { useTodoStore } from '@/stores/todo-store'
 import { useUiStore } from '@/stores/ui-store'
 import { fireEvent, render, screen } from '@/test-utils'
 
-
 // ストアのモック
 vi.mock('@/stores/todo-store', () => ({
   useTodoStore: vi.fn(),
@@ -226,6 +225,9 @@ describe('TodoItem', () => {
     // onConfirmコールバックを取得して実行
     const mockedOpenConfirmModal = vi.mocked(openConfirmModal)
     const onConfirmCallback = mockedOpenConfirmModal.mock.calls[0][0].onConfirm
+    if (!onConfirmCallback) {
+      throw new Error('onConfirm callback is not defined')
+    }
     onConfirmCallback()
 
     // Assert
