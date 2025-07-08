@@ -105,7 +105,11 @@ describe('deleteTodo', () => {
   })
 
   it('should handle authentication error', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: DeleteTodoInput = {
       id: 'todo-123',
     }
@@ -119,6 +123,9 @@ describe('deleteTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('認証エラー')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle todo not found error', async () => {
@@ -141,7 +148,11 @@ describe('deleteTodo', () => {
   })
 
   it('should handle database error during find', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: DeleteTodoInput = {
       id: 'todo-123',
     }
@@ -156,10 +167,17 @@ describe('deleteTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('Database connection error')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle database error during delete', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const mockUserId = 'user-1'
     const todoId = 'todo-123'
     const existingTodo = {
@@ -193,10 +211,17 @@ describe('deleteTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('Delete failed')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle foreign key constraint error', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const mockUserId = 'user-1'
     const todoId = 'todo-123'
     const existingTodo = {
@@ -236,5 +261,8 @@ describe('deleteTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('データベースエラー: 関連するデータの制約により削除できませんでした。')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 })

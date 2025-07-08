@@ -172,7 +172,11 @@ describe('completeTodo', () => {
   })
 
   it('should handle authentication error', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: CompleteTodoInput = {
       id: 'todo-123',
     }
@@ -186,6 +190,9 @@ describe('completeTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('認証エラー')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle todo not found error', async () => {
@@ -208,7 +215,11 @@ describe('completeTodo', () => {
   })
 
   it('should handle database error during find', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: CompleteTodoInput = {
       id: 'todo-123',
     }
@@ -223,10 +234,17 @@ describe('completeTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('Database connection error')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle database error during update', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const mockUserId = 'user-1'
     const todoId = 'todo-123'
     const existingTodo = {
@@ -251,5 +269,8 @@ describe('completeTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('Update failed')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 })

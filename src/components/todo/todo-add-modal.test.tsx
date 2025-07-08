@@ -26,7 +26,12 @@ vi.mock('@/components/category', () => ({
   }) =>
     opened ? (
       <div data-testid="category-create-modal">
-        <button onClick={() => onCategoryCreated('new-category-id')}>
+        <button
+          onClick={() => {
+            onCategoryCreated('new-category-id')
+            onClose()
+          }}
+        >
           Create Category
         </button>
         <button onClick={onClose}>Close</button>
