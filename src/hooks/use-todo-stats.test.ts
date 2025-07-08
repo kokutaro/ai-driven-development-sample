@@ -10,7 +10,11 @@ import { statsClient } from '@/lib/api/stats-client'
 import { useTodoStore } from '@/stores/todo-store'
 
 // モックの設定
-vi.mock('@/lib/api/stats-client')
+vi.mock('@/lib/api/stats-client', () => ({
+  statsClient: {
+    getTodoStats: vi.fn(),
+  },
+}))
 vi.mock('@/hooks/use-client-only')
 vi.mock('@/stores/todo-store')
 
@@ -33,6 +37,10 @@ describe('useTodoStats', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useClientOnly).mockReturnValue(true)
+    // console.errorをモック化
+    vi.spyOn(console, 'error').mockImplementation(() => {
+      // エラーログを無視
+    })
     // デフォルトのTodoStoreモック
     vi.mocked(useTodoStore).mockReturnValue({
       clearError: vi.fn(),
@@ -50,6 +58,7 @@ describe('useTodoStats', () => {
 
   afterEach(() => {
     vi.resetAllMocks()
+    vi.restoreAllMocks()
   })
 
   it('正常に統計情報を取得する', async () => {
@@ -160,7 +169,9 @@ describe('useTodoStats', () => {
     })
 
     // 再取得を実行
-    result.current.refetch()
+    await waitFor(() => {
+      result.current.refetch()
+    })
 
     await waitFor(() => {
       // 初回(2回) + 手動refetch(1回) = 3回
@@ -334,6 +345,7 @@ describe('useTodoStats', () => {
   })
 
   it('TODO読み込み完了時に統計情報を更新する', async () => {
+    // statsClient.getTodoStatsのモックを確実に設定
     vi.mocked(statsClient.getTodoStats).mockResolvedValue(mockSuccessResponse)
 
     let todoLoading = true
@@ -353,12 +365,21 @@ describe('useTodoStats', () => {
 
     const { rerender } = renderHook(() => useTodoStats())
 
+    // 初回のAPI呼び出しを待つ（todoLoadingがtrueでも初回は呼ばれる）
+    await waitFor(() => {
+      expect(statsClient.getTodoStats).toHaveBeenCalled()
+    })
+
+    // TODO読み込み完了前の呼び出し回数をクリア
+    vi.mocked(statsClient.getTodoStats).mockClear()
+
     // TODO読み込み完了をシミュレート
     todoLoading = false
     rerender()
 
     // 読み込み完了後に統計情報が更新されることを確認
     await waitFor(() => {
+      // todoLoadingがfalseになったことで統計情報が再取得される
       expect(statsClient.getTodoStats).toHaveBeenCalled()
     })
   })

@@ -15,6 +15,20 @@ vi.mock('@tabler/icons-react', () => ({
   IconTrash: () => <div data-testid="icon-trash" />,
 }))
 
+// Mantine modalsのモック
+let mockConfirmCallback: (() => void) | undefined = undefined
+vi.mock('@mantine/modals', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actual = (await importOriginal()) as any
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return {
+    ...actual,
+    openConfirmModal: vi.fn((options: { onConfirm?: () => void }) => {
+      mockConfirmCallback = options.onConfirm
+    }),
+  }
+})
+
 const mockSubTasks: SubTask[] = [
   {
     createdAt: new Date(),
@@ -55,6 +69,7 @@ const mockUseSubTasks = {
 describe('SubTaskList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockConfirmCallback = undefined
     vi.mocked(useSubTasks).mockReturnValue(mockUseSubTasks)
   })
 
@@ -120,13 +135,19 @@ describe('SubTaskList', () => {
 
   it('削除ボタンをクリックして確認すると削除される', async () => {
     // Arrange
-    globalThis.confirm = vi.fn().mockReturnValue(true)
+    mockConfirmCallback = undefined
 
     // Act
     render(<SubTaskList todoId="todo-1" />)
 
     const deleteButtons = screen.getAllByTestId('icon-trash')
     fireEvent.click(deleteButtons[0])
+
+    // Mantine modalのonConfirmを実行
+    expect(mockConfirmCallback).toBeDefined()
+    if (mockConfirmCallback) {
+      ;(mockConfirmCallback as () => void)()
+    }
 
     // Assert
     await waitFor(() => {
@@ -136,13 +157,17 @@ describe('SubTaskList', () => {
 
   it('削除ボタンをクリックしてキャンセルすると削除されない', async () => {
     // Arrange
-    globalThis.confirm = vi.fn().mockReturnValue(false)
+    mockConfirmCallback = undefined
 
     // Act
     render(<SubTaskList todoId="todo-1" />)
 
     const deleteButtons = screen.getAllByTestId('icon-trash')
     fireEvent.click(deleteButtons[0])
+
+    // Mantine modalが開かれたが、onConfirmは呼ばない（キャンセル）
+    expect(mockConfirmCallback).toBeDefined()
+    // onConfirmを呼ばないことでキャンセル動作をシミュレート
 
     // Assert
     expect(mockDeleteSubTask).not.toHaveBeenCalled()

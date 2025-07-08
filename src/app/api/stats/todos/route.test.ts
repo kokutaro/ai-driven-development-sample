@@ -28,6 +28,15 @@ describe('/api/stats/todos', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getCurrentUser).mockResolvedValue(mockUser)
+    // console.errorをモック化
+    vi.spyOn(console, 'error').mockImplementation(() => {
+      // エラーログを無視
+    })
+  })
+
+  afterEach(() => {
+    // モックのリストア
+    vi.restoreAllMocks()
   })
 
   it('認証されていないユーザーは401エラーを返す', async () => {
