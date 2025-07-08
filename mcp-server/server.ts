@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { pathToFileURL } from 'node:url'
 
 import { createTodoInputSchema, listTodosInputSchema } from './schemas/todo-mcp'
 import { createTodo, listTodos } from './tools'
@@ -116,8 +117,9 @@ export class TodoMcpServer {
 /**
  * サーバーをスタンドアロンで実行
  * NOTE: この部分はスタンドアロン実行時のみ評価される
+ * ESモジュール環境では import.meta.url を使用して実行判定を行う
  */
-if (typeof require !== 'undefined' && require.main === module) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const server = new TodoMcpServer()
   server.start().catch((error) => {
     console.error('Failed to start MCP server:', error)
