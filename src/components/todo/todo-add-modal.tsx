@@ -1,4 +1,7 @@
+import { useMemo, useState } from 'react'
+
 import {
+  ActionIcon,
   Button,
   Group,
   Modal,
@@ -9,10 +12,13 @@ import {
   TextInput,
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
-import { IconCalendar, IconStar } from '@tabler/icons-react'
+import { IconCalendar, IconPlus, IconStar } from '@tabler/icons-react'
 
 import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
+import type { Category } from '@/types/todo'
+
+import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
 
@@ -32,7 +38,9 @@ interface TodoAddModalProps {
  */
 export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
   const { createTodo } = useTodoStore()
-  const { categories } = useCategories()
+  const { categories, setCategories } = useCategories()
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [selectKey, setSelectKey] = useState(0)
 
   const form = useForm({
     initialValues: {
@@ -63,10 +71,25 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
     }
   }
 
-  const categoryOptions = categories.map((category) => ({
-    label: category.name,
-    value: category.id,
-  }))
+  const handleCategoryCreated = async (newCategory: Category) => {
+    // 1. categories 配列に新しいカテゴリを直接追加
+    setCategories((prev) => [...prev, newCategory])
+
+    // 2. フォームに選択値を設定
+    form.setFieldValue('categoryId', newCategory.id)
+
+    // 3. Select を強制再レンダリング
+    setSelectKey((prev) => prev + 1)
+  }
+
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        label: category.name,
+        value: category.id,
+      })),
+    [categories]
+  )
 
   return (
     <Modal
@@ -107,13 +130,25 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
             {...form.getInputProps('isImportant')}
           />
 
-          <Select
-            clearable
-            data={categoryOptions}
-            label="カテゴリ"
-            placeholder="カテゴリを選択..."
-            {...form.getInputProps('categoryId')}
-          />
+          <Group align="end" gap="xs">
+            <Select
+              clearable
+              data={categoryOptions}
+              key={`categories-${selectKey}-${categories.length}-${form.values.categoryId}`}
+              label="カテゴリ"
+              placeholder="カテゴリを選択..."
+              style={{ flex: 1 }}
+              {...form.getInputProps('categoryId')}
+            />
+            <ActionIcon
+              aria-label="新しいカテゴリを作成"
+              onClick={() => setIsCategoryModalOpen(true)}
+              size="lg"
+              variant="light"
+            >
+              <IconPlus size={16} />
+            </ActionIcon>
+          </Group>
 
           <Group justify="flex-end" mt="md">
             <Button onClick={onClose} variant="subtle">
@@ -123,6 +158,12 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
           </Group>
         </Stack>
       </form>
+
+      <CategoryCreateModal
+        onCategoryCreated={handleCategoryCreated}
+        onClose={() => setIsCategoryModalOpen(false)}
+        opened={isCategoryModalOpen}
+      />
     </Modal>
   )
 }

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KanbanBoard } from './kanban-board'
@@ -263,7 +263,9 @@ describe('KanbanBoard', () => {
       }
 
       // Act
-      mockOnDragStart(dragStartEvent)
+      act(() => {
+        mockOnDragStart(dragStartEvent)
+      })
 
       // Assert - activeIdとactiveTaskが設定されることを確認
       // DragOverlayにactiveTaskが表示されることで確認
@@ -287,7 +289,9 @@ describe('KanbanBoard', () => {
       }
 
       // Act
-      mockOnDragStart(dragStartEvent)
+      act(() => {
+        mockOnDragStart(dragStartEvent)
+      })
 
       // Assert - activeTaskが設定されないことを確認
       expect(screen.getByTestId('drag-overlay')).toBeInTheDocument()
@@ -593,7 +597,9 @@ describe('KanbanBoard', () => {
       }
 
       // Act
-      mockOnDragStart(dragStartEvent)
+      act(() => {
+        mockOnDragStart(dragStartEvent)
+      })
 
       // Assert
       expect(screen.getByTestId('drag-overlay')).toBeInTheDocument()
@@ -622,7 +628,11 @@ describe('KanbanBoard', () => {
 
   describe('エッジケース', () => {
     it('moveToKanbanColumnでエラーが発生しても適切に処理される', async () => {
-      // Arrange
+      // Arrange - エラーログを抑制
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // テスト中のエラーログを抑制
+      })
+
       Object.assign(mockKanbanStore, {
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
@@ -670,6 +680,9 @@ describe('KanbanBoard', () => {
       expect(() => {
         mockOnDragEnd(dragEndEvent)
       }).not.toThrow()
+
+      // Cleanup
+      consoleSpy.mockRestore()
     })
 
     it('複数のカラムを正しく表示する', () => {

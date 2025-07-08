@@ -145,6 +145,7 @@ const eslintConfig = tseslint.config(
       '**/public/**',
       '**/coverage/**',
       '**/mcp-server/**',
+      '**/.yarn/**',
     ],
   }
 )

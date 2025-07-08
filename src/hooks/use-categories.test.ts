@@ -435,10 +435,12 @@ describe('useCategories', () => {
 
       // Act
       await act(async () => {
-        await result.current.createCategory({
-          color: '#123456',
-          name: 'テスト',
-        })
+        await expect(
+          result.current.createCategory({
+            color: '#123456',
+            name: 'テスト',
+          })
+        ).rejects.toThrow('カテゴリの作成に失敗しました')
       })
 
       // Assert

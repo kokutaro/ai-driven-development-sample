@@ -107,7 +107,11 @@ describe('createTodo', () => {
   })
 
   it('should handle authentication error', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: CreateTodoInput = {
       title: 'テストタスク',
     }
@@ -121,10 +125,17 @@ describe('createTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('認証エラー')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle database error', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: CreateTodoInput = {
       title: 'テストタスク',
     }
@@ -139,6 +150,9 @@ describe('createTodo', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('Database error')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should create todo with minimal input', async () => {

@@ -116,7 +116,11 @@ describe('listTodos', () => {
   })
 
   it('should handle authentication error', async () => {
-    // Arrange
+    // Arrange - エラーログを抑制
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      // テスト中のエラーログを抑制
+    })
+
     const input: ListTodosInput = {
       filter: 'all',
       page: 1,
@@ -134,6 +138,9 @@ describe('listTodos', () => {
     expect(result.content).toHaveLength(1)
     expect(result.content[0].text).toContain('認証エラー')
     expect(result.isError).toBe(true)
+
+    // Cleanup
+    consoleSpy.mockRestore()
   })
 
   it('should handle filter conditions correctly', async () => {

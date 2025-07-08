@@ -1,5 +1,4 @@
-import { TodoDetailPanel } from './todo-detail-panel'
-
+/* eslint-disable import/order */
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
 import { fireEvent, render, screen, waitFor } from '@/test-utils'
@@ -17,9 +16,12 @@ vi.mock('@/hooks/use-categories', () => ({
 // Tabler iconsのモック
 vi.mock('@tabler/icons-react', () => ({
   IconCalendar: () => <div data-testid="icon-calendar" />,
+  IconPalette: () => <div data-testid="icon-palette" />,
   IconPlus: () => <div data-testid="icon-plus" />,
   IconStar: () => <div data-testid="icon-star" />,
 }))
+
+import { TodoDetailPanel } from './todo-detail-panel'
 
 const mockUpdateTodo = vi.fn()
 const mockTodoStore = {
@@ -52,6 +54,7 @@ const mockUseCategories = {
   deleteCategory: vi.fn(),
   error: undefined,
   isLoading: false,
+  setCategories: vi.fn(),
   updateCategory: vi.fn(),
 }
 

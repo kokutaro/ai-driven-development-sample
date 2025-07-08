@@ -504,7 +504,11 @@ describe('/api/todos/[id]/move-to-column', () => {
       })
 
       it('JSONパースエラーの場合500を返す', async () => {
-        // Arrange
+        // Arrange - エラーログを抑制
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+          // テスト中のエラーログを抑制
+        })
+
         const request = new NextRequest(
           'http://localhost:3000/api/todos/todo-1/move-to-column',
           {
@@ -524,10 +528,16 @@ describe('/api/todos/[id]/move-to-column', () => {
         expect(data.success).toBe(false)
         expect(data.error.code).toBe('INTERNAL_SERVER_ERROR')
         expect(data.error.message).toBe('サーバーエラーが発生しました')
+
+        // Cleanup
+        consoleSpy.mockRestore()
       })
 
       it('データベースエラーの場合500を返す', async () => {
-        // Arrange
+        // Arrange - エラーログを抑制
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+          // テスト中のエラーログを抑制
+        })
         mockTodoFindFirst.mockRejectedValue(new Error('Database error'))
 
         const request = new NextRequest(
@@ -551,10 +561,16 @@ describe('/api/todos/[id]/move-to-column', () => {
         expect(data.success).toBe(false)
         expect(data.error.code).toBe('INTERNAL_SERVER_ERROR')
         expect(data.error.message).toBe('サーバーエラーが発生しました')
+
+        // Cleanup
+        consoleSpy.mockRestore()
       })
 
       it('Prisma updateエラーの場合500を返す', async () => {
-        // Arrange
+        // Arrange - エラーログを抑制
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+          // テスト中のエラーログを抑制
+        })
         mockTodoFindFirst.mockResolvedValueOnce(mockTodo)
         mockKanbanColumnFindFirst.mockResolvedValue(mockKanbanColumn)
         mockTodoFindFirst.mockResolvedValueOnce(null)
@@ -581,6 +597,9 @@ describe('/api/todos/[id]/move-to-column', () => {
         expect(data.success).toBe(false)
         expect(data.error.code).toBe('INTERNAL_SERVER_ERROR')
         expect(data.error.message).toBe('サーバーエラーが発生しました')
+
+        // Cleanup
+        consoleSpy.mockRestore()
       })
     })
 

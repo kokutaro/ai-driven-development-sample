@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { categoryClient } from '@/lib/api/category-client'
@@ -7,11 +8,12 @@ interface UseCategoriesReturn {
   categories: Category[]
   clearError: () => void
   // Actions
-  createCategory: (data: { color: string; name: string }) => Promise<void>
+  createCategory: (data: { color: string; name: string }) => Promise<Category>
 
   deleteCategory: (id: string) => Promise<void>
   error: string | undefined
   isLoading: boolean
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>
   updateCategory: (
     id: string,
     data: { color?: string; name?: string }
@@ -56,14 +58,16 @@ export function useCategories(): UseCategoriesReturn {
 
   // 新しいカテゴリを作成
   const createCategory = useCallback(
-    async (data: { color: string; name: string }) => {
+    async (data: { color: string; name: string }): Promise<Category> => {
       setError(undefined)
 
       try {
         const response = await categoryClient.createCategory(data)
         setCategories((prev) => [...prev, response.data])
+        return response.data
       } catch {
         setError('カテゴリの作成に失敗しました')
+        throw new Error('カテゴリの作成に失敗しました')
       }
     },
     []
@@ -112,6 +116,7 @@ export function useCategories(): UseCategoriesReturn {
     deleteCategory,
     error,
     isLoading,
+    setCategories,
     updateCategory,
   }
 }

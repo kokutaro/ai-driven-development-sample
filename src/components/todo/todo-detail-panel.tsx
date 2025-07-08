@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
+  ActionIcon,
   Button,
   Divider,
   Group,
@@ -16,9 +17,10 @@ import { IconCalendar, IconPlus, IconStar } from '@tabler/icons-react'
 
 import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
+import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
-import { type Todo } from '@/types/todo'
+import { type Category, type Todo } from '@/types/todo'
 
 interface TodoDetailPanelProps {
   todo: Todo
@@ -35,7 +37,9 @@ interface TodoDetailPanelProps {
  */
 export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
   const { updateTodo } = useTodoStore()
-  const { categories } = useCategories()
+  const { categories, setCategories } = useCategories()
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [selectKey, setSelectKey] = useState(0)
 
   const form = useForm({
     initialValues: {
@@ -186,10 +190,28 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
     }
   }
 
-  const categoryOptions = categories.map((category) => ({
-    label: category.name,
-    value: category.id,
-  }))
+  const handleCategoryCreated = async (newCategory: Category) => {
+    // 1. categories 配列に新しいカテゴリを直接追加
+    setCategories((prev) => [...prev, newCategory])
+
+    // 2. フォームに選択値を設定
+    form.setFieldValue('categoryId', newCategory.id)
+
+    // 3. 実際のTODO更新も実行
+    void handleFieldChange('categoryId', newCategory.id)
+
+    // 4. Select を強制再レンダリング
+    setSelectKey((prev) => prev + 1)
+  }
+
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        label: category.name,
+        value: category.id,
+      })),
+    [categories]
+  )
 
   return (
     <Stack gap="md" p="md">
@@ -234,16 +256,28 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         thumbIcon={<IconStar size={12} />}
       />
 
-      <Select
-        clearable
-        data={categoryOptions}
-        label="カテゴリ"
-        onChange={(value) =>
-          handleFieldChange('categoryId', value ?? undefined)
-        }
-        placeholder="カテゴリを選択..."
-        value={form.values.categoryId}
-      />
+      <Group align="end" gap="xs">
+        <Select
+          clearable
+          data={categoryOptions}
+          key={`categories-${selectKey}-${categories.length}-${form.values.categoryId}`}
+          label="カテゴリ"
+          onChange={(value) =>
+            handleFieldChange('categoryId', value ?? undefined)
+          }
+          placeholder="カテゴリを選択..."
+          style={{ flex: 1 }}
+          value={form.values.categoryId}
+        />
+        <ActionIcon
+          aria-label="新しいカテゴリを作成"
+          onClick={() => setIsCategoryModalOpen(true)}
+          size="lg"
+          variant="light"
+        >
+          <IconPlus size={16} />
+        </ActionIcon>
+      </Group>
 
       <Divider />
 
@@ -260,6 +294,12 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         </Group>
         {/* サブタスクリストは後で実装 */}
       </Stack>
+
+      <CategoryCreateModal
+        onCategoryCreated={handleCategoryCreated}
+        onClose={() => setIsCategoryModalOpen(false)}
+        opened={isCategoryModalOpen}
+      />
     </Stack>
   )
 }
