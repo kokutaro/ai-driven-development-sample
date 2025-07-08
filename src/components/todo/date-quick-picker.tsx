@@ -36,7 +36,7 @@ interface DateQuickPickerProps {
   /**
    * 日付が選択された時のコールバック関数
    */
-  onChange: (date: Date | null) => void
+  onChange: (date: Date | undefined) => void
 }
 
 /**
@@ -46,7 +46,6 @@ interface DateQuickPickerProps {
  * 選択された日付は23:59:59に設定されます。
  */
 export function DateQuickPicker({ onChange }: DateQuickPickerProps) {
-
   /**
    * 今日ボタンクリック時の処理
    */

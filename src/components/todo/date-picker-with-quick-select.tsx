@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-null */
 import { Stack } from '@mantine/core'
 import { DatePickerInput, type DatePickerInputProps } from '@mantine/dates'
 
@@ -8,11 +9,11 @@ interface DatePickerWithQuickSelectProps
   /**
    * 日付が変更された時のコールバック関数
    */
-  onChange: (date: Date | null) => void
+  onChange: (date: Date | undefined) => void
   /**
    * 現在選択されている日付
    */
-  value?: Date | null
+  value?: Date | undefined
 }
 
 /**
@@ -30,16 +31,16 @@ export function DatePickerWithQuickSelect({
    * DatePickerInputのonChangeハンドラー
    * DatePickerInputは文字列またはnullを渡すため、Dateオブジェクトまたはnullに変換する
    */
-  const handleDatePickerChange = (dateString: string | null) => {
+  const handleDatePickerChange = (dateString: null | string) => {
     if (dateString === null) {
-      onChange(null)
+      onChange(undefined)
     } else {
       const date = new Date(dateString)
       // 無効な日付でないかチェック
-      if (!Number.isNaN(date.getTime())) {
-        onChange(date)
+      if (Number.isNaN(date.getTime())) {
+        onChange(undefined)
       } else {
-        onChange(null)
+        onChange(date)
       }
     }
   }

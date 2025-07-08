@@ -27,7 +27,7 @@ describe('DatePickerWithQuickSelect', () => {
     renderWithProviders(
       <DatePickerWithQuickSelect
         label="期限日"
-        onChange={mockOnChange}
+        onChange={mockOnChange as (date: Date | undefined) => void}
         placeholder="期限日を選択..."
       />
     )
@@ -58,7 +58,7 @@ describe('DatePickerWithQuickSelect', () => {
       <DatePickerWithQuickSelect
         clearable
         label="期限日"
-        onChange={mockOnChange}
+        onChange={mockOnChange as (date: Date | undefined) => void}
         placeholder="期限日を選択..."
       />
     )
