@@ -171,6 +171,16 @@ export async function PUT(
       return createValidationErrorResponse(error.errors)
     }
 
+    if (error instanceof TypeError && error.message.includes('Invalid date')) {
+      return createValidationErrorResponse([
+        {
+          code: 'invalid_date',
+          message: 'Invalid date format',
+          path: ['dueDate'],
+        },
+      ])
+    }
+
     if (error instanceof Error && error.message === '認証が必要です') {
       return createErrorResponse('UNAUTHORIZED', '認証が必要です', 401)
     }

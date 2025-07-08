@@ -101,9 +101,7 @@ export async function POST(request: NextRequest) {
     const todo = await prisma.todo.create({
       data: {
         ...validatedData,
-        dueDate: validatedData.dueDate
-          ? new Date(validatedData.dueDate)
-          : undefined,
+        dueDate: validatedData.dueDate ?? undefined,
         userId,
       },
       include: {
@@ -121,6 +119,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return createValidationErrorResponse(error.errors)
+    }
+
+    if (error instanceof TypeError && error.message.includes('Invalid date')) {
+      return createValidationErrorResponse([
+        {
+          code: 'invalid_date',
+          message: 'Invalid date format',
+          path: ['dueDate'],
+        },
+      ])
     }
 
     if (error instanceof Error && error.message === '認証が必要です') {
