@@ -13,6 +13,10 @@ interface TodoStore {
   // Actions
   fetchTodos: (filter?: string) => Promise<void>
   isLoading: boolean
+  moveToKanbanColumn: (
+    todoId: string,
+    kanbanColumnId: null | string
+  ) => Promise<void>
   reset: () => void
   todos: Todo[]
   toggleTodo: (id: string) => Promise<void>
@@ -87,6 +91,44 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   },
 
   isLoading: false,
+
+  moveToKanbanColumn: async (todoId, kanbanColumnId) => {
+    try {
+      const response = await fetch(`/api/todos/${todoId}/move-to-column`, {
+        body: JSON.stringify({ kanbanColumnId }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'PATCH',
+      })
+
+      if (!response.ok) {
+        throw new Error('タスクの移動に失敗しました')
+      }
+
+      const responseData = await response.json()
+      const updatedTodo = responseData.data as Todo
+
+      // 更新されたtodoの妥当性を検証
+      if (
+        !updatedTodo ||
+        typeof updatedTodo.id !== 'string' ||
+        !updatedTodo.title
+      ) {
+        throw new Error('APIから無効なtodoデータが返されました')
+      }
+
+      set((state) => ({
+        todos: state.todos.map((todo) =>
+          todo.id === todoId ? { ...todo, ...updatedTodo } : todo
+        ),
+      }))
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'タスクの移動に失敗しました'
+      set({ error: errorMessage })
+    }
+  },
 
   reset: () =>
     set({

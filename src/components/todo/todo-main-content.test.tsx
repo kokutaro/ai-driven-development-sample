@@ -59,8 +59,19 @@ vi.mock('@tabler/icons-react', () => ({
   IconSortDescending: () => <div data-testid="icon-sort" />,
 }))
 
+// ViewToggleコンポーネントのモック
+vi.mock('@/components/ui/view-toggle', () => ({
+  ViewToggle: () => <div data-testid="view-toggle">View Toggle</div>,
+}))
+
+// KanbanBoardコンポーネントのモック
+vi.mock('@/components/kanban/kanban-board', () => ({
+  KanbanBoard: () => <div data-testid="kanban-board">Kanban Board</div>,
+}))
+
 const mockUiStore = {
   selectedFilter: 'all',
+  viewMode: 'list' as const,
 }
 
 const mockTodos = [
@@ -300,5 +311,44 @@ describe('TodoMainContent', () => {
     // Assert - Groupコンテナが存在（タイトルと並び替えオプション）
     const groupElements = document.querySelectorAll('.mantine-Group-root')
     expect(groupElements.length).toBeGreaterThan(0)
+  })
+
+  it('Kanbanビューの場合はKanbanBoardが表示される', () => {
+    // Arrange
+    vi.mocked(useUiStore).mockReturnValue({
+      selectedFilter: 'all',
+      viewMode: 'kanban' as const,
+    })
+
+    // Act
+    render(<TodoMainContent />)
+
+    // Assert
+    expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
+    expect(screen.queryByTestId('todo-list')).not.toBeInTheDocument()
+  })
+
+  it('リストビューの場合はTodoListとタスク追加ボタンが表示される', () => {
+    // Arrange
+    vi.mocked(useUiStore).mockReturnValue({
+      selectedFilter: 'all',
+      viewMode: 'list' as const,
+    })
+
+    // Act
+    render(<TodoMainContent />)
+
+    // Assert
+    expect(screen.getByTestId('todo-list')).toBeInTheDocument()
+    expect(screen.getByText('タスクの追加')).toBeInTheDocument()
+    expect(screen.queryByTestId('kanban-board')).not.toBeInTheDocument()
+  })
+
+  it('ViewToggleコンポーネントが表示される', () => {
+    // Act
+    render(<TodoMainContent />)
+
+    // Assert
+    expect(screen.getByTestId('view-toggle')).toBeInTheDocument()
   })
 })
