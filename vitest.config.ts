@@ -19,6 +19,7 @@ export default defineConfig({
         '**/index.ts',
         'src/types/**/*.ts',
         'src/app/**/*.tsx', // Next.js App Router pages
+        'mcp-server/**/*', // MCP server code
       ],
       include: ['src/**/*.{ts,tsx}'],
       reporter: ['text', 'json', 'lcov', 'html'],

@@ -30,7 +30,8 @@
     "dist/**/*",
     "build/**/*",
     "out/**/*",
-    "public/**/*"
+    "public/**/*",
+    "mcp-server/**/*"
   ],
   "include": [
     "**/*.ts",
