@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Prismaクライアントのモック
+import './__mocks__/prisma'
+
 // window.matchMedia のモック
 Object.defineProperty(globalThis, 'matchMedia', {
   value: vi.fn().mockImplementation((query) => ({
@@ -31,6 +34,11 @@ const suppressedErrorMessages = [
   'TODO取得エラー:',
   'TODO完了状態切り替えエラー:',
   'タスク作成エラー:',
+  'Kanbanカラム取得エラー:',
+  'Kanbanカラム作成エラー:',
+  'Kanbanカラム更新エラー:',
+  'Kanbanカラム削除エラー:',
+  'Kanbanカラム並び替えエラー:',
 ]
 
 console.error = (...args: unknown[]) => {

@@ -6,7 +6,9 @@ import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 
 const reorderKanbanColumnsSchema = z.object({
-  columnIds: z.array(z.string().min(1, 'カラムIDは必須です')),
+  columnIds: z
+    .array(z.string().min(1, 'カラムIDは必須です'))
+    .min(1, 'カラムIDの配列は空にできません'),
 })
 
 /**
