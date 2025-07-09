@@ -12,10 +12,11 @@
 4. For the coding, follow the @ai-rules/coding-guidelines.md to write the robust and well structured code.
 5. Show implementation plan to user
 6. When user approve, do the task
-7. Do `yarn format`, `yarn lint`, `yarn typecheck`, `yarn test`
-8. Commit the changes if all checks in before are passed.
-9. Push to the remote
-10. Create PR
+7. Every code change, use MCP:ESLint to lint the code which you have modified.
+8. Do `yarn format`, `yarn lint`, `yarn typecheck`, `yarn test`
+9. Commit the changes if all checks in before are passed.
+10. Push to the remote
+11. Create PR
 
 ## Note
 
