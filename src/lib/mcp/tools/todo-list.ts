@@ -1,76 +1,85 @@
-import type { ListTodosInput } from '../schemas/todo-mcp'
-import { mcpPrisma } from '../lib/db'
-import { getUserId } from '../lib/auth'
-import { buildFilterConditions, getFilterDisplayName } from '../lib/todo-filters'
+import { listTodosInputSchema } from '../schemas/todo-mcp'
+
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { buildFilterConditions } from '@/lib/todo-filters'
 
 /**
  * TODO一覧取得ツール
- * 
+ *
  * データベースから実際のTODOを取得します。
  * フィルタリング、ソート、ページネーション機能を提供し、
  * Webアプリケーションと同じ機能を実現します。
  */
-export async function listTodos(params: ListTodosInput) {
+export async function listTodos(params: Record<string, unknown>) {
   try {
+    // パラメータのバリデーション
+    const validatedParams = listTodosInputSchema.parse(params)
+
     // 認証チェック
-    const userId = await getUserId()
+    const user = await getCurrentUser()
+    if (!user) {
+      throw new Error('認証が必要です')
+    }
 
     // フィルタ条件を構築
-    const filterConditions = buildFilterConditions(params.filter)
-    
+    const filterConditions = buildFilterConditions(validatedParams.filter)
+
     // WHERE句を構築
     const where = {
-      userId,
+      userId: user.id,
       ...filterConditions,
-      ...(params.categoryId && { categoryId: params.categoryId }),
+      ...(validatedParams.categoryId && {
+        categoryId: validatedParams.categoryId,
+      }),
     }
 
     // ソート条件を構築
     const orderBy = {
-      [params.sortBy]: params.sortOrder,
+      [validatedParams.sortBy]: validatedParams.sortOrder,
     }
 
     // データベースからTODOを取得
     const [todos, total] = await Promise.all([
-      mcpPrisma.todo.findMany({
-        where,
+      prisma.todo.findMany({
         include: {
           category: {
             select: {
+              color: true,
               id: true,
               name: true,
-              color: true,
             },
           },
           subTasks: {
-            select: {
-              id: true,
-              title: true,
-              isCompleted: true,
-            },
             orderBy: {
               order: 'asc',
+            },
+            select: {
+              id: true,
+              isCompleted: true,
+              title: true,
             },
           },
         },
         orderBy,
-        skip: (params.page - 1) * params.limit,
-        take: params.limit,
+        skip: (validatedParams.page - 1) * validatedParams.limit,
+        take: validatedParams.limit,
+        where,
       }),
-      mcpPrisma.todo.count({ where }),
+      prisma.todo.count({ where }),
     ])
 
     // ページネーション情報
     const pagination = {
-      page: params.page,
-      limit: params.limit,
+      hasNext: validatedParams.page * validatedParams.limit < total,
+      hasPrev: validatedParams.page > 1,
+      limit: validatedParams.limit,
+      page: validatedParams.page,
       total,
-      totalPages: Math.ceil(total / params.limit),
-      hasNext: params.page * params.limit < total,
-      hasPrev: params.page > 1,
+      totalPages: Math.ceil(total / validatedParams.limit),
     }
 
-    const filterDisplayName = getFilterDisplayName(params.filter)
+    const filterDisplayName = getFilterDisplayName(validatedParams.filter)
 
     // レスポンス作成
     const todoList = todos
@@ -81,9 +90,10 @@ export async function listTodos(params: ListTodosInput) {
           ? `期限: ${new Date(todo.dueDate).toLocaleDateString('ja-JP')}`
           : ''
         const categoryText = todo.category ? `[${todo.category.name}]` : ''
-        const subTasksText = todo.subTasks.length > 0 
-          ? `サブタスク: ${todo.subTasks.filter(st => st.isCompleted).length}/${todo.subTasks.length}完了`
-          : ''
+        const subTasksText =
+          todo.subTasks.length > 0
+            ? `サブタスク: ${todo.subTasks.filter((st) => st.isCompleted).length}/${todo.subTasks.length}完了`
+            : ''
 
         return `${statusIcon} **${todo.title}** ${importantIcon} ${categoryText}
 ${todo.description ? `   ${todo.description}` : ''}
@@ -103,12 +113,16 @@ ${subTasksText ? `   ${subTasksText}` : ''}
 
 ${todoList || 'TODOが見つかりませんでした。'}
 
-${pagination.totalPages > 1 ? `
+${
+  pagination.totalPages > 1
+    ? `
 **ページネーション**:
 - 現在: ${pagination.page}/${pagination.totalPages}ページ
 - 前のページ: ${pagination.hasPrev ? '有' : '無'}
 - 次のページ: ${pagination.hasNext ? '有' : '無'}
-` : ''}
+`
+    : ''
+}
 
 データベースから取得した実際のTODOデータです。`,
           type: 'text' as const,
@@ -117,16 +131,14 @@ ${pagination.totalPages > 1 ? `
     }
   } catch (error) {
     console.error('TODO一覧取得エラー:', error)
-    
+
     // エラーの種類に応じたメッセージ
     let errorMessage = 'TODO一覧の取得に失敗しました。'
-    
+
     if (error instanceof Error) {
-      if (error.message.includes('認証が必要です')) {
-        errorMessage = '認証エラー: ユーザー認証に失敗しました。'
-      } else {
-        errorMessage = `エラー: ${error.message}`
-      }
+      errorMessage = error.message.includes('認証が必要です')
+        ? '認証エラー: ユーザー認証に失敗しました。'
+        : `エラー: ${error.message}`
     }
 
     return {
@@ -139,4 +151,21 @@ ${pagination.totalPages > 1 ? `
       isError: true,
     }
   }
+}
+
+/**
+ * フィルタ名の表示用ラベルを取得
+ */
+function getFilterDisplayName(filter: string): string {
+  const displayNames: Record<string, string> = {
+    all: 'すべて',
+    assigned: '自分に割り当て',
+    completed: '完了済み',
+    flagged: 'フラグ付き',
+    important: '重要',
+    today: '今日',
+    upcoming: '今後の予定',
+  }
+
+  return displayNames[filter] || filter
 }
