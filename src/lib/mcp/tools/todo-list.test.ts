@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { listTodos } from './todo-list'
 
 import type { ListTodosInput } from '../schemas/todo-mcp'
+import type { Todo } from '@prisma/client'
 
 // モックの設定
 vi.mock('@/lib/db', () => ({
@@ -22,28 +23,14 @@ vi.mock('@/lib/todo-filters', () => ({
   buildFilterConditions: vi.fn(),
 }))
 
-const mockPrisma = {
-  todo: {
-    count: vi.fn(),
-    findMany: vi.fn(),
-  },
-}
+const { prisma } = await import('@/lib/db')
+const { getCurrentUser } = await import('@/lib/auth')
+const { buildFilterConditions } = await import('@/lib/todo-filters')
 
-const mockGetCurrentUser = vi.fn()
-const mockBuildFilterConditions = vi.fn()
-
-// モックされたモジュール関数を取得
-vi.doMock('@/lib/db', () => ({
-  prisma: mockPrisma,
-}))
-
-vi.doMock('@/lib/auth', () => ({
-  getCurrentUser: mockGetCurrentUser,
-}))
-
-vi.doMock('@/lib/todo-filters', () => ({
-  buildFilterConditions: mockBuildFilterConditions,
-}))
+const mockPrismaFindMany = vi.mocked(prisma.todo.findMany)
+const mockPrismaCount = vi.mocked(prisma.todo.count)
+const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockBuildFilterConditions = vi.mocked(buildFilterConditions)
 
 describe('listTodos', () => {
   beforeEach(() => {
@@ -67,18 +54,27 @@ describe('listTodos', () => {
     updatedAt: new Date(),
   }
 
-  const mockTodos = [
+  const mockTodos: Array<
+    Todo & {
+      category: null | { color: string; id: string; name: string }
+      subTasks: Array<{ id: string; isCompleted: boolean; title: string }>
+    }
+  > = [
     {
       category: {
         color: '#FF6B6B',
         id: 'cat-1',
         name: '仕事',
       },
+      categoryId: 'cat-1',
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
       description: 'テスト用のタスクです',
       dueDate: new Date('2024-01-31'),
       id: 'todo-1',
       isCompleted: false,
       isImportant: true,
+      kanbanColumnId: null,
+      order: 0,
       subTasks: [
         {
           id: 'sub-1',
@@ -92,24 +88,32 @@ describe('listTodos', () => {
         },
       ],
       title: 'テストタスク1',
+      updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+      userId: mockUser.id,
     },
     {
-      category: undefined,
-      description: undefined,
-      dueDate: undefined,
+      category: null,
+      categoryId: null,
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      description: null,
+      dueDate: null,
       id: 'todo-2',
       isCompleted: true,
       isImportant: false,
+      kanbanColumnId: null,
+      order: 1,
       subTasks: [],
       title: 'テストタスク2',
+      updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+      userId: mockUser.id,
     },
   ]
 
   it('正常なパラメータで TODO 一覧を取得できる', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findMany.mockResolvedValue(mockTodos)
-    mockPrisma.todo.count.mockResolvedValue(2)
+    mockPrismaFindMany.mockResolvedValue(mockTodos)
+    mockPrismaCount.mockResolvedValue(2)
 
     // Act
     const result = await listTodos(defaultParams)
@@ -147,20 +151,20 @@ describe('listTodos', () => {
       isCompleted: false,
       isImportant: true,
     })
-    mockPrisma.todo.findMany.mockResolvedValue([])
-    mockPrisma.todo.count.mockResolvedValue(0)
+    mockPrismaFindMany.mockResolvedValue([])
+    mockPrismaCount.mockResolvedValue(0)
 
     // Act
     await listTodos(paramsWithFilter)
 
     // Assert
-    expect(mockPrisma.todo.findMany).toHaveBeenCalledWith(
+    expect(mockPrismaFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
+        where: expect.objectContaining({
           categoryId: 'cat-1',
           isImportant: true,
           userId: mockUser.id,
-        },
+        }),
       })
     )
   })
@@ -174,8 +178,8 @@ describe('listTodos', () => {
     }
 
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findMany.mockResolvedValue([])
-    mockPrisma.todo.count.mockResolvedValue(25)
+    mockPrismaFindMany.mockResolvedValue([])
+    mockPrismaCount.mockResolvedValue(25)
 
     // Act
     const result = await listTodos(paramsWithPagination)
@@ -189,7 +193,7 @@ describe('listTodos', () => {
   it('データベースエラーが発生した場合はエラーを返す', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findMany.mockRejectedValue(new Error('Database error'))
+    mockPrismaFindMany.mockRejectedValue(new Error('Database error'))
 
     // Act
     const result = await listTodos(defaultParams)
@@ -202,8 +206,8 @@ describe('listTodos', () => {
   it('TODO が見つからない場合は適切なメッセージを表示', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findMany.mockResolvedValue([])
-    mockPrisma.todo.count.mockResolvedValue(0)
+    mockPrismaFindMany.mockResolvedValue([])
+    mockPrismaCount.mockResolvedValue(0)
 
     // Act
     const result = await listTodos(defaultParams)

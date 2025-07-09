@@ -46,9 +46,18 @@ describe('completeTodo', () => {
     category: {
       name: '仕事',
     },
+    categoryId: null,
+    createdAt: new Date(),
+    description: null,
+    dueDate: null,
     id: 'todo-1',
     isCompleted: false,
+    isImportant: false,
+    kanbanColumnId: null,
+    order: 0,
     title: 'テストタスク',
+    updatedAt: new Date(),
+    userId: mockUser.id,
   }
 
   it('未完了の TODO を完了にできる', async () => {
@@ -107,7 +116,7 @@ describe('completeTodo', () => {
     const result = await completeTodo(params)
 
     // Assert
-    expect(mockPrisma.todo.update).toHaveBeenCalledWith({
+    expect(mockPrismaUpdate).toHaveBeenCalledWith({
       data: {
         isCompleted: false,
       },
