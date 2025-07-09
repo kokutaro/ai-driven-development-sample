@@ -10,7 +10,6 @@ import { useForm } from '@mantine/form'
 import { zodResolver } from 'mantine-form-zod-resolver'
 import { z } from 'zod'
 
-
 import { useKanbanStore } from '@/stores/kanban-store'
 
 const kanbanColumnSchema = z.object({
@@ -71,12 +70,13 @@ export function KanbanColumnAddModal({
       size="md"
       title="新しいカラムを追加"
     >
-      <form onSubmit={form.onSubmit(handleSubmit)}>
+      <form noValidate onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="md">
           <TextInput
             label="カラム名"
             placeholder="例: To Do, In Progress, Done"
             required
+            withAsterisk={false}
             {...form.getInputProps('name')}
           />
 
@@ -101,6 +101,7 @@ export function KanbanColumnAddModal({
               '#fab005',
               '#fd7e14',
             ]}
+            withAsterisk={false}
             {...form.getInputProps('color')}
           />
 
