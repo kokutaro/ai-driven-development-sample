@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTodo } from './todo-create'
 
 import type { CreateTodoInput } from '../schemas/todo-mcp'
+import type { Todo } from '@prisma/client'
 
 // モックの設定
 vi.mock('@/lib/db', () => ({
@@ -17,22 +18,11 @@ vi.mock('@/lib/auth', () => ({
   getCurrentUser: vi.fn(),
 }))
 
-const mockPrisma = {
-  todo: {
-    create: vi.fn(),
-  },
-}
+const { prisma } = await import('@/lib/db')
+const { getCurrentUser } = await import('@/lib/auth')
 
-const mockGetCurrentUser = vi.fn()
-
-// モックされたモジュール関数を取得
-vi.doMock('@/lib/db', () => ({
-  prisma: mockPrisma,
-}))
-
-vi.doMock('@/lib/auth', () => ({
-  getCurrentUser: mockGetCurrentUser,
-}))
+const mockPrismaCreate = vi.mocked(prisma.todo.create)
+const mockGetCurrentUser = vi.mocked(getCurrentUser)
 
 describe('createTodo', () => {
   beforeEach(() => {
@@ -59,24 +49,32 @@ describe('createTodo', () => {
       id: 'cat-1',
       name: '仕事',
     },
+    categoryId: 'cat-1',
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
     description: 'テスト用のタスクです',
     dueDate: new Date('2024-01-31'),
     id: 'todo-1',
     isCompleted: false,
     isImportant: false,
+    kanbanColumnId: null,
+    order: 0,
     title: 'テストタスク',
+    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+    userId: mockUser.id,
+  } satisfies Todo & {
+    category: null | { color: string; id: string; name: string }
   }
 
   it('基本的なパラメータで TODO を作成できる', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.create.mockResolvedValue(mockCreatedTodo)
+    mockPrismaCreate.mockResolvedValue(mockCreatedTodo as Todo)
 
     // Act
     const result = await createTodo(basicParams)
 
     // Assert
-    expect(mockPrisma.todo.create).toHaveBeenCalledWith({
+    expect(mockPrismaCreate).toHaveBeenCalledWith({
       data: {
         categoryId: undefined,
         description: 'テスト用のタスクです',
@@ -111,17 +109,17 @@ describe('createTodo', () => {
     }
 
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.create.mockResolvedValue({
+    mockPrismaCreate.mockResolvedValue({
       ...mockCreatedTodo,
       isImportant: true,
       title: 'フルパラメータタスク',
-    })
+    } as Todo)
 
     // Act
     const result = await createTodo(fullParams)
 
     // Assert
-    expect(mockPrisma.todo.create).toHaveBeenCalledWith({
+    expect(mockPrismaCreate).toHaveBeenCalledWith({
       data: {
         categoryId: 'cat-1',
         description: '全パラメータ指定のテスト',
@@ -159,7 +157,7 @@ describe('createTodo', () => {
   it('データベースエラーが発生した場合はエラーを返す', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.create.mockRejectedValue(new Error('Database error'))
+    mockPrismaCreate.mockRejectedValue(new Error('Database error'))
 
     // Act
     const result = await createTodo(basicParams)
@@ -177,13 +175,14 @@ describe('createTodo', () => {
     }
 
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.create.mockResolvedValue({
+    mockPrismaCreate.mockResolvedValue({
       ...mockCreatedTodo,
-      category: undefined,
-      description: undefined,
-      dueDate: undefined,
+      category: null,
+      categoryId: null,
+      description: null,
+      dueDate: null,
       title: 'ミニマルタスク',
-    })
+    } as Todo)
 
     // Act
     const result = await createTodo(minimalParams)
