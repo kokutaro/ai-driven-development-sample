@@ -339,6 +339,23 @@ describe('CategoryCreateModal', () => {
     consoleSpy.mockRestore()
   })
 
+  it('Escapeキーでモーダルが閉じない', () => {
+    // Act
+    render(
+      <CategoryCreateModal
+        onCategoryCreated={mockOnCategoryCreated}
+        onClose={mockOnClose}
+        opened={true}
+      />
+    )
+
+    // Act - Escapeキーを押す
+    fireEvent.keyDown(document, { code: 'Escape', key: 'Escape' })
+
+    // Assert
+    expect(mockOnClose).not.toHaveBeenCalled()
+  })
+
   it('アイコンが正しく表示される', () => {
     // Act
     render(
