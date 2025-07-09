@@ -27,6 +27,15 @@ const mockPrisma = {
 
 const mockGetCurrentUser = vi.fn()
 
+// モックされたモジュール関数を取得
+vi.doMock('@/lib/db', () => ({
+  prisma: mockPrisma,
+}))
+
+vi.doMock('@/lib/auth', () => ({
+  getCurrentUser: mockGetCurrentUser,
+}))
+
 describe('deleteTodo', () => {
   beforeEach(() => {
     vi.clearAllMocks()

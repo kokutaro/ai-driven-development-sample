@@ -32,6 +32,19 @@ const mockPrisma = {
 const mockGetCurrentUser = vi.fn()
 const mockBuildFilterConditions = vi.fn()
 
+// モックされたモジュール関数を取得
+vi.doMock('@/lib/db', () => ({
+  prisma: mockPrisma,
+}))
+
+vi.doMock('@/lib/auth', () => ({
+  getCurrentUser: mockGetCurrentUser,
+}))
+
+vi.doMock('@/lib/todo-filters', () => ({
+  buildFilterConditions: mockBuildFilterConditions,
+}))
+
 describe('listTodos', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -130,7 +143,10 @@ describe('listTodos', () => {
     }
 
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockBuildFilterConditions.mockReturnValue({ isImportant: true })
+    mockBuildFilterConditions.mockReturnValue({
+      isCompleted: false,
+      isImportant: true,
+    })
     mockPrisma.todo.findMany.mockResolvedValue([])
     mockPrisma.todo.count.mockResolvedValue(0)
 

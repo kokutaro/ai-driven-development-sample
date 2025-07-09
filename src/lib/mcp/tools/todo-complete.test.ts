@@ -18,14 +18,12 @@ vi.mock('@/lib/auth', () => ({
   getCurrentUser: vi.fn(),
 }))
 
-const mockPrisma = {
-  todo: {
-    findFirst: vi.fn(),
-    update: vi.fn(),
-  },
-}
+const { prisma } = await import('@/lib/db')
+const { getCurrentUser } = await import('@/lib/auth')
 
-const mockGetCurrentUser = vi.fn()
+const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockPrismaFindFirst = vi.mocked(prisma.todo.findFirst)
+const mockPrismaUpdate = vi.mocked(prisma.todo.update)
 
 describe('completeTodo', () => {
   beforeEach(() => {
@@ -56,8 +54,8 @@ describe('completeTodo', () => {
   it('未完了の TODO を完了にできる', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findFirst.mockResolvedValue(mockTodo)
-    mockPrisma.todo.update.mockResolvedValue({
+    mockPrismaFindFirst.mockResolvedValue(mockTodo)
+    mockPrismaUpdate.mockResolvedValue({
       ...mockTodo,
       isCompleted: true,
     })
@@ -66,7 +64,7 @@ describe('completeTodo', () => {
     const result = await completeTodo(params)
 
     // Assert
-    expect(mockPrisma.todo.findFirst).toHaveBeenCalledWith({
+    expect(mockPrismaFindFirst).toHaveBeenCalledWith({
       include: {
         category: {
           select: {
@@ -79,7 +77,7 @@ describe('completeTodo', () => {
         userId: mockUser.id,
       },
     })
-    expect(mockPrisma.todo.update).toHaveBeenCalledWith({
+    expect(mockPrismaUpdate).toHaveBeenCalledWith({
       data: {
         isCompleted: true,
       },
@@ -99,8 +97,8 @@ describe('completeTodo', () => {
     }
 
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findFirst.mockResolvedValue(completedTodo)
-    mockPrisma.todo.update.mockResolvedValue({
+    mockPrismaFindFirst.mockResolvedValue(completedTodo)
+    mockPrismaUpdate.mockResolvedValue({
       ...completedTodo,
       isCompleted: false,
     })
@@ -136,7 +134,7 @@ describe('completeTodo', () => {
   it('指定された TODO が見つからない場合はエラーを返す', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findFirst.mockResolvedValue(null)
+    mockPrismaFindFirst.mockResolvedValue(null)
 
     // Act
     const result = await completeTodo(params)
@@ -154,8 +152,8 @@ describe('completeTodo', () => {
     }
 
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findFirst.mockResolvedValue(todoWithoutCategory)
-    mockPrisma.todo.update.mockResolvedValue({
+    mockPrismaFindFirst.mockResolvedValue(todoWithoutCategory)
+    mockPrismaUpdate.mockResolvedValue({
       ...todoWithoutCategory,
       isCompleted: true,
     })
@@ -171,7 +169,7 @@ describe('completeTodo', () => {
   it('データベースエラーが発生した場合はエラーを返す', async () => {
     // Arrange
     mockGetCurrentUser.mockResolvedValue(mockUser)
-    mockPrisma.todo.findFirst.mockRejectedValue(new Error('Database error'))
+    mockPrismaFindFirst.mockRejectedValue(new Error('Database error'))
 
     // Act
     const result = await completeTodo(params)
