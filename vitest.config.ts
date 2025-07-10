@@ -34,6 +34,10 @@ export default defineConfig({
     },
     environment: 'jsdom',
     globals: true,
+    /**
+     * CI環境ではメモリ不足を防ぐためテストワーカー数を1に制限します
+     */
+    maxWorkers: process.env.CI ? 1 : undefined,
     setupFiles: ['./src/tests/setup.ts'],
   },
 })
