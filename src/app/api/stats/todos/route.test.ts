@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from './route'
 
 import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/db'
 
 // モックの設定
 vi.mock('@/auth', () => ({
@@ -18,6 +17,8 @@ vi.mock('@/lib/db', () => ({
     },
   },
 }))
+
+const { prisma } = await import('@/lib/db')
 
 describe('/api/stats/todos', () => {
   const mockUser = {
