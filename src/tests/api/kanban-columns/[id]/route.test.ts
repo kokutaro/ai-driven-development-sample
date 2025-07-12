@@ -458,6 +458,222 @@ describe('/api/kanban-columns/[id]', () => {
 
       consoleErrorSpy.mockRestore()
     })
+
+    it('should handle validation error - invalid order (negative value)', async () => {
+      const invalidRequestBody = {
+        order: -1,
+      }
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(invalidRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('VALIDATION_ERROR')
+      expect(data.error.message).toBe('バリデーションエラー')
+    })
+
+    it('should handle validation error - invalid order (zero value)', async () => {
+      const invalidRequestBody = {
+        order: 0,
+      }
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(invalidRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('VALIDATION_ERROR')
+      expect(data.error.message).toBe('バリデーションエラー')
+    })
+
+    it('should update only color field', async () => {
+      const colorOnlyRequestBody = {
+        color: '#45B7D1',
+      }
+      const mockExistingColumn = {
+        color: '#FF6B6B',
+        id: 'column-1',
+        name: 'To Do',
+        order: 1,
+        userId: 'user-1',
+      }
+      const mockUpdatedColumn = {
+        ...mockExistingColumn,
+        color: '#45B7D1',
+        updatedAt: new Date(),
+      }
+
+      mockPrisma.kanbanColumn.findFirst.mockResolvedValueOnce(
+        mockExistingColumn
+      )
+      mockPrisma.kanbanColumn.update.mockResolvedValueOnce(mockUpdatedColumn)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(colorOnlyRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data.color).toBe('#45B7D1')
+      expect(mockPrisma.kanbanColumn.update).toHaveBeenCalledWith({
+        data: colorOnlyRequestBody,
+        where: {
+          id: 'column-1',
+        },
+      })
+    })
+
+    it('should update only name field', async () => {
+      const nameOnlyRequestBody = {
+        name: 'In Progress',
+      }
+      const mockExistingColumn = {
+        color: '#FF6B6B',
+        id: 'column-1',
+        name: 'To Do',
+        order: 1,
+        userId: 'user-1',
+      }
+      const mockUpdatedColumn = {
+        ...mockExistingColumn,
+        name: 'In Progress',
+        updatedAt: new Date(),
+      }
+
+      mockPrisma.kanbanColumn.findFirst.mockResolvedValueOnce(
+        mockExistingColumn
+      )
+      mockPrisma.kanbanColumn.update.mockResolvedValueOnce(mockUpdatedColumn)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(nameOnlyRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data.name).toBe('In Progress')
+      expect(mockPrisma.kanbanColumn.update).toHaveBeenCalledWith({
+        data: nameOnlyRequestBody,
+        where: {
+          id: 'column-1',
+        },
+      })
+    })
+
+    it('should update only order field', async () => {
+      const orderOnlyRequestBody = {
+        order: 2,
+      }
+      const mockExistingColumn = {
+        color: '#FF6B6B',
+        id: 'column-1',
+        name: 'To Do',
+        order: 1,
+        userId: 'user-1',
+      }
+      const mockUpdatedColumn = {
+        ...mockExistingColumn,
+        order: 2,
+        updatedAt: new Date(),
+      }
+
+      mockPrisma.kanbanColumn.findFirst.mockResolvedValueOnce(
+        mockExistingColumn
+      )
+      mockPrisma.kanbanColumn.update.mockResolvedValueOnce(mockUpdatedColumn)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(orderOnlyRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data.order).toBe(2)
+      expect(mockPrisma.kanbanColumn.update).toHaveBeenCalledWith({
+        data: orderOnlyRequestBody,
+        where: {
+          id: 'column-1',
+        },
+      })
+    })
+
+    it('should handle 50-character name (boundary test)', async () => {
+      const fiftyCharName = 'a'.repeat(50)
+      const boundaryRequestBody = {
+        name: fiftyCharName,
+      }
+      const mockExistingColumn = {
+        color: '#FF6B6B',
+        id: 'column-1',
+        name: 'To Do',
+        order: 1,
+        userId: 'user-1',
+      }
+      const mockUpdatedColumn = {
+        ...mockExistingColumn,
+        name: fiftyCharName,
+        updatedAt: new Date(),
+      }
+
+      mockPrisma.kanbanColumn.findFirst.mockResolvedValueOnce(
+        mockExistingColumn
+      )
+      mockPrisma.kanbanColumn.update.mockResolvedValueOnce(mockUpdatedColumn)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(boundaryRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data.name).toBe(fiftyCharName)
+      expect(data.data.name).toHaveLength(50)
+    })
   })
 
   describe('DELETE', () => {
@@ -652,6 +868,76 @@ describe('/api/kanban-columns/[id]', () => {
       )
 
       consoleErrorSpy.mockRestore()
+    })
+  })
+
+  describe('Authentication Errors', () => {
+    it('GET: should return 401 when user authentication fails', async () => {
+      const mockParams = { id: 'column-1' }
+      const authError = new Error('認証が必要です')
+      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1'
+      )
+      const response = await GET(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('UNAUTHORIZED')
+      expect(data.error.message).toBe('認証が必要です')
+      expect(mockPrisma.kanbanColumn.findFirst).not.toHaveBeenCalled()
+    })
+
+    it('PUT: should return 401 when user authentication fails', async () => {
+      const mockParams = { id: 'column-1' }
+      const authError = new Error('認証が必要です')
+      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+
+      const validRequestBody = {
+        color: '#4ECDC4',
+        name: 'Updated Column',
+      }
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          body: JSON.stringify(validRequestBody),
+          method: 'PUT',
+        }
+      )
+
+      const response = await PUT(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('UNAUTHORIZED')
+      expect(data.error.message).toBe('認証が必要です')
+      expect(mockPrisma.kanbanColumn.findFirst).not.toHaveBeenCalled()
+    })
+
+    it('DELETE: should return 401 when user authentication fails', async () => {
+      const mockParams = { id: 'column-1' }
+      const authError = new Error('認証が必要です')
+      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/column-1',
+        {
+          method: 'DELETE',
+        }
+      )
+
+      const response = await DELETE(request, { params: mockParams })
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('UNAUTHORIZED')
+      expect(data.error.message).toBe('認証が必要です')
+      expect(mockPrisma.kanbanColumn.findFirst).not.toHaveBeenCalled()
     })
   })
 })
