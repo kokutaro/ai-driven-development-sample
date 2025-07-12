@@ -1,5 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// bcryptjsをモックして計算コストを削減
+vi.mock('bcryptjs', () => ({
+  default: {
+    /** ハッシュとキーの一致を判定する */
+    compare: vi.fn(
+      async (key: string, hashed: string) => hashed === `hashed-${key}`
+    ),
+    /** ハッシュ化されたAPIキーを返す */
+    hash: vi.fn(async (key: string) => `hashed-${key}`),
+  },
+}))
+
 import {
   createApiKey,
   deleteApiKey,
