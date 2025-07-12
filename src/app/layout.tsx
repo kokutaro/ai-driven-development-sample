@@ -7,6 +7,7 @@ import { ModalsProvider } from '@mantine/modals'
 import type { Metadata } from 'next'
 
 import { AppProvider } from '@/components/providers/app-provider'
+import { SessionProvider } from '@/components/providers/session-provider'
 
 import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
@@ -45,7 +46,9 @@ export default function RootLayout({
             }}
           >
             <DatesProvider settings={{ firstDayOfWeek: 0, locale: 'ja' }}>
-              <AppProvider>{children}</AppProvider>
+              <SessionProvider>
+                <AppProvider>{children}</AppProvider>
+              </SessionProvider>
             </DatesProvider>
           </ModalsProvider>
         </MantineProvider>
