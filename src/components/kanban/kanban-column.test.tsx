@@ -86,6 +86,10 @@ vi.mock('@dnd-kit/utilities', () => ({
 }))
 
 describe('KanbanColumn', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders column with name and task count', () => {
     render(<KanbanColumn column={mockColumn} />)
 
