@@ -62,7 +62,9 @@ export function KanbanColumnEditModal({
         name: column.name,
       })
     }
-  }, [column, form])
+    // form依存は意図的に除外（無限ループ防止）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [column?.color, column?.name])
 
   const handleSubmit = async (values: typeof form.values) => {
     if (!column) return
