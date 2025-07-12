@@ -57,12 +57,21 @@ export function KanbanColumnEditModal({
   // カラム情報が変更されたときにフォームを更新
   useEffect(() => {
     if (column) {
-      form.setValues({
-        color: column.color,
-        name: column.name,
-      })
+      // 現在のフォーム値と比較して、実際に変更があった場合のみ更新
+      const currentValues = form.values
+      if (
+        currentValues.color !== column.color ||
+        currentValues.name !== column.name
+      ) {
+        form.setValues({
+          color: column.color,
+          name: column.name,
+        })
+      }
     }
-  }, [column, form])
+    // formを依存配列に含めると無限ループが発生するため意図的に除外
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [column])
 
   const handleSubmit = async (values: typeof form.values) => {
     if (!column) return
