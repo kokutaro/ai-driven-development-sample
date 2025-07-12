@@ -5,11 +5,15 @@ import type { KanbanColumn, Todo } from '@/types/todo'
 export type ViewMode = 'kanban' | 'list'
 
 interface UIStore {
+  // ドロワー状態
+  isDrawerOpen: boolean
   reset: () => void
   selectedFilter: string
   selectedKanbanColumn: KanbanColumn | undefined
+
   selectedTodo: Todo | undefined
 
+  setDrawerOpen: (open: boolean) => void
   // Actions
   setSelectedFilter: (filter: string) => void
   setSelectedKanbanColumn: (column: KanbanColumn | undefined) => void
@@ -31,8 +35,10 @@ interface UIStore {
  * - 選択されたKanbanカラム
  */
 export const useUiStore = create<UIStore>((set) => ({
+  isDrawerOpen: false,
   reset: () =>
     set({
+      isDrawerOpen: false,
       selectedFilter: 'all',
       selectedKanbanColumn: undefined,
       selectedTodo: undefined,
@@ -43,6 +49,7 @@ export const useUiStore = create<UIStore>((set) => ({
   selectedKanbanColumn: undefined,
   selectedTodo: undefined,
 
+  setDrawerOpen: (open) => set({ isDrawerOpen: open }),
   setSelectedFilter: (filter) => set({ selectedFilter: filter }),
   setSelectedKanbanColumn: (column) => set({ selectedKanbanColumn: column }),
   setSelectedTodo: (todo) => set({ selectedTodo: todo }),

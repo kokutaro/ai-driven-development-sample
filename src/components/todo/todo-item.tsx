@@ -7,6 +7,7 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { openConfirmModal } from '@mantine/modals'
 import { IconCalendar, IconStar, IconTrash } from '@tabler/icons-react'
 
@@ -33,7 +34,10 @@ interface TodoItemProps {
  */
 export function TodoItem({ todo }: TodoItemProps) {
   const { deleteTodo, toggleTodo } = useTodoStore()
-  const { selectedTodo, setSelectedTodo } = useUiStore()
+  const { selectedTodo, setDrawerOpen, setSelectedTodo } = useUiStore()
+
+  // デスクトップサイズの判定 (992px以上をデスクトップとして扱う)
+  const isDesktop = useMediaQuery('(min-width: 62em)')
 
   const handleToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()
@@ -58,6 +62,11 @@ export function TodoItem({ todo }: TodoItemProps) {
 
   const handleClick = () => {
     setSelectedTodo(todo)
+
+    // モバイル/タブレットの場合はドロワーを開く
+    if (!isDesktop) {
+      setDrawerOpen(true)
+    }
   }
 
   const isSelected = selectedTodo?.id === todo.id
