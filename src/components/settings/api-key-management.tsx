@@ -21,11 +21,12 @@ export function ApiKeyManagement() {
   const { apiKeys, clearError, error, fetchApiKeys, isLoading } =
     useApiKeyStore()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [createdApiKey, setCreatedApiKey] =
-    useState<ApiKeyCreateResponse | null>(null)
+  const [createdApiKey, setCreatedApiKey] = useState<
+    ApiKeyCreateResponse | undefined
+  >(undefined)
 
   useEffect(() => {
-    fetchApiKeys()
+    void fetchApiKeys()
   }, [fetchApiKeys])
 
   const handleCreateSuccess = (result: ApiKeyCreateResponse) => {
@@ -34,7 +35,7 @@ export function ApiKeyManagement() {
   }
 
   const handleCloseDisplayModal = () => {
-    setCreatedApiKey(null)
+    setCreatedApiKey(undefined)
   }
 
   return (

@@ -12,7 +12,7 @@ interface ApiKeyStore {
   createApiKey: (data: ApiKeyCreateInput) => Promise<ApiKeyCreateResponse>
 
   deleteApiKey: (id: string) => Promise<void>
-  error: null | string
+  error: string | undefined
   // Actions
   fetchApiKeys: () => Promise<void>
   isLoading: boolean
@@ -27,11 +27,11 @@ interface ApiKeyStore {
  * - APIキーの削除
  * - エラー処理
  */
-export const useApiKeyStore = create<ApiKeyStore>((set, get) => ({
+export const useApiKeyStore = create<ApiKeyStore>((set, _get) => ({
   apiKeys: [],
-  clearError: () => set({ error: null }),
+  clearError: () => set({ error: undefined }),
   createApiKey: async (data: ApiKeyCreateInput) => {
-    set({ error: null, isLoading: true })
+    set({ error: undefined, isLoading: true })
     try {
       const response = await fetch('/api/api-keys', {
         body: JSON.stringify(data),
@@ -42,9 +42,11 @@ export const useApiKeyStore = create<ApiKeyStore>((set, get) => ({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = (await response.json()) as {
+          error?: { message?: string }
+        }
         throw new Error(
-          errorData.error?.message || 'APIキーの作成に失敗しました'
+          errorData.error?.message ?? 'APIキーの作成に失敗しました'
         )
       }
 
@@ -71,16 +73,18 @@ export const useApiKeyStore = create<ApiKeyStore>((set, get) => ({
   },
 
   deleteApiKey: async (id: string) => {
-    set({ error: null, isLoading: true })
+    set({ error: undefined, isLoading: true })
     try {
       const response = await fetch(`/api/api-keys/${id}`, {
         method: 'DELETE',
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = (await response.json()) as {
+          error?: { message?: string }
+        }
         throw new Error(
-          errorData.error?.message || 'APIキーの削除に失敗しました'
+          errorData.error?.message ?? 'APIキーの削除に失敗しました'
         )
       }
 
@@ -101,16 +105,18 @@ export const useApiKeyStore = create<ApiKeyStore>((set, get) => ({
     }
   },
 
-  error: null,
+  error: undefined,
 
   fetchApiKeys: async () => {
-    set({ error: null, isLoading: true })
+    set({ error: undefined, isLoading: true })
     try {
       const response = await fetch('/api/api-keys')
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = (await response.json()) as {
+          error?: { message?: string }
+        }
         throw new Error(
-          errorData.error?.message || 'APIキーの取得に失敗しました'
+          errorData.error?.message ?? 'APIキーの取得に失敗しました'
         )
       }
 

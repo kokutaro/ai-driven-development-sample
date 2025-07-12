@@ -167,5 +167,7 @@ function getFilterDisplayName(filter: string): string {
     upcoming: '今後の予定',
   }
 
-  return displayNames[filter] || filter
+  return Object.prototype.hasOwnProperty.call(displayNames, filter)
+    ? displayNames[filter]
+    : filter
 }

@@ -66,12 +66,14 @@ describe('API Key Utilities', () => {
         createdAt: new Date(),
         expiresAt: null,
         id: 'test-id',
+        keyHash: 'test-hash',
         lastUsedAt: null,
         name: 'Test Key',
         updatedAt: new Date(),
+        userId: 'user-123',
       }
 
-      vi.mocked(prisma.apiKey.create).mockResolvedValue(mockApiKey as any)
+      vi.mocked(prisma.apiKey.create).mockResolvedValue(mockApiKey)
 
       const result = await createApiKey('user-123', 'Test Key')
 
@@ -103,13 +105,15 @@ describe('API Key Utilities', () => {
           createdAt: new Date(),
           expiresAt: null,
           id: 'key-1',
+          keyHash: 'test-hash',
           lastUsedAt: new Date(),
           name: 'Test Key 1',
           updatedAt: new Date(),
+          userId: 'user-123',
         },
       ]
 
-      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys as any)
+      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys)
 
       const result = await getUserApiKeys('user-123')
 
@@ -131,9 +135,18 @@ describe('API Key Utilities', () => {
 
   describe('deleteApiKey', () => {
     it('should delete API key', async () => {
-      const mockApiKey = { id: 'key-1', userId: 'user-123' }
+      const mockApiKey = {
+        createdAt: new Date(),
+        expiresAt: null,
+        id: 'key-1',
+        keyHash: 'test-hash',
+        lastUsedAt: null,
+        name: 'Test Key',
+        updatedAt: new Date(),
+        userId: 'user-123',
+      }
 
-      vi.mocked(prisma.apiKey.delete).mockResolvedValue(mockApiKey as any)
+      vi.mocked(prisma.apiKey.delete).mockResolvedValue(mockApiKey)
 
       const result = await deleteApiKey('user-123', 'key-1')
 
@@ -148,14 +161,14 @@ describe('API Key Utilities', () => {
   })
 
   describe('getUserIdFromApiKey', () => {
-    it('should return null for invalid API key format', async () => {
+    it('should return undefined for invalid API key format', async () => {
       const userId = await getUserIdFromApiKey('invalid-key')
-      expect(userId).toBeNull()
+      expect(userId).toBeUndefined()
     })
 
-    it('should return null for non-todo prefixed key', async () => {
+    it('should return undefined for non-todo prefixed key', async () => {
       const userId = await getUserIdFromApiKey('other_1234567890')
-      expect(userId).toBeNull()
+      expect(userId).toBeUndefined()
     })
 
     it('should return user ID for valid API key', async () => {
@@ -164,15 +177,28 @@ describe('API Key Utilities', () => {
 
       const mockApiKeys = [
         {
+          createdAt: new Date(),
           expiresAt: null,
           id: 'key-1',
           keyHash: hashedKey,
+          lastUsedAt: null,
+          name: 'Test Key',
+          updatedAt: new Date(),
           userId: 'user-123',
         },
       ]
 
-      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys as any)
-      vi.mocked(prisma.apiKey.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys)
+      vi.mocked(prisma.apiKey.update).mockResolvedValue({
+        createdAt: new Date(),
+        expiresAt: null,
+        id: 'key-1',
+        keyHash: 'test-hash',
+        lastUsedAt: new Date(),
+        name: 'Test Key',
+        updatedAt: new Date(),
+        userId: 'user-123',
+      })
 
       const userId = await getUserIdFromApiKey(plainKey)
 
@@ -183,25 +209,29 @@ describe('API Key Utilities', () => {
       })
     })
 
-    it('should return null for expired API key', async () => {
+    it('should return undefined for expired API key', async () => {
       const plainKey = generateApiKey()
       const hashedKey = await hashApiKey(plainKey)
       const expiredDate = new Date(Date.now() - 1000) // 1秒前
 
       const mockApiKeys = [
         {
+          createdAt: new Date(),
           expiresAt: expiredDate,
           id: 'key-1',
           keyHash: hashedKey,
+          lastUsedAt: null,
+          name: 'Test Key',
+          updatedAt: new Date(),
           userId: 'user-123',
         },
       ]
 
-      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys as any)
+      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys)
 
       const userId = await getUserIdFromApiKey(plainKey)
 
-      expect(userId).toBeNull()
+      expect(userId).toBeUndefined()
     })
   })
 
@@ -212,15 +242,28 @@ describe('API Key Utilities', () => {
 
       const mockApiKeys = [
         {
+          createdAt: new Date(),
           expiresAt: null,
           id: 'key-1',
           keyHash: hashedKey,
+          lastUsedAt: null,
+          name: 'Test Key',
+          updatedAt: new Date(),
           userId: 'user-123',
         },
       ]
 
-      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys as any)
-      vi.mocked(prisma.apiKey.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys)
+      vi.mocked(prisma.apiKey.update).mockResolvedValue({
+        createdAt: new Date(),
+        expiresAt: null,
+        id: 'key-1',
+        keyHash: 'test-hash',
+        lastUsedAt: new Date(),
+        name: 'Test Key',
+        updatedAt: new Date(),
+        userId: 'user-123',
+      })
 
       const isValid = await isValidApiKey(plainKey)
 

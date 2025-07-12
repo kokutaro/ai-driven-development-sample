@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { Card, Stack, Text, TextInput, Title, Skeleton } from '@mantine/core'
+import { Card, Skeleton, Stack, Text, TextInput, Title } from '@mantine/core'
 
 import { useUserStore } from '@/stores/user-store'
 

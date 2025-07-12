@@ -18,6 +18,19 @@ import type { ApiKeyResponse } from '@/schemas/api-key'
 
 import { useApiKeyStore } from '@/stores/api-key-store'
 
+/**
+ * 日付を日本語形式でフォーマットする
+ */
+const formatDate = (date: string) => {
+  return new Intl.DateTimeFormat('ja-JP', {
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(date))
+}
+
 interface ApiKeyListProps {
   apiKeys: ApiKeyResponse[]
   isLoading: boolean
@@ -34,7 +47,7 @@ interface ApiKeyListProps {
  */
 export function ApiKeyList({ apiKeys, isLoading }: ApiKeyListProps) {
   const { deleteApiKey } = useApiKeyStore()
-  const [deletingId, setDeletingId] = useState<null | string>(null)
+  const [deletingId, setDeletingId] = useState<string | undefined>(undefined)
 
   const handleDelete = (apiKey: ApiKeyResponse) => {
     modals.openConfirmModal({
@@ -47,28 +60,20 @@ export function ApiKeyList({ apiKeys, isLoading }: ApiKeyListProps) {
       ),
       confirmProps: { color: 'red' },
       labels: { cancel: 'キャンセル', confirm: '削除' },
-      onConfirm: async () => {
-        try {
-          setDeletingId(apiKey.id)
-          await deleteApiKey(apiKey.id)
-        } catch {
-          // エラーはストアで処理される
-        } finally {
-          setDeletingId(null)
-        }
+      onConfirm: () => {
+        void (async () => {
+          try {
+            setDeletingId(apiKey.id)
+            await deleteApiKey(apiKey.id)
+          } catch {
+            // エラーはストアで処理される
+          } finally {
+            setDeletingId(undefined)
+          }
+        })()
       },
       title: 'APIキーの削除',
     })
-  }
-
-  const formatDate = (date: string) => {
-    return new Intl.DateTimeFormat('ja-JP', {
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(new Date(date))
   }
 
   const getStatusBadge = (apiKey: ApiKeyResponse) => {

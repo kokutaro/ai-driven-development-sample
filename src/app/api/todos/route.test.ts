@@ -23,7 +23,12 @@ vi.mock('@/lib/auth', () => ({
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getCurrentUser, getCurrentUserFromRequest, getUserIdFromRequest, getUserIdFromRequestWithApiKey } = await import('@/lib/auth')
+const {
+  getCurrentUser,
+  getCurrentUserFromRequest,
+  getUserIdFromRequest,
+  getUserIdFromRequestWithApiKey,
+} = await import('@/lib/auth')
 
 // モック関数の型付け
 const mockCount = vi.mocked(prisma.todo.count)
@@ -32,7 +37,9 @@ const mockFindMany = vi.mocked(prisma.todo.findMany)
 const mockGetCurrentUser = vi.mocked(getCurrentUser)
 const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
 const mockGetUserIdFromRequest = vi.mocked(getUserIdFromRequest)
-const mockGetUserIdFromRequestWithApiKey = vi.mocked(getUserIdFromRequestWithApiKey)
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
+  getUserIdFromRequestWithApiKey
+)
 
 describe('/api/todos', () => {
   beforeEach(() => {
@@ -268,7 +275,9 @@ describe('/api/todos', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetUserIdFromRequestWithApiKey.mockRejectedValue(new Error('認証が必要です'))
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValue(
+        new Error('認証が必要です')
+      )
 
       const request = new NextRequest('http://localhost:3000/api/todos', {
         body: JSON.stringify({ title: 'テスト' }),

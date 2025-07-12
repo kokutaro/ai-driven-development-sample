@@ -2,6 +2,8 @@ import crypto from 'node:crypto'
 
 import bcrypt from 'bcryptjs'
 
+import type { ApiKeyResponse } from '@/schemas/api-key'
+
 import { prisma } from '@/lib/db'
 
 /**
@@ -23,7 +25,7 @@ export async function createApiKey(
   userId: string,
   name: string,
   expiresAt?: Date
-): Promise<{ apiKey: any; plainKey: string }> {
+): Promise<{ apiKey: ApiKeyResponse; plainKey: string }> {
   const plainKey = generateApiKey()
   const keyHash = await hashApiKey(plainKey)
 
@@ -99,13 +101,13 @@ export async function getUserApiKeys(userId: string) {
  * APIキーからユーザーIDを取得する
  *
  * @param apiKey - APIキー
- * @returns ユーザーID（見つからない場合はnull）
+ * @returns ユーザーID（見つからない場合はundefined）
  */
 export async function getUserIdFromApiKey(
   apiKey: string
-): Promise<null | string> {
+): Promise<string | undefined> {
   if (!apiKey?.startsWith('todo_')) {
-    return null
+    return undefined
   }
 
   // すべてのAPIキーを取得してハッシュを比較
@@ -122,7 +124,7 @@ export async function getUserIdFromApiKey(
     if (await verifyApiKey(apiKey, key.keyHash)) {
       // 有効期限をチェック
       if (key.expiresAt && key.expiresAt < new Date()) {
-        return null
+        return undefined
       }
 
       // 最終使用日時を更新
@@ -135,7 +137,7 @@ export async function getUserIdFromApiKey(
     }
   }
 
-  return null
+  return undefined
 }
 
 /**
@@ -157,7 +159,7 @@ export async function hashApiKey(apiKey: string): Promise<string> {
  */
 export async function isValidApiKey(apiKey: string): Promise<boolean> {
   const userId = await getUserIdFromApiKey(apiKey)
-  return userId !== null
+  return userId !== undefined
 }
 
 /**

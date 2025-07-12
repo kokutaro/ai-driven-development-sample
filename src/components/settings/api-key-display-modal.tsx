@@ -20,7 +20,7 @@ import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react'
 import type { ApiKeyCreateResponse } from '@/schemas/api-key'
 
 interface ApiKeyDisplayModalProps {
-  apiKeyData: ApiKeyCreateResponse | null
+  apiKeyData: ApiKeyCreateResponse | undefined
   onClose: () => void
   opened: boolean
 }
@@ -41,7 +41,7 @@ export function ApiKeyDisplayModal({
   const [isVisible, setIsVisible] = useState(false)
 
   if (!apiKeyData) {
-    return null
+    return undefined
   }
 
   const { apiKey, plainKey } = apiKeyData

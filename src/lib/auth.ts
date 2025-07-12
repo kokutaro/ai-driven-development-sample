@@ -58,19 +58,19 @@ export async function getCurrentUserFromRequest(
  * リクエストからAPIキーを取得してユーザーを認証する
  *
  * @param request - Next.jsリクエストオブジェクト
- * @returns ユーザー情報（認証失敗時はnull）
+ * @returns ユーザー情報（認証失敗時はundefined）
  */
 export async function getUserFromApiKey(
   request: NextRequest
-): Promise<null | User> {
+): Promise<undefined | User> {
   const apiKey = request.nextUrl.searchParams.get('apiKey')
   if (!apiKey) {
-    return null
+    return undefined
   }
 
   const userId = await getUserIdFromApiKey(apiKey)
   if (!userId) {
-    return null
+    return undefined
   }
 
   // データベースからユーザー情報を取得
@@ -87,7 +87,7 @@ export async function getUserFromApiKey(
   })
 
   if (!user) {
-    return null
+    return undefined
   }
 
   return {
