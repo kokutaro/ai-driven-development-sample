@@ -1,21 +1,12 @@
 'use client'
 
-import {
-  ActionIcon,
-  AppShell,
-  Avatar,
-  Group,
-  TextInput,
-  Title,
-} from '@mantine/core'
-import { IconHelp, IconSearch, IconSettings } from '@tabler/icons-react'
+import { AppShell } from '@mantine/core'
 
+import { Header } from '@/components/layout/header'
 import { TodoDetailPanel } from '@/components/todo/todo-detail-panel'
 import { TodoMainContent } from '@/components/todo/todo-main-content'
 import { TodoSidebar } from '@/components/todo/todo-sidebar'
-import { useClientOnly } from '@/hooks/use-client-only'
 import { useUiStore } from '@/stores/ui-store'
-import { useUserStore } from '@/stores/user-store'
 
 /**
  * TODOアプリケーションのメインページ
@@ -26,9 +17,7 @@ import { useUserStore } from '@/stores/user-store'
  * - 右カラム：選択したタスクの詳細編集（TodoDetailPanel）
  */
 export default function TodoPage() {
-  const { user } = useUserStore()
   const { selectedTodo } = useUiStore()
-  const isClient = useClientOnly()
 
   return (
     <AppShell
@@ -43,28 +32,7 @@ export default function TodoPage() {
     >
       {/* ヘッダー */}
       <AppShell.Header>
-        <Group h="100%" justify="space-between" px="md">
-          <Group>
-            <Title c="blue" order={3}>
-              To Do
-            </Title>
-          </Group>
-
-          <Group>
-            <TextInput
-              leftSection={<IconSearch size={16} />}
-              placeholder="タスクを検索..."
-              w={300}
-            />
-            <ActionIcon size="lg" variant="subtle">
-              <IconSettings size={18} />
-            </ActionIcon>
-            <ActionIcon size="lg" variant="subtle">
-              <IconHelp size={18} />
-            </ActionIcon>
-            {isClient && <Avatar name={user?.name} size="sm" />}
-          </Group>
-        </Group>
+        <Header />
       </AppShell.Header>
 
       {/* 左サイドバー - フィルタ */}
