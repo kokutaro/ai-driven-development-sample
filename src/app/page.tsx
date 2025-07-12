@@ -1,7 +1,7 @@
 'use client'
 
 import { AppShell } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { useDisclosure, useMediaQuery } from '@mantine/hooks'
 
 import { Header } from '@/components/layout/header'
 import { TodoDetailDrawer } from '@/components/todo/todo-detail-drawer'
@@ -24,6 +24,10 @@ export default function TodoPage() {
   const { isDrawerOpen, selectedTodo, setDrawerOpen, setSelectedTodo } =
     useUiStore()
 
+  // ナビゲーションメニューの開閉状態管理
+  const [navbarOpened, { close: closeNavbar, toggle: toggleNavbar }] =
+    useDisclosure()
+
   // デスクトップサイズの判定 (992px以上をデスクトップとして扱う)
   const isDesktop = useMediaQuery('(min-width: 62em)')
 
@@ -44,12 +48,16 @@ export default function TodoPage() {
           width: { md: 400, sm: 300 },
         }}
         header={{ height: 60 }}
-        navbar={{ breakpoint: 'sm', collapsed: { mobile: true }, width: 280 }}
+        navbar={{
+          breakpoint: 'sm',
+          collapsed: { mobile: !navbarOpened },
+          width: 280,
+        }}
         padding="md"
       >
         {/* ヘッダー */}
         <AppShell.Header>
-          <Header />
+          <Header navbarOpened={navbarOpened} toggleNavbar={toggleNavbar} />
         </AppShell.Header>
 
         {/* 左サイドバー - フィルタ */}
@@ -58,7 +66,9 @@ export default function TodoPage() {
         </AppShell.Navbar>
 
         {/* メインコンテンツ - タスク一覧 */}
-        <AppShell.Main>
+        <AppShell.Main
+          onClick={!isDesktop && navbarOpened ? closeNavbar : undefined}
+        >
           <TodoMainContent />
         </AppShell.Main>
 

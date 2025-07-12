@@ -113,7 +113,7 @@ describe('Header', () => {
 
     // Assert
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(2) // 設定ボタンとヘルプボタン
+    expect(buttons).toHaveLength(3) // ハンバーガーボタン、設定ボタン、ヘルプボタン
   })
 
   it('ユーザーが設定されている場合、ユーザー名のイニシャルでAvatarを表示する', () => {
