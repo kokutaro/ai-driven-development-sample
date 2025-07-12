@@ -157,8 +157,6 @@ describe('AuthProvider', () => {
   it('handles complex session data correctly', () => {
     // Arrange
     const complexSession: Session = {
-      accessToken: 'access_token_example',
-      error: undefined,
       expires: '2024-12-31T23:59:59.999Z',
       user: {
         email: 'tanaka@example.com',
