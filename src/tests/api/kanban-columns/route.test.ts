@@ -3,23 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 認証モック
 vi.mock('@/lib/auth', () => ({
-  getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックを最初にインポート
 import { GET, POST } from '@/app/api/kanban-columns/route'
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { mockPrisma } from '@/tests/__mocks__/prisma'
 
-const mockGetUserIdFromRequest = getUserIdFromRequest as ReturnType<
-  typeof vi.fn
->
+const mockGetUserIdFromRequestWithApiKey =
+  getUserIdFromRequestWithApiKey as ReturnType<typeof vi.fn>
 
 describe('/api/kanban-columns', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトで認証済みユーザーとしてモック
-    mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('GET', () => {
@@ -49,7 +48,10 @@ describe('/api/kanban-columns', () => {
 
       mockPrisma.kanbanColumn.findMany.mockResolvedValueOnce(mockColumns)
 
-      const response = await GET()
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns'
+      )
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -98,7 +100,10 @@ describe('/api/kanban-columns', () => {
     it('should return empty array when no columns exist', async () => {
       mockPrisma.kanbanColumn.findMany.mockResolvedValueOnce([])
 
-      const response = await GET()
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns'
+      )
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -116,7 +121,10 @@ describe('/api/kanban-columns', () => {
           // Intentionally empty for testing
         })
 
-      const response = await GET()
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns'
+      )
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(500)
@@ -132,11 +140,14 @@ describe('/api/kanban-columns', () => {
     })
 
     it('should handle authentication error', async () => {
-      mockGetUserIdFromRequest.mockRejectedValueOnce(
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValueOnce(
         new Error('認証が必要です')
       )
 
-      const response = await GET()
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns'
+      )
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(401)
@@ -483,7 +494,7 @@ describe('/api/kanban-columns', () => {
     })
 
     it('should handle authentication error', async () => {
-      mockGetUserIdFromRequest.mockRejectedValueOnce(
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValueOnce(
         new Error('認証が必要です')
       )
 

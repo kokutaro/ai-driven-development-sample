@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import type { NextRequest } from 'next/server'
 
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const moveToColumnSchema = z.object({
@@ -23,7 +23,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = params
 
     const body = await request.json()

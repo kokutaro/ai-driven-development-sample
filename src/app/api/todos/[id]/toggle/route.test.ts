@@ -14,17 +14,19 @@ vi.mock('@/lib/db', () => ({
 
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
-  getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getUserIdFromRequest } = await import('@/lib/auth')
+const { getUserIdFromRequestWithApiKey } = await import('@/lib/auth')
 
 // モック関数の型付け
 const mockFindUnique = vi.mocked(prisma.todo.findUnique)
 const mockUpdate = vi.mocked(prisma.todo.update)
-const mockGetUserIdFromRequest = vi.mocked(getUserIdFromRequest)
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
+  getUserIdFromRequestWithApiKey
+)
 
 describe('/api/todos/[id]/toggle', () => {
   const mockTodo = {
@@ -45,7 +47,7 @@ describe('/api/todos/[id]/toggle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('PATCH /api/todos/[id]/toggle', () => {
@@ -162,7 +164,9 @@ describe('/api/todos/[id]/toggle', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetUserIdFromRequest.mockRejectedValue(new Error('認証が必要です'))
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValue(
+        new Error('認証が必要です')
+      )
 
       const request = new NextRequest(
         'http://localhost:3000/api/todos/todo-1/toggle',

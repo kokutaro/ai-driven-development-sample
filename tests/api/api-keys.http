@@ -1,0 +1,38 @@
+# API Key Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+### Variables
+@apiKeyId = REPLACE_WITH_ACTUAL_API_KEY_ID
+
+###
+# GET /api/api-keys - APIキー一覧取得
+GET {{baseUrl}}/api-keys
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/api-keys - APIキー作成
+POST {{baseUrl}}/api-keys
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "テストAPIキー",
+  "expiresAt": "2024-12-31T23:59:59.000Z"
+}
+
+###
+# POST /api/api-keys - APIキー作成（期限なし）
+POST {{baseUrl}}/api-keys
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "永続APIキー"
+}
+
+###
+# DELETE /api/api-keys/{id} - APIキー削除
+DELETE {{baseUrl}}/api-keys/{{apiKeyId}}
+Authorization: Bearer {{authToken}}

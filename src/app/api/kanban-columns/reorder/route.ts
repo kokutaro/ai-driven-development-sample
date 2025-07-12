@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import type { NextRequest } from 'next/server'
 
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const reorderKanbanColumnsSchema = z.object({
@@ -20,7 +20,7 @@ const reorderKanbanColumnsSchema = z.object({
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
 
     const body = await request.json()
     const { columnIds } = reorderKanbanColumnsSchema.parse(body)

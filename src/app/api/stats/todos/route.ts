@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import type { NextRequest } from 'next/server'
 
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUserFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 /**
@@ -14,9 +14,9 @@ import { prisma } from '@/lib/db'
  * @param request - リクエストオブジェクト
  * @returns 統計情報のレスポンス
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         {

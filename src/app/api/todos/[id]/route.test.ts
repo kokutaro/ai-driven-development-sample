@@ -15,20 +15,23 @@ vi.mock('@/lib/db', () => ({
 
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
-  getCurrentUser: vi.fn(),
-  getUserIdFromRequest: vi.fn(),
+  getCurrentUserFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getCurrentUser, getUserIdFromRequest } = await import('@/lib/auth')
+const { getCurrentUserFromRequest, getUserIdFromRequestWithApiKey } =
+  await import('@/lib/auth')
 
 // モック関数の型付け
 const mockFindUnique = vi.mocked(prisma.todo.findUnique)
 const mockUpdate = vi.mocked(prisma.todo.update)
 const mockDelete = vi.mocked(prisma.todo.delete)
-const mockGetCurrentUser = vi.mocked(getCurrentUser)
-const mockGetUserIdFromRequest = vi.mocked(getUserIdFromRequest)
+const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
+  getUserIdFromRequestWithApiKey
+)
 
 describe('/api/todos/[id]', () => {
   const mockTodo = {
@@ -52,14 +55,14 @@ describe('/api/todos/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetCurrentUser.mockResolvedValue({
+    mockGetCurrentUserFromRequest.mockResolvedValue({
       createdAt: new Date(),
       email: 'test@example.com',
       id: 'user-1',
       name: 'Test User',
       updatedAt: new Date(),
     })
-    mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('GET /api/todos/[id]', () => {

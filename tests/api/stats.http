@@ -1,0 +1,9 @@
+# Statistics API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+###
+# GET /api/stats/todos - TODO統計情報取得
+GET {{baseUrl}}/stats/todos
+Authorization: Bearer {{authToken}}

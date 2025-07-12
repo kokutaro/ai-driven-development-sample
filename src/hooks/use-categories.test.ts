@@ -240,6 +240,7 @@ describe('useCategories', () => {
 
   it('長時間のAPI呼び出しでもタイムアウトしない', async () => {
     // Arrange
+    vi.useFakeTimers()
     getCategoriesSpy.mockImplementation(
       () =>
         new Promise((resolve) =>
@@ -262,12 +263,14 @@ describe('useCategories', () => {
     expect(result.current.isLoading).toBe(true)
 
     // Assert - データ取得後
-    await waitFor(
-      () => {
-        expect(result.current.isLoading).toBe(false)
-      },
-      { timeout: 1000 }
-    )
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500)
+    })
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    vi.useRealTimers()
 
     expect(result.current.categories).toEqual(mockCategories)
   })

@@ -304,6 +304,7 @@ describe('TodoAddModal', () => {
 
   it('タスク作成中はローディング状態になる', async () => {
     // Arrange - createTodoが時間がかかるようにモック
+    vi.useFakeTimers()
     mockCreateTodo.mockImplementation(
       () => new Promise((resolve) => setTimeout(resolve, 100))
     )
@@ -318,8 +319,14 @@ describe('TodoAddModal', () => {
     const createButton = screen.getByText('作成')
     fireEvent.click(createButton)
 
+    await act(async () => {
+      await vi.runAllTimersAsync()
+    })
+
     // Assert - ローディング中はボタンが無効化される（Mantineの実装による）
     expect(mockCreateTodo).toHaveBeenCalled()
+
+    vi.useRealTimers()
   })
 
   it('タスク作成エラー時でもモーダルは開いたまま', async () => {

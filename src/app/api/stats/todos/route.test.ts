@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GET } from './route'
 
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUserFromRequest } from '@/lib/auth'
 
 // モックの設定
 vi.mock('@/auth', () => ({
@@ -31,7 +31,7 @@ describe('/api/stats/todos', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(getCurrentUser).mockResolvedValue(mockUser)
+    vi.mocked(getCurrentUserFromRequest).mockResolvedValue(mockUser)
     // console.errorをモック化
     vi.spyOn(console, 'error').mockImplementation(() => {
       // エラーログを無視
@@ -44,7 +44,7 @@ describe('/api/stats/todos', () => {
   })
 
   it('認証されていないユーザーは401エラーを返す', async () => {
-    vi.mocked(getCurrentUser).mockResolvedValue(undefined)
+    vi.mocked(getCurrentUserFromRequest).mockResolvedValue(undefined)
 
     const request = new NextRequest('http://localhost:3000/api/stats/todos')
     const response = await GET(request)

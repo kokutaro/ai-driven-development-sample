@@ -1,0 +1,265 @@
+# 全APIエンドポイント統合テストファイル
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+### 共通変数
+@todoId = REPLACE_WITH_ACTUAL_TODO_ID
+@categoryId = REPLACE_WITH_ACTUAL_CATEGORY_ID
+@subTaskId = REPLACE_WITH_ACTUAL_SUBTASK_ID
+@apiKeyId = REPLACE_WITH_ACTUAL_API_KEY_ID
+@kanbanColumnId = REPLACE_WITH_ACTUAL_KANBAN_COLUMN_ID
+
+### ====== 認証関連 ======
+
+###
+# GET /api/auth/providers - 利用可能な認証プロバイダ一覧
+GET {{baseUrl}}/auth/providers
+
+###
+# GET /api/auth/session - 現在のセッション情報
+GET {{baseUrl}}/auth/session
+
+###
+# GET /api/auth/csrf - CSRFトークン取得
+GET {{baseUrl}}/auth/csrf
+
+### ====== タスク管理 ======
+
+###
+# GET /api/todos - タスク一覧取得
+GET {{baseUrl}}/todos
+Authorization: Bearer {{authToken}}
+
+###
+# GET /api/todos - タスク一覧取得（フィルタリング）
+GET {{baseUrl}}/todos?filter=today&page=1&limit=10&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/todos - タスク作成
+POST {{baseUrl}}/todos
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "新しいタスク",
+  "description": "タスクの詳細説明",
+  "dueDate": "2024-12-31T23:59:59.000Z",
+  "isImportant": false,
+  "categoryId": "{{categoryId}}",
+  "kanbanColumnId": null
+}
+
+###
+# GET /api/todos/{id} - タスク詳細取得
+GET {{baseUrl}}/todos/{{todoId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PUT /api/todos/{id} - タスク更新
+PUT {{baseUrl}}/todos/{{todoId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "更新されたタスク",
+  "description": "更新された説明",
+  "dueDate": "2024-12-31T23:59:59.000Z",
+  "isImportant": true,
+  "categoryId": "{{categoryId}}"
+}
+
+###
+# PATCH /api/todos/{id}/toggle - タスク完了状態切り替え
+PATCH {{baseUrl}}/todos/{{todoId}}/toggle
+Authorization: Bearer {{authToken}}
+
+###
+# PATCH /api/todos/{id}/move-to-column - タスクをKanbanカラムに移動
+PATCH {{baseUrl}}/todos/{{todoId}}/move-to-column
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "kanbanColumnId": "{{kanbanColumnId}}",
+  "order": 1
+}
+
+###
+# DELETE /api/todos/{id} - タスク削除
+DELETE {{baseUrl}}/todos/{{todoId}}
+Authorization: Bearer {{authToken}}
+
+### ====== サブタスク管理 ======
+
+###
+# GET /api/todos/{id}/subtasks - サブタスク一覧取得
+GET {{baseUrl}}/todos/{{todoId}}/subtasks
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/todos/{id}/subtasks - サブタスク作成
+POST {{baseUrl}}/todos/{{todoId}}/subtasks
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "新しいサブタスク"
+}
+
+###
+# PUT /api/todos/{id}/subtasks/{subId} - サブタスク更新
+PUT {{baseUrl}}/todos/{{todoId}}/subtasks/{{subTaskId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "更新されたサブタスク",
+  "isCompleted": true
+}
+
+###
+# PATCH /api/todos/{id}/subtasks/{subId} - サブタスク完了状態切り替え
+PATCH {{baseUrl}}/todos/{{todoId}}/subtasks/{{subTaskId}}
+Authorization: Bearer {{authToken}}
+
+###
+# DELETE /api/todos/{id}/subtasks/{subId} - サブタスク削除
+DELETE {{baseUrl}}/todos/{{todoId}}/subtasks/{{subTaskId}}
+Authorization: Bearer {{authToken}}
+
+### ====== カテゴリ管理 ======
+
+###
+# GET /api/categories - カテゴリ一覧取得
+GET {{baseUrl}}/categories
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/categories - カテゴリ作成
+POST {{baseUrl}}/categories
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "新しいカテゴリ",
+  "color": "#FF6B6B"
+}
+
+###
+# PUT /api/categories/{id} - カテゴリ更新
+PUT {{baseUrl}}/categories/{{categoryId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "更新されたカテゴリ",
+  "color": "#4ECDC4"
+}
+
+###
+# DELETE /api/categories/{id} - カテゴリ削除
+DELETE {{baseUrl}}/categories/{{categoryId}}
+Authorization: Bearer {{authToken}}
+
+### ====== APIキー管理 ======
+
+###
+# GET /api/api-keys - APIキー一覧取得
+GET {{baseUrl}}/api-keys
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/api-keys - APIキー作成
+POST {{baseUrl}}/api-keys
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "テストAPIキー",
+  "expiresAt": "2024-12-31T23:59:59.000Z"
+}
+
+###
+# DELETE /api/api-keys/{id} - APIキー削除
+DELETE {{baseUrl}}/api-keys/{{apiKeyId}}
+Authorization: Bearer {{authToken}}
+
+### ====== Kanbanボード管理 ======
+
+###
+# GET /api/kanban-columns - Kanbanカラム一覧取得
+GET {{baseUrl}}/kanban-columns
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/kanban-columns - Kanbanカラム作成
+POST {{baseUrl}}/kanban-columns
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "新しいカラム",
+  "color": "#FF6B6B",
+  "order": 1
+}
+
+###
+# GET /api/kanban-columns/{id} - Kanbanカラム詳細取得
+GET {{baseUrl}}/kanban-columns/{{kanbanColumnId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PUT /api/kanban-columns/{id} - Kanbanカラム更新
+PUT {{baseUrl}}/kanban-columns/{{kanbanColumnId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "更新されたカラム",
+  "color": "#45B7D1"
+}
+
+###
+# DELETE /api/kanban-columns/{id} - Kanbanカラム削除
+DELETE {{baseUrl}}/kanban-columns/{{kanbanColumnId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PATCH /api/kanban-columns/reorder - Kanbanカラム並び替え
+PATCH {{baseUrl}}/kanban-columns/reorder
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "columnIds": ["column1", "column2", "column3"]
+}
+
+###
+# POST /api/kanban-columns/seed - Kanbanカラム初期データ作成
+POST {{baseUrl}}/kanban-columns/seed
+Authorization: Bearer {{authToken}}
+
+### ====== 統計情報 ======
+
+###
+# GET /api/stats/todos - TODO統計情報取得
+GET {{baseUrl}}/stats/todos
+Authorization: Bearer {{authToken}}
+
+### ====== MCP ======
+
+###
+# GET /api/mcp - MCP endpoint
+GET {{baseUrl}}/mcp
+
+###
+# POST /api/mcp - MCP endpoint
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+
+{
+  "method": "example_method",
+  "params": {}
+}

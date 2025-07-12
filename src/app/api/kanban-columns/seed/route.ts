@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 
-import { getUserIdFromRequest } from '@/lib/auth'
+import type { NextRequest } from 'next/server'
+
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 /**
@@ -8,9 +10,9 @@ import { prisma } from '@/lib/db'
  *
  * 新規ユーザー向けにデフォルトのカラム（To Do、In Progress、Done）を作成します。
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
 
     // 既存のカラムがあるかチェック
     const existingColumns = await prisma.kanbanColumn.findFirst({

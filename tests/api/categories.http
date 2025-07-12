@@ -1,0 +1,39 @@
+# Category API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+### Variables
+@categoryId = REPLACE_WITH_ACTUAL_CATEGORY_ID
+
+###
+# GET /api/categories - カテゴリ一覧取得
+GET {{baseUrl}}/categories
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/categories - カテゴリ作成
+POST {{baseUrl}}/categories
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "新しいカテゴリ",
+  "color": "#FF6B6B"
+}
+
+###
+# PUT /api/categories/{id} - カテゴリ更新
+PUT {{baseUrl}}/categories/{{categoryId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "更新されたカテゴリ",
+  "color": "#4ECDC4"
+}
+
+###
+# DELETE /api/categories/{id} - カテゴリ削除
+DELETE {{baseUrl}}/categories/{{categoryId}}
+Authorization: Bearer {{authToken}}

@@ -7,7 +7,10 @@ import {
   createSuccessResponse,
   createValidationErrorResponse,
 } from '@/lib/api-utils'
-import { getCurrentUser, getUserIdFromRequest } from '@/lib/auth'
+import {
+  getCurrentUserFromRequest,
+  getUserIdFromRequestWithApiKey,
+} from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { todoUpdateSchema } from '@/schemas/todo'
 
@@ -19,7 +22,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = await params
 
     // タスクの存在確認と所有者確認
@@ -65,7 +68,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserFromRequest(request)
     if (!user) {
       return createErrorResponse('UNAUTHORIZED', '認証が必要です', 401)
     }
@@ -136,7 +139,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = await params
     const body = await request.json()
     const validatedData = todoUpdateSchema.parse(body)
