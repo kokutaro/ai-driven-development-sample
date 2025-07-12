@@ -155,5 +155,76 @@ describe('/api/api-keys', () => {
       expect(data.success).toBe(false)
       expect(data.error.code).toBe('UNAUTHORIZED')
     })
+
+    it('should handle API key creation with expiration date', async () => {
+      const expiresAt = '2025-12-31T23:59:59.000Z'
+      const mockResult = {
+        apiKey: {
+          createdAt: new Date(),
+          expiresAt: new Date(expiresAt),
+          id: 'key-1',
+          lastUsedAt: null,
+          name: 'Test Key',
+          updatedAt: new Date(),
+        },
+        plainKey: 'todo_test123456789',
+      }
+
+      mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-123')
+      mockCreateApiKey.mockResolvedValue(mockResult)
+
+      const request = new NextRequest('http://localhost:3000/api/api-keys', {
+        body: JSON.stringify({
+          expiresAt,
+          name: 'Test Key',
+        }),
+        method: 'POST',
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(data.success).toBe(true)
+      expect(mockCreateApiKey).toHaveBeenCalledWith(
+        'user-123',
+        'Test Key',
+        new Date(expiresAt)
+      )
+    })
+
+    it('should handle server errors during creation', async () => {
+      mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-123')
+      mockCreateApiKey.mockRejectedValue(new Error('Database error'))
+
+      const request = new NextRequest('http://localhost:3000/api/api-keys', {
+        body: JSON.stringify({
+          name: 'Test Key',
+        }),
+        method: 'POST',
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('INTERNAL_SERVER_ERROR')
+    })
+  })
+
+  describe('GET error handling', () => {
+    it('should handle server errors during fetch', async () => {
+      mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-123')
+      mockGetUserApiKeys.mockRejectedValue(new Error('Database error'))
+
+      const request = new NextRequest('http://localhost:3000/api/api-keys')
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('INTERNAL_SERVER_ERROR')
+    })
   })
 })

@@ -278,4 +278,90 @@ describe('API Key Utilities', () => {
       expect(isValid).toBe(false)
     })
   })
+
+  describe('edge cases and additional coverage', () => {
+    it('should handle createApiKey with expiration date', async () => {
+      const expiresAt = new Date('2025-12-31')
+      const mockApiKey = {
+        createdAt: new Date(),
+        expiresAt,
+        id: 'test-id',
+        keyHash: 'test-hash',
+        lastUsedAt: null,
+        name: 'Test Key',
+        updatedAt: new Date(),
+        userId: 'user-123',
+      }
+
+      vi.mocked(prisma.apiKey.create).mockResolvedValue(mockApiKey)
+
+      const result = await createApiKey('user-123', 'Test Key', expiresAt)
+
+      expect(result.apiKey.expiresAt).toEqual(expiresAt)
+      expect(prisma.apiKey.create).toHaveBeenCalledWith({
+        data: {
+          expiresAt,
+          keyHash: expect.any(String),
+          name: 'Test Key',
+          userId: 'user-123',
+        },
+        select: {
+          createdAt: true,
+          expiresAt: true,
+          id: true,
+          lastUsedAt: true,
+          name: true,
+          updatedAt: true,
+        },
+      })
+    })
+
+    it('should handle getUserIdFromApiKey when no API keys found', async () => {
+      const plainKey = generateApiKey()
+      vi.mocked(prisma.apiKey.findMany).mockResolvedValue([])
+
+      const userId = await getUserIdFromApiKey(plainKey)
+
+      expect(userId).toBeUndefined()
+    })
+
+    it('should handle getUserIdFromApiKey when key hash does not match', async () => {
+      const plainKey = generateApiKey()
+      const differentKey = generateApiKey()
+      const hashedDifferentKey = await hashApiKey(differentKey)
+
+      const mockApiKeys = [
+        {
+          createdAt: new Date(),
+          expiresAt: null,
+          id: 'key-1',
+          keyHash: hashedDifferentKey,
+          lastUsedAt: null,
+          name: 'Test Key',
+          updatedAt: new Date(),
+          userId: 'user-123',
+        },
+      ]
+
+      vi.mocked(prisma.apiKey.findMany).mockResolvedValue(mockApiKeys)
+
+      const userId = await getUserIdFromApiKey(plainKey)
+
+      expect(userId).toBeUndefined()
+    })
+
+    it('should handle null or undefined API key in getUserIdFromApiKey', async () => {
+      const userId1 = await getUserIdFromApiKey(null as unknown as string)
+      const userId2 = await getUserIdFromApiKey(undefined as unknown as string)
+
+      expect(userId1).toBeUndefined()
+      expect(userId2).toBeUndefined()
+    })
+
+    it('should handle empty string API key', async () => {
+      const userId = await getUserIdFromApiKey('')
+
+      expect(userId).toBeUndefined()
+    })
+  })
 })
