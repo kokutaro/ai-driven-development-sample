@@ -500,5 +500,82 @@ describe('/api/kanban-columns/reorder', () => {
 
       consoleErrorSpy.mockRestore()
     })
+
+    it('should handle duplicate column IDs in request', async () => {
+      const duplicateIdsRequestBody = {
+        columnIds: ['column-1', 'column-2', 'column-1'], // 重複したID
+      }
+
+      // 重複があっても実際には2つのカラムしか見つからない
+      const mockExistingColumns = [
+        { id: 'column-1', name: 'To Do', userId: 'user-1' },
+        { id: 'column-2', name: 'In Progress', userId: 'user-1' },
+      ]
+
+      mockPrisma.kanbanColumn.findMany.mockResolvedValueOnce(
+        mockExistingColumns
+      )
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/reorder',
+        {
+          body: JSON.stringify(duplicateIdsRequestBody),
+          method: 'PATCH',
+        }
+      )
+
+      const response = await PATCH(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(404)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('NOT_FOUND')
+      expect(data.error.message).toBe(
+        '指定されたKanbanカラムの一部が見つかりません'
+      )
+    })
+
+    it('should handle completely malformed JSON in request body', async () => {
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/reorder',
+        {
+          body: '{columnIds: [column-1, column-2]}', // 不正なJSON（クォートなし）
+          method: 'PATCH',
+        }
+      )
+
+      const response = await PATCH(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('INTERNAL_SERVER_ERROR')
+      expect(data.error.message).toBe('サーバーエラーが発生しました')
+    })
+
+    it('PATCH: should return 401 when user authentication fails', async () => {
+      const validRequestBody = {
+        columnIds: ['column-2', 'column-1', 'column-3'],
+      }
+      const authError = new Error('認証が必要です')
+      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns/reorder',
+        {
+          body: JSON.stringify(validRequestBody),
+          method: 'PATCH',
+        }
+      )
+
+      const response = await PATCH(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('UNAUTHORIZED')
+      expect(data.error.message).toBe('認証が必要です')
+      expect(mockPrisma.kanbanColumn.findMany).not.toHaveBeenCalled()
+    })
   })
 })
