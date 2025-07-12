@@ -12,10 +12,12 @@ import {
   horizontalListSortingStrategy,
   SortableContext,
 } from '@dnd-kit/sortable'
-import { Alert, Group, Loader, Text } from '@mantine/core'
+import { Alert, Button, Group, Loader, Paper, Stack, Text } from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 
 import { KanbanCard } from './kanban-card'
 import { KanbanColumn } from './kanban-column'
+import { KanbanColumnAddModal } from './kanban-column-add-modal'
 
 import type { Todo } from '@/types/todo'
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
@@ -37,6 +39,7 @@ export function KanbanBoard() {
   const { moveToKanbanColumn } = useTodoStore()
   const [activeId, setActiveId] = useState<string | undefined>(undefined)
   const [activeTask, setActiveTask] = useState<Todo | undefined>(undefined)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -133,26 +136,59 @@ export function KanbanBoard() {
   const columnIds = kanbanColumns.map((column) => column.id)
 
   return (
-    <DndContext
-      onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
-      onDragStart={handleDragStart}
-      sensors={sensors}
-    >
-      <Group align="flex-start" gap="md" wrap="nowrap">
-        <SortableContext
-          items={columnIds}
-          strategy={horizontalListSortingStrategy}
-        >
-          {kanbanColumns.map((column) => (
-            <KanbanColumn column={column} key={column.id} />
-          ))}
-        </SortableContext>
-      </Group>
+    <Stack gap="md">
+      <DndContext
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragStart={handleDragStart}
+        sensors={sensors}
+      >
+        <Group align="flex-start" gap="md" wrap="nowrap">
+          <SortableContext
+            items={columnIds}
+            strategy={horizontalListSortingStrategy}
+          >
+            {kanbanColumns.map((column) => (
+              <KanbanColumn column={column} key={column.id} />
+            ))}
+          </SortableContext>
 
-      <DragOverlay>
-        {activeTask && activeId ? <KanbanCard task={activeTask} /> : undefined}
-      </DragOverlay>
-    </DndContext>
+          {/* 新しいカラムを追加ボタン */}
+          <Paper
+            miw={300}
+            p="md"
+            radius="md"
+            style={{
+              backgroundColor: 'var(--mantine-color-gray-0)',
+              border: '2px dashed var(--mantine-color-gray-4)',
+              cursor: 'pointer',
+            }}
+            withBorder={false}
+          >
+            <Button
+              fullWidth
+              leftSection={<IconPlus size={16} />}
+              onClick={() => setIsAddModalOpen(true)}
+              size="lg"
+              variant="subtle"
+            >
+              新しいカラムを追加
+            </Button>
+          </Paper>
+        </Group>
+
+        <DragOverlay>
+          {activeTask && activeId ? (
+            <KanbanCard task={activeTask} />
+          ) : undefined}
+        </DragOverlay>
+      </DndContext>
+
+      {/* カラム追加モーダル */}
+      <KanbanColumnAddModal
+        onClose={() => setIsAddModalOpen(false)}
+        opened={isAddModalOpen}
+      />
+    </Stack>
   )
 }

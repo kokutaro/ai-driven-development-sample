@@ -75,6 +75,8 @@ export function CategoryCreateModal({
 
   return (
     <Modal
+      closeOnClickOutside={false}
+      closeOnEscape={false}
       onClose={onClose}
       opened={opened}
       size="md"

@@ -1,10 +1,27 @@
+import { useState } from 'react'
+
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { Badge, Box, Group, Paper, Stack, Text, Title } from '@mantine/core'
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Group,
+  Menu,
+  Paper,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
+import { modals } from '@mantine/modals'
+import { IconDots, IconEdit, IconTrash } from '@tabler/icons-react'
 
 import { KanbanCard } from './kanban-card'
+import { KanbanColumnEditModal } from './kanban-column-edit-modal'
 
 import type { KanbanColumn as KanbanColumnType } from '@/types/todo'
+
+import { useKanbanStore } from '@/stores/kanban-store'
 
 interface KanbanColumnProps {
   column: KanbanColumnType
@@ -20,6 +37,9 @@ interface KanbanColumnProps {
  * - ソート可能なタスクリスト
  */
 export function KanbanColumn({ column }: KanbanColumnProps) {
+  const { deleteKanbanColumn } = useKanbanStore()
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
   const { isOver, setNodeRef } = useDroppable({
     data: {
       type: 'column',
@@ -29,6 +49,30 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
 
   const tasks = column.todos ?? []
   const taskIds = tasks.map((task) => task.id)
+
+  const handleDeleteColumn = () => {
+    modals.openConfirmModal({
+      centered: true,
+      children: (
+        <Text size="sm">
+          このカラムを削除すると、カラム内のすべてのタスクが未分類になります。
+          この操作は元に戻せません。本当に削除しますか？
+        </Text>
+      ),
+      confirmProps: { color: 'red' },
+      labels: { cancel: 'キャンセル', confirm: '削除' },
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteKanbanColumn(column.id)
+          } catch (error) {
+            console.error('カラム削除エラー:', error)
+          }
+        })()
+      },
+      title: 'カラムの削除',
+    })
+  }
 
   return (
     <Paper
@@ -48,10 +92,35 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
       <Stack gap="md">
         {/* カラムヘッダー */}
         <Group justify="space-between">
-          <Title order={4}>{column.name}</Title>
-          <Badge color="gray" size="sm" variant="filled">
-            {tasks.length}
-          </Badge>
+          <Group gap="sm">
+            <Title order={4}>{column.name}</Title>
+            <Badge color="gray" size="sm" variant="filled">
+              {tasks.length}
+            </Badge>
+          </Group>
+          <Menu position="bottom-end" shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon color="gray" size="sm" variant="subtle">
+                <IconDots size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<IconEdit size={14} />}
+                onClick={() => setIsEditModalOpen(true)}
+              >
+                編集
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size={14} />}
+                onClick={handleDeleteColumn}
+              >
+                削除
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
 
         {/* タスクリスト */}
@@ -84,6 +153,13 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
           )}
         </Stack>
       </Stack>
+
+      {/* 編集モーダル */}
+      <KanbanColumnEditModal
+        column={column}
+        onClose={() => setIsEditModalOpen(false)}
+        opened={isEditModalOpen}
+      />
     </Paper>
   )
 }
