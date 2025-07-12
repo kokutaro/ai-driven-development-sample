@@ -11,7 +11,7 @@ import { PATCH } from '@/app/api/kanban-columns/reorder/route'
 import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { mockPrisma } from '@/tests/__mocks__/prisma'
 
-const mockGetUserIdFromRequestWithApiKeyWithApiKey =
+const mockGetUserIdFromRequestWithApiKey =
   getUserIdFromRequestWithApiKey as ReturnType<typeof vi.fn>
 
 describe('/api/kanban-columns/reorder', () => {

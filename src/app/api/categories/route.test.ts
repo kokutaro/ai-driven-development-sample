@@ -14,7 +14,6 @@ vi.mock('@/lib/db', () => ({
 
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
-  getCurrentUser: vi.fn(),
   getCurrentUserFromRequest: vi.fn(),
   getUserIdFromRequest: vi.fn(),
   getUserIdFromRequestWithApiKey: vi.fn(),
@@ -23,7 +22,6 @@ vi.mock('@/lib/auth', () => ({
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
 const {
-  getCurrentUser,
   getCurrentUserFromRequest,
   getUserIdFromRequest,
   getUserIdFromRequestWithApiKey,
@@ -32,7 +30,6 @@ const {
 // モック関数の型付け
 const mockFindMany = vi.mocked(prisma.category.findMany)
 const mockCreate = vi.mocked(prisma.category.create)
-const mockGetCurrentUser = vi.mocked(getCurrentUser)
 const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
 const mockGetUserIdFromRequest = vi.mocked(getUserIdFromRequest)
 const mockGetUserIdFromRequestWithApiKey = vi.mocked(
@@ -70,13 +67,6 @@ describe('/api/categories', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetCurrentUser.mockResolvedValue({
-      createdAt: fixedDate,
-      email: 'test@example.com',
-      id: 'user-1',
-      name: 'Test User',
-      updatedAt: fixedDate,
-    })
     mockGetCurrentUserFromRequest.mockResolvedValue({
       createdAt: fixedDate,
       email: 'test@example.com',
@@ -116,7 +106,7 @@ describe('/api/categories', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest('http://localhost:3000/api/categories')
 
@@ -227,7 +217,7 @@ describe('/api/categories', () => {
         color: '#45B7D1',
         name: '学習',
       }
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest('http://localhost:3000/api/categories', {
         body: JSON.stringify(newCategoryData),

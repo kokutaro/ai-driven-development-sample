@@ -177,7 +177,7 @@ describe('/api/todos/[id]/subtasks', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest(
         'http://localhost:3000/api/todos/todo-1/subtasks'
@@ -346,7 +346,7 @@ describe('/api/todos/[id]/subtasks', () => {
       const newSubTaskData = {
         title: '新しいサブタスク',
       }
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest(
         'http://localhost:3000/api/todos/todo-1/subtasks',

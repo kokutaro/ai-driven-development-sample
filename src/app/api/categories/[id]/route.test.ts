@@ -26,9 +26,7 @@ const { getCurrentUserFromRequest } = await import('@/lib/auth')
 const mockFindUnique = vi.mocked(prisma.category.findUnique)
 const mockUpdate = vi.mocked(prisma.category.update)
 const mockDelete = vi.mocked(prisma.category.delete)
-const mockGetCurrentUserFromRequestFromRequest = vi.mocked(
-  getCurrentUserFromRequest
-)
+const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
 
 describe('/api/categories/[id]', () => {
   const fixedDate = new Date('2024-01-01T00:00:00.000Z')

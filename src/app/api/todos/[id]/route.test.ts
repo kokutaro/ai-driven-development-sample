@@ -28,10 +28,8 @@ const { getCurrentUserFromRequest, getUserIdFromRequestWithApiKey } =
 const mockFindUnique = vi.mocked(prisma.todo.findUnique)
 const mockUpdate = vi.mocked(prisma.todo.update)
 const mockDelete = vi.mocked(prisma.todo.delete)
-const mockGetCurrentUserFromRequestFromRequest = vi.mocked(
-  getCurrentUserFromRequest
-)
-const mockGetUserIdFromRequestWithApiKeyWithApiKey = vi.mocked(
+const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
   getUserIdFromRequestWithApiKey
 )
 
