@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import type { NextRequest } from 'next/server'
 
+import { getUserIdFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const createKanbanColumnSchema = z.object({
@@ -21,8 +22,7 @@ const createKanbanColumnSchema = z.object({
  */
 export async function GET() {
   try {
-    // TODO: 認証機能実装後にユーザーIDを取得
-    const userId = 'user-1' // 仮のユーザーID
+    const userId = await getUserIdFromRequest()
 
     const kanbanColumns = await prisma.kanbanColumn.findMany({
       include: {
@@ -65,6 +65,21 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Kanbanカラム取得エラー:', error)
+
+    // 認証エラーの場合
+    if (error instanceof Error && error.message === '認証が必要です') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'UNAUTHORIZED',
+            message: '認証が必要です',
+          },
+          success: false,
+        },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
       {
         error: {
@@ -86,8 +101,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    // TODO: 認証機能実装後にユーザーIDを取得
-    const userId = 'user-1' // 仮のユーザーID
+    const userId = await getUserIdFromRequest()
 
     const body = await request.json()
     const validatedData = createKanbanColumnSchema.parse(body)
@@ -131,6 +145,21 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Kanbanカラム作成エラー:', error)
+
+    // 認証エラーの場合
+    if (error instanceof Error && error.message === '認証が必要です') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'UNAUTHORIZED',
+            message: '認証が必要です',
+          },
+          success: false,
+        },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
       {
         error: {

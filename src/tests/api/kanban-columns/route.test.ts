@@ -1,13 +1,25 @@
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// 認証モック
+vi.mock('@/lib/auth', () => ({
+  getUserIdFromRequest: vi.fn(),
+}))
+
 // モックを最初にインポート
 import { GET, POST } from '@/app/api/kanban-columns/route'
+import { getUserIdFromRequest } from '@/lib/auth'
 import { mockPrisma } from '@/tests/__mocks__/prisma'
+
+const mockGetUserIdFromRequest = getUserIdFromRequest as ReturnType<
+  typeof vi.fn
+>
 
 describe('/api/kanban-columns', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // デフォルトで認証済みユーザーとしてモック
+    mockGetUserIdFromRequest.mockResolvedValue('user-1')
   })
 
   describe('GET', () => {
@@ -117,6 +129,20 @@ describe('/api/kanban-columns', () => {
       )
 
       consoleErrorSpy.mockRestore()
+    })
+
+    it('should handle authentication error', async () => {
+      mockGetUserIdFromRequest.mockRejectedValueOnce(
+        new Error('認証が必要です')
+      )
+
+      const response = await GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('UNAUTHORIZED')
+      expect(data.error.message).toBe('認証が必要です')
     })
   })
 
@@ -454,6 +480,28 @@ describe('/api/kanban-columns', () => {
       )
 
       consoleErrorSpy.mockRestore()
+    })
+
+    it('should handle authentication error', async () => {
+      mockGetUserIdFromRequest.mockRejectedValueOnce(
+        new Error('認証が必要です')
+      )
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/kanban-columns',
+        {
+          body: JSON.stringify(validRequestBody),
+          method: 'POST',
+        }
+      )
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.success).toBe(false)
+      expect(data.error.code).toBe('UNAUTHORIZED')
+      expect(data.error.message).toBe('認証が必要です')
     })
   })
 })
