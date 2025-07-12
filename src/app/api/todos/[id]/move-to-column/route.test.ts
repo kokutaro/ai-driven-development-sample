@@ -24,6 +24,26 @@ interface TodoWithRelations extends Todo {
   }>
 }
 
+// Auth機能のモック
+vi.mock('@/lib/auth', () => ({
+  getCurrentUser: vi.fn().mockResolvedValue({
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    email: 'test@example.com',
+    id: 'test-user-id',
+    name: 'Test User',
+    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+  }),
+  getUserIdFromRequest: vi.fn().mockResolvedValue('test-user-id'),
+  isAuthenticated: vi.fn().mockResolvedValue(true),
+  requireAuth: vi.fn().mockResolvedValue({
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    email: 'test@example.com',
+    id: 'test-user-id',
+    name: 'Test User',
+    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+  }),
+}))
+
 // Prismaクライアントのモック
 vi.mock('@/lib/db', () => ({
   prisma: {

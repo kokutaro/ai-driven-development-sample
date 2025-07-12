@@ -38,6 +38,13 @@ export default defineConfig({
      * CI環境ではメモリ不足を防ぐためテストワーカー数を1に制限します
      */
     maxWorkers: process.env.CI ? 1 : undefined,
+    // ESM/CJS互換性のための設定
+    server: {
+      deps: {
+        // next-authなどの外部依存をプリバンドル
+        external: ['next-auth', '@auth/prisma-adapter'],
+      },
+    },
     setupFiles: ['./src/tests/setup.ts'],
   },
 })
