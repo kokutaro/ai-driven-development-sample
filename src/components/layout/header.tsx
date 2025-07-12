@@ -1,6 +1,7 @@
-import { ActionIcon, Avatar, Group, TextInput, Title } from '@mantine/core'
+import { ActionIcon, Group, TextInput, Title } from '@mantine/core'
 import { IconHelp, IconSearch, IconSettings } from '@tabler/icons-react'
 
+import { UserAvatarMenu } from '@/components/layout/user-avatar-menu'
 import { useClientOnly } from '@/hooks/use-client-only'
 import { generateUserInitials } from '@/lib/utils'
 import { useUserStore } from '@/stores/user-store'
@@ -52,7 +53,13 @@ export function Header() {
         <ActionIcon size="lg" variant="subtle">
           <IconHelp size={18} />
         </ActionIcon>
-        {isClient && <Avatar name={avatarName} size="sm" src={avatarSrc} />}
+        {isClient && (
+          <UserAvatarMenu
+            avatarName={avatarName}
+            avatarSrc={avatarSrc}
+            user={user}
+          />
+        )}
       </Group>
     </Group>
   )
