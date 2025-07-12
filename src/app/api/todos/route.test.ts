@@ -123,6 +123,14 @@ describe('/api/todos', () => {
               name: true,
             },
           },
+          kanbanColumn: {
+            select: {
+              color: true,
+              id: true,
+              name: true,
+              order: true,
+            },
+          },
           subTasks: {
             orderBy: {
               order: 'asc',

@@ -41,6 +41,14 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
+          kanbanColumn: {
+            select: {
+              color: true,
+              id: true,
+              name: true,
+              order: true,
+            },
+          },
           subTasks: {
             orderBy: {
               order: 'asc',
@@ -110,6 +118,14 @@ export async function POST(request: NextRequest) {
             color: true,
             id: true,
             name: true,
+          },
+        },
+        kanbanColumn: {
+          select: {
+            color: true,
+            id: true,
+            name: true,
+            order: true,
           },
         },
       },
