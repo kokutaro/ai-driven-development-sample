@@ -9,6 +9,7 @@ import type {
 interface KanbanStore {
   // Actions
   clearError: () => void
+  createDefaultColumns: () => Promise<void>
   createKanbanColumn: (data: CreateKanbanColumnData) => Promise<void>
   deleteKanbanColumn: (id: string) => Promise<void>
 
@@ -35,6 +36,39 @@ interface KanbanStore {
  */
 export const useKanbanStore = create<KanbanStore>((set, get) => ({
   clearError: () => set({ error: undefined }),
+
+  createDefaultColumns: async () => {
+    set({ error: undefined, isLoading: true })
+    try {
+      const response = await fetch('/api/kanban-columns/seed', {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        // カラムが既に存在する場合はエラーとしない
+        if (response.status === 409) {
+          set({ isLoading: false })
+          return
+        }
+        throw new Error('デフォルトKanbanカラムの作成に失敗しました')
+      }
+      const responseData = await response.json()
+      const newColumns = responseData.data
+      set({
+        isLoading: false,
+        kanbanColumns: newColumns.sort(
+          (a: KanbanColumn, b: KanbanColumn) => a.order - b.order
+        ),
+      })
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'デフォルトKanbanカラムの作成に失敗しました',
+        isLoading: false,
+      })
+    }
+  },
   createKanbanColumn: async (data: CreateKanbanColumnData) => {
     set({ error: undefined, isLoading: true })
     try {
