@@ -2,6 +2,7 @@ import { ActionIcon, Avatar, Group, TextInput, Title } from '@mantine/core'
 import { IconHelp, IconSearch, IconSettings } from '@tabler/icons-react'
 
 import { useClientOnly } from '@/hooks/use-client-only'
+import { generateUserInitials } from '@/lib/utils'
 import { useUserStore } from '@/stores/user-store'
 
 /**
@@ -16,6 +17,10 @@ import { useUserStore } from '@/stores/user-store'
 export function Header() {
   const { user } = useUserStore()
   const isClient = useClientOnly()
+
+  // ユーザーアバター用の設定を生成
+  const avatarSrc = user?.image ?? undefined
+  const avatarName = user?.name ? generateUserInitials(user.name) : undefined
 
   return (
     <Group h="100%" justify="space-between" px="md">
@@ -37,7 +42,7 @@ export function Header() {
         <ActionIcon size="lg" variant="subtle">
           <IconHelp size={18} />
         </ActionIcon>
-        {isClient && <Avatar name={user?.name ?? undefined} size="sm" />}
+        {isClient && <Avatar name={avatarName} size="sm" src={avatarSrc} />}
       </Group>
     </Group>
   )

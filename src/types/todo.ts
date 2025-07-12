@@ -216,6 +216,7 @@ export interface User {
   createdAt: Date
   email: string
   id: string
+  image?: string
   kanbanColumns?: KanbanColumn[]
   name: string
 

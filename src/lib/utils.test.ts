@@ -1,4 +1,10 @@
-import { capitalize, cn, formatDate, isValidEmail } from './utils'
+import {
+  capitalize,
+  cn,
+  formatDate,
+  generateUserInitials,
+  isValidEmail,
+} from './utils'
 
 describe('utils', () => {
   describe('capitalize', () => {
@@ -291,6 +297,74 @@ describe('utils', () => {
       expect(typeof result).toBe('string')
       expect(result.length).toBeGreaterThan(0)
       expect(result).toContain(today.getFullYear().toString())
+    })
+  })
+
+  describe('generateUserInitials', () => {
+    it('複数の単語からイニシャルを生成する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('Kohara Hiromi')).toBe('KH')
+      expect(generateUserInitials('John Doe')).toBe('JD')
+      expect(generateUserInitials('田中 太郎')).toBe('田太')
+    })
+
+    it('単一の単語からイニシャルを生成する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('John')).toBe('J')
+      expect(generateUserInitials('太郎')).toBe('太')
+      expect(generateUserInitials('test')).toBe('T')
+    })
+
+    it('3つ以上の単語がある場合は最初の2文字のみ返す', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('John Michael Doe')).toBe('JM')
+      expect(generateUserInitials('田中 太郎 次郎')).toBe('田太')
+      expect(generateUserInitials('A B C D E')).toBe('AB')
+    })
+
+    it('余分なスペースを適切に処理する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('  John   Doe  ')).toBe('JD')
+      expect(generateUserInitials('John    Doe')).toBe('JD')
+      expect(generateUserInitials(' 田中  太郎 ')).toBe('田太')
+    })
+
+    it('小文字を大文字に変換する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('john doe')).toBe('JD')
+      expect(generateUserInitials('alice smith')).toBe('AS')
+      expect(generateUserInitials('test user')).toBe('TU')
+    })
+
+    it('空文字列や空白のみの文字列で空文字列を返す', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('')).toBe('')
+      expect(generateUserInitials('   ')).toBe('')
+      expect(generateUserInitials('\t\n')).toBe('')
+    })
+
+    it('数字で始まる名前を処理する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('123 Test')).toBe('1T')
+      expect(generateUserInitials('3M Company')).toBe('3C')
+    })
+
+    it('特殊文字で始まる名前を処理する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('@John Doe')).toBe('@D')
+      expect(generateUserInitials('$User Name')).toBe('$N')
+    })
+
+    it('ハイフンやアンダースコアを含む名前を処理する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('Mary-Jane Watson')).toBe('MW')
+      expect(generateUserInitials('user_name test')).toBe('UT')
+    })
+
+    it('単一文字の単語を処理する', () => {
+      // Arrange & Act & Assert
+      expect(generateUserInitials('A B')).toBe('AB')
+      expect(generateUserInitials('X Y Z')).toBe('XY')
     })
   })
 
