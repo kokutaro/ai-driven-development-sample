@@ -7,13 +7,13 @@ vi.mock('@/stores/user-store', () => ({
   useUserStore: mockUseUserStore,
 }))
 
-const setUser = vi.fn()
-mockUseUserStore.mockReturnValue({ setUser })
+const initializeAuth = vi.fn()
+mockUseUserStore.mockReturnValue({ initializeAuth })
 
 const { AppProvider } = await import('./app-provider')
 
 describe('AppProvider', () => {
-  it('子要素を表示しデモユーザーを設定する', () => {
+  it('子要素を表示し認証状態を初期化する', () => {
     render(
       <AppProvider>
         <div>child</div>
@@ -21,15 +21,10 @@ describe('AppProvider', () => {
     )
 
     expect(screen.getByText('child')).toBeInTheDocument()
-    expect(setUser).toHaveBeenCalledTimes(1)
-    expect(setUser.mock.calls[0][0]).toMatchObject({
-      email: 'demo@example.com',
-      id: 'user-1',
-      name: 'デモユーザー',
-    })
+    expect(initializeAuth).toHaveBeenCalledTimes(1)
   })
 
-  it('再レンダリングしてもsetUserは1回だけ呼ばれる', () => {
+  it('再レンダリングしてもinitializeAuthは1回だけ呼ばれる', () => {
     const { rerender } = render(
       <AppProvider>
         <span>first</span>
@@ -42,6 +37,6 @@ describe('AppProvider', () => {
     )
 
     expect(screen.getByText('second')).toBeInTheDocument()
-    expect(setUser).toHaveBeenCalledTimes(2)
+    expect(initializeAuth).toHaveBeenCalledTimes(2)
   })
 })
