@@ -41,6 +41,26 @@ export function formatDate(date: Date): string {
 }
 
 /**
+ * ユーザー名からイニシャルを生成する関数
+ *
+ * ユーザー名をスペースで分割し、各単語の最初の文字を大文字で結合します。
+ * 例: "Kohara Hiromi" → "KH", "田中太郎" → "田太"
+ *
+ * @param name - ユーザー名
+ * @returns イニシャル文字列
+ */
+export function generateUserInitials(name: string): string {
+  if (!name?.trim()) return ''
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('')
+    .slice(0, 2) // 最大2文字まで
+}
+
+/**
  * メールアドレスの有効性を検証する関数
  *
  * @param email - 検証するメールアドレス
