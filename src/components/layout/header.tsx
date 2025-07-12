@@ -22,6 +22,16 @@ export function Header() {
   const avatarSrc = user?.image ?? undefined
   const avatarName = user?.name ? generateUserInitials(user.name) : undefined
 
+  // デバッグ用（開発時のみ）
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Header - User data:', {
+      avatarName,
+      avatarSrc,
+      isClient,
+      user,
+    })
+  }
+
   return (
     <Group h="100%" justify="space-between" px="md">
       <Group>

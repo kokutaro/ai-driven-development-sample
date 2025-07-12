@@ -35,12 +35,22 @@ export const useUserStore = create<UserStore>((set, get) => ({
         isAuthenticated(),
       ])
 
+      // デバッグ用（開発時のみ）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('UserStore - Auth initialized:', { authenticated, user })
+      }
+
       set({
         isAuthenticated: authenticated,
         isLoading: false,
         user,
       })
-    } catch {
+    } catch (error) {
+      // デバッグ用（開発時のみ）
+      if (process.env.NODE_ENV === 'development') {
+        console.error('UserStore - Auth initialization failed:', error)
+      }
+
       set({
         isAuthenticated: false,
         isLoading: false,

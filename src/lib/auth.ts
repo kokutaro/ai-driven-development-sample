@@ -19,6 +19,7 @@ export async function getCurrentUser(): Promise<undefined | User> {
     createdAt: new Date(), // 実際のデータベースから取得する場合は適切な値を設定
     email: session.user.email ?? '',
     id: session.user.id ?? '',
+    image: session.user.image ?? undefined,
     name: session.user.name ?? '',
     updatedAt: new Date(), // 実際のデータベースから取得する場合は適切な値を設定
   }
