@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 
 import { deleteApiKey } from '@/lib/api-key'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-utils'
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 
 /**
  * DELETE /api/api-keys/[id] - APIキー削除
@@ -12,7 +12,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const apiKeyId = params.id
 
     await deleteApiKey(userId, apiKeyId)

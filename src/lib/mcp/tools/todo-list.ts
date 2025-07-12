@@ -168,6 +168,7 @@ function getFilterDisplayName(filter: string): string {
   }
 
   return Object.prototype.hasOwnProperty.call(displayNames, filter)
-    ? displayNames[filter]
+    ? // eslint-disable-next-line security/detect-object-injection
+      displayNames[filter]
     : filter
 }

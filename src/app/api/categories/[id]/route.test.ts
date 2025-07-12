@@ -15,18 +15,20 @@ vi.mock('@/lib/db', () => ({
 
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
-  getCurrentUser: vi.fn(),
+  getCurrentUserFromRequest: vi.fn(),
 }))
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getCurrentUser } = await import('@/lib/auth')
+const { getCurrentUserFromRequest } = await import('@/lib/auth')
 
 // モック関数の型付け
 const mockFindUnique = vi.mocked(prisma.category.findUnique)
 const mockUpdate = vi.mocked(prisma.category.update)
 const mockDelete = vi.mocked(prisma.category.delete)
-const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockGetCurrentUserFromRequestFromRequest = vi.mocked(
+  getCurrentUserFromRequest
+)
 
 describe('/api/categories/[id]', () => {
   const fixedDate = new Date('2024-01-01T00:00:00.000Z')
@@ -42,7 +44,7 @@ describe('/api/categories/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetCurrentUser.mockResolvedValue({
+    mockGetCurrentUserFromRequest.mockResolvedValue({
       createdAt: fixedDate,
       email: 'test@example.com',
       id: 'user-1',
@@ -204,7 +206,7 @@ describe('/api/categories/[id]', () => {
         color: '#4ECDC4',
         name: '更新された仕事',
       }
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest(
         'http://localhost:3000/api/categories/category-1',
@@ -309,7 +311,7 @@ describe('/api/categories/[id]', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest(
         'http://localhost:3000/api/categories/category-1',

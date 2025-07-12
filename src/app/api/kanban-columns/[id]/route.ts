@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import type { NextRequest } from 'next/server'
 
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const updateKanbanColumnSchema = z.object({
@@ -31,7 +31,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = params
 
     // カラムの存在確認
@@ -121,7 +121,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = params
 
     const kanbanColumn = await prisma.kanbanColumn.findFirst({
@@ -216,7 +216,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = params
 
     const body = await request.json()

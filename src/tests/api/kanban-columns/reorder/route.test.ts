@@ -3,23 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 認証モック
 vi.mock('@/lib/auth', () => ({
-  getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックを最初にインポート
 import { PATCH } from '@/app/api/kanban-columns/reorder/route'
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { mockPrisma } from '@/tests/__mocks__/prisma'
 
-const mockGetUserIdFromRequest = getUserIdFromRequest as ReturnType<
-  typeof vi.fn
->
+const mockGetUserIdFromRequestWithApiKeyWithApiKey =
+  getUserIdFromRequestWithApiKey as ReturnType<typeof vi.fn>
 
 describe('/api/kanban-columns/reorder', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトで認証済みユーザーとしてモック
-    mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('PATCH', () => {
@@ -558,7 +557,7 @@ describe('/api/kanban-columns/reorder', () => {
         columnIds: ['column-2', 'column-1', 'column-3'],
       }
       const authError = new Error('認証が必要です')
-      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValueOnce(authError)
 
       const request = new NextRequest(
         'http://localhost:3000/api/kanban-columns/reorder',

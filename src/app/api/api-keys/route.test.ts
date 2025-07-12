@@ -5,7 +5,7 @@ import { GET, POST } from '@/app/api/api-keys/route'
 
 // 依存関係をモック
 vi.mock('@/lib/auth', () => ({
-  getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 vi.mock('@/lib/api-key', () => ({
@@ -13,9 +13,9 @@ vi.mock('@/lib/api-key', () => ({
   getUserApiKeys: vi.fn(),
 }))
 
-const mockGetUserIdFromRequest = vi.mocked(
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
   await import('@/lib/auth')
-).getUserIdFromRequest
+).getUserIdFromRequestWithApiKey
 const mockGetUserApiKeys = vi.mocked(
   await import('@/lib/api-key')
 ).getUserApiKeys
@@ -39,10 +39,11 @@ describe('/api/api-keys', () => {
         },
       ]
 
-      mockGetUserIdFromRequest.mockResolvedValue('user-123')
+      mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-123')
       mockGetUserApiKeys.mockResolvedValue(mockApiKeys)
 
-      const response = await GET()
+      const request = new NextRequest('http://localhost:3000/api/api-keys')
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -61,9 +62,12 @@ describe('/api/api-keys', () => {
     })
 
     it('should return 401 for unauthenticated user', async () => {
-      mockGetUserIdFromRequest.mockRejectedValue(new Error('認証が必要です'))
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValue(
+        new Error('認証が必要です')
+      )
 
-      const response = await GET()
+      const request = new NextRequest('http://localhost:3000/api/api-keys')
+      const response = await GET(request)
       const data = await response.json()
 
       expect(response.status).toBe(401)
@@ -86,7 +90,7 @@ describe('/api/api-keys', () => {
         plainKey: 'todo_test123456789',
       }
 
-      mockGetUserIdFromRequest.mockResolvedValue('user-123')
+      mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-123')
       mockCreateApiKey.mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost:3000/api/api-keys', {
@@ -115,7 +119,7 @@ describe('/api/api-keys', () => {
     })
 
     it('should return validation error for invalid data', async () => {
-      mockGetUserIdFromRequest.mockResolvedValue('user-123')
+      mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-123')
 
       const request = new NextRequest('http://localhost:3000/api/api-keys', {
         body: JSON.stringify({
@@ -133,7 +137,9 @@ describe('/api/api-keys', () => {
     })
 
     it('should return 401 for unauthenticated user', async () => {
-      mockGetUserIdFromRequest.mockRejectedValue(new Error('認証が必要です'))
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValue(
+        new Error('認証が必要です')
+      )
 
       const request = new NextRequest('http://localhost:3000/api/api-keys', {
         body: JSON.stringify({

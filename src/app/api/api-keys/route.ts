@@ -8,15 +8,15 @@ import {
   createSuccessResponse,
   createValidationErrorResponse,
 } from '@/lib/api-utils'
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { apiKeyCreateSchema } from '@/schemas/api-key'
 
 /**
  * GET /api/api-keys - APIキー一覧取得
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
 
     const apiKeys = await getUserApiKeys(userId)
 
@@ -40,7 +40,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const body = await request.json()
     const validatedData = apiKeyCreateSchema.parse(body)
 

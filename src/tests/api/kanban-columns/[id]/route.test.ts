@@ -3,23 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 認証モック
 vi.mock('@/lib/auth', () => ({
-  getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックを最初にインポート
 import { DELETE, GET, PUT } from '@/app/api/kanban-columns/[id]/route'
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { mockPrisma } from '@/tests/__mocks__/prisma'
 
-const mockGetUserIdFromRequest = getUserIdFromRequest as ReturnType<
-  typeof vi.fn
->
+const mockGetUserIdFromRequestWithApiKeyWithApiKey =
+  getUserIdFromRequestWithApiKey as ReturnType<typeof vi.fn>
 
 describe('/api/kanban-columns/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトで認証済みユーザーとしてモック
-    mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('GET', () => {
@@ -875,7 +874,7 @@ describe('/api/kanban-columns/[id]', () => {
     it('GET: should return 401 when user authentication fails', async () => {
       const mockParams = { id: 'column-1' }
       const authError = new Error('認証が必要です')
-      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValueOnce(authError)
 
       const request = new NextRequest(
         'http://localhost:3000/api/kanban-columns/column-1'
@@ -893,7 +892,7 @@ describe('/api/kanban-columns/[id]', () => {
     it('PUT: should return 401 when user authentication fails', async () => {
       const mockParams = { id: 'column-1' }
       const authError = new Error('認証が必要です')
-      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValueOnce(authError)
 
       const validRequestBody = {
         color: '#4ECDC4',
@@ -921,7 +920,7 @@ describe('/api/kanban-columns/[id]', () => {
     it('DELETE: should return 401 when user authentication fails', async () => {
       const mockParams = { id: 'column-1' }
       const authError = new Error('認証が必要です')
-      mockGetUserIdFromRequest.mockRejectedValueOnce(authError)
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValueOnce(authError)
 
       const request = new NextRequest(
         'http://localhost:3000/api/kanban-columns/column-1',

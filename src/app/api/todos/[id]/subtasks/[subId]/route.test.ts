@@ -18,19 +18,19 @@ vi.mock('@/lib/db', () => ({
 
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
-  getCurrentUser: vi.fn(),
+  getCurrentUserFromRequest: vi.fn(),
 }))
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getCurrentUser } = await import('@/lib/auth')
+const { getCurrentUserFromRequest } = await import('@/lib/auth')
 
 // モック関数の型付け
 const mockSubTaskFindUnique = vi.mocked(prisma.subTask.findUnique)
 const mockSubTaskUpdate = vi.mocked(prisma.subTask.update)
 const mockSubTaskDelete = vi.mocked(prisma.subTask.delete)
 const _mockTodoFindUnique = vi.mocked(prisma.todo.findUnique)
-const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
 
 describe('/api/todos/[id]/subtasks/[subId]', () => {
   const mockTodo = {
@@ -61,7 +61,7 @@ describe('/api/todos/[id]/subtasks/[subId]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetCurrentUser.mockResolvedValue({
+    mockGetCurrentUserFromRequest.mockResolvedValue({
       createdAt: new Date(),
       email: 'test@example.com',
       id: 'user-1',
@@ -343,7 +343,7 @@ describe('/api/todos/[id]/subtasks/[subId]', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest(
         'http://localhost:3000/api/todos/todo-1/subtasks/subtask-1',

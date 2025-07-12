@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import type { NextRequest } from 'next/server'
 
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const createKanbanColumnSchema = z.object({
@@ -20,9 +20,9 @@ const createKanbanColumnSchema = z.object({
  *
  * @returns Kanbanカラムの一覧
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
 
     const kanbanColumns = await prisma.kanbanColumn.findMany({
       include: {
@@ -101,7 +101,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
 
     const body = await request.json()
     const validatedData = createKanbanColumnSchema.parse(body)
