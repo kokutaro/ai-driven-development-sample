@@ -1,4 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// グローバルauthモックを無効化してこのテストファイル専用のモックを使用
+vi.unmock('@/lib/auth')
+
+// NextAuth.jsのauthをモック
+vi.mock('@/auth', () => ({
+  auth: vi.fn(),
+}))
 
 import {
   getCurrentUser,
@@ -6,11 +14,6 @@ import {
   isAuthenticated,
   requireAuth,
 } from './auth'
-
-// NextAuth.jsのauthをモック
-vi.mock('@/auth', () => ({
-  auth: vi.fn(),
-}))
 
 const { auth } = await import('@/auth')
 const mockAuth = vi.mocked(
@@ -20,6 +23,9 @@ const mockAuth = vi.mocked(
 )
 
 describe('auth', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
   describe('getCurrentUser', () => {
     it('認証済みユーザーの情報を返す', async () => {
       // Arrange
