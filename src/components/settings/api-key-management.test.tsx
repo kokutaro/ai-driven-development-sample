@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiKeyManagement } from '@/components/settings/api-key-management'
 import { useApiKeyStore } from '@/stores/api-key-store'
+import { renderWithProviders as render } from '@/test-utils'
 
 // Zustandストアをモック
 vi.mock('@/stores/api-key-store')
@@ -14,6 +15,7 @@ vi.mock('@mantine/modals', () => ({
   modals: {
     openConfirmModal: vi.fn(),
   },
+  ModalsProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
 describe('ApiKeyManagement', () => {
@@ -72,7 +74,9 @@ describe('ApiKeyManagement', () => {
 
     render(<ApiKeyManagement />)
 
-    const createButton = screen.getByText('新しいAPIキーを作成')
+    const createButton = screen.getByRole('button', {
+      name: '新しいAPIキーを作成',
+    })
     expect(createButton).toBeDisabled()
   })
 
@@ -107,7 +111,7 @@ describe('ApiKeyManagement', () => {
     render(<ApiKeyManagement />)
 
     // ローディングスケルトンが表示されることを確認
-    const skeletons = screen.getAllByRole('progressbar')
+    const skeletons = document.querySelectorAll('.mantine-Skeleton-root')
     expect(skeletons.length).toBeGreaterThan(0)
   })
 })
