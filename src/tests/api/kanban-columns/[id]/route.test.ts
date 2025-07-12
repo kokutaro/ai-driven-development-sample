@@ -1,13 +1,25 @@
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// 認証モック
+vi.mock('@/lib/auth', () => ({
+  getUserIdFromRequest: vi.fn(),
+}))
+
 // モックを最初にインポート
 import { DELETE, GET, PUT } from '@/app/api/kanban-columns/[id]/route'
+import { getUserIdFromRequest } from '@/lib/auth'
 import { mockPrisma } from '@/tests/__mocks__/prisma'
+
+const mockGetUserIdFromRequest = getUserIdFromRequest as ReturnType<
+  typeof vi.fn
+>
 
 describe('/api/kanban-columns/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // デフォルトで認証済みユーザーとしてモック
+    mockGetUserIdFromRequest.mockResolvedValue('user-1')
   })
 
   describe('GET', () => {
