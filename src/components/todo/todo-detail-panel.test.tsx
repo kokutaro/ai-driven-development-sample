@@ -1,6 +1,7 @@
 /* eslint-disable import/order */
 import { useCategories } from '@/hooks/use-categories'
 import { useTodoStore } from '@/stores/todo-store'
+import { useKanbanStore } from '@/stores/kanban-store'
 import { fireEvent, render, screen, waitFor } from '@/test-utils'
 import { type Todo } from '@/types/todo'
 
@@ -13,6 +14,9 @@ vi.mock('@/hooks/use-categories', () => ({
   useCategories: vi.fn(),
 }))
 
+vi.mock('@/stores/kanban-store', () => ({
+  useKanbanStore: vi.fn(),
+}))
 // Tabler iconsのモック
 vi.mock('@tabler/icons-react', () => ({
   IconCalendar: () => <div data-testid="icon-calendar" />,
@@ -58,6 +62,41 @@ const mockUseCategories = {
   updateCategory: vi.fn(),
 }
 
+const mockKanbanColumns = [
+  {
+    color: '#FF6B6B',
+    createdAt: new Date(),
+    id: 'kanban-1',
+    name: 'TODO',
+    order: 1,
+    updatedAt: new Date(),
+    userId: 'user-1',
+  },
+  {
+    color: '#4ECDC4',
+    createdAt: new Date(),
+    id: 'kanban-2',
+    name: 'In Progress',
+    order: 2,
+    updatedAt: new Date(),
+    userId: 'user-1',
+  },
+]
+
+const mockFetchKanbanColumns = vi.fn()
+const mockUseKanbanStore = {
+  clearError: vi.fn(),
+  createKanbanColumn: vi.fn(),
+  deleteKanbanColumn: vi.fn(),
+  error: undefined,
+  fetchKanbanColumns: mockFetchKanbanColumns,
+  isLoading: false,
+  kanbanColumns: mockKanbanColumns,
+  reorderKanbanColumns: vi.fn(),
+  reset: vi.fn(),
+  updateKanbanColumn: vi.fn(),
+}
+
 const mockTodo: Todo = {
   category: {
     color: '#FF6B6B',
@@ -74,6 +113,7 @@ const mockTodo: Todo = {
   id: 'todo-1',
   isCompleted: false,
   isImportant: false,
+  kanbanColumnId: 'kanban-1',
   order: 0,
   title: 'テストタスク',
   updatedAt: new Date(),
@@ -86,6 +126,8 @@ describe('TodoDetailPanel', () => {
     vi.mocked(useTodoStore).mockReturnValue(mockTodoStore)
     vi.mocked(useCategories).mockReturnValue(mockUseCategories)
     mockUpdateTodo.mockResolvedValue(undefined)
+    vi.mocked(useKanbanStore).mockReturnValue(mockUseKanbanStore)
+    mockFetchKanbanColumns.mockResolvedValue(undefined)
   })
 
   it('選択されたタスクの詳細が表示される', () => {
@@ -152,6 +194,7 @@ describe('TodoDetailPanel', () => {
 
     // Assert
     expect(screen.getByText('カテゴリ')).toBeInTheDocument()
+    expect(screen.getByText('Kanbanカラム')).toBeInTheDocument()
   })
 
   it('カテゴリオプションが正しく表示される', async () => {
@@ -176,6 +219,7 @@ describe('TodoDetailPanel', () => {
         description: 'テスト用の説明',
         dueDate: '2024-01-15T00:00:00.000Z',
         isImportant: false,
+        kanbanColumnId: 'kanban-1',
         title: '更新されたタスク',
       })
     })
@@ -195,6 +239,7 @@ describe('TodoDetailPanel', () => {
         description: '更新された説明',
         dueDate: '2024-01-15T00:00:00.000Z',
         isImportant: false,
+        kanbanColumnId: 'kanban-1',
         title: 'テストタスク',
       })
     })
@@ -214,6 +259,7 @@ describe('TodoDetailPanel', () => {
         description: 'テスト用の説明',
         dueDate: '2024-01-15T00:00:00.000Z',
         isImportant: true,
+        kanbanColumnId: 'kanban-1',
         title: 'テストタスク',
       })
     })

@@ -1,6 +1,7 @@
 import { TodoAddModal } from './todo-add-modal'
 
 import { useCategories } from '@/hooks/use-categories'
+import { useKanbanStore } from '@/stores/kanban-store'
 import { useTodoStore } from '@/stores/todo-store'
 import { act, fireEvent, render, screen, waitFor } from '@/test-utils'
 
@@ -11,6 +12,10 @@ vi.mock('@/stores/todo-store', () => ({
 
 vi.mock('@/hooks/use-categories', () => ({
   useCategories: vi.fn(),
+}))
+
+vi.mock('@/stores/kanban-store', () => ({
+  useKanbanStore: vi.fn(),
 }))
 
 // カテゴリ作成モーダルのモック
@@ -81,6 +86,40 @@ const mockUseCategories = {
   updateCategory: vi.fn(),
 }
 
+const mockKanbanColumns = [
+  {
+    color: '#FF6B6B',
+    createdAt: new Date(),
+    id: 'kanban-1',
+    name: 'TODO',
+    order: 1,
+    updatedAt: new Date(),
+    userId: 'user-1',
+  },
+  {
+    color: '#4ECDC4',
+    createdAt: new Date(),
+    id: 'kanban-2',
+    name: 'In Progress',
+    order: 2,
+    updatedAt: new Date(),
+    userId: 'user-1',
+  },
+]
+
+const mockFetchKanbanColumns = vi.fn()
+const mockUseKanbanStore = {
+  clearError: vi.fn(),
+  createKanbanColumn: vi.fn(),
+  deleteKanbanColumn: vi.fn(),
+  error: undefined,
+  fetchKanbanColumns: mockFetchKanbanColumns,
+  isLoading: false,
+  kanbanColumns: mockKanbanColumns,
+  reorderKanbanColumns: vi.fn(),
+  reset: vi.fn(),
+  updateKanbanColumn: vi.fn(),
+}
 describe('TodoAddModal', () => {
   const mockOnClose = vi.fn()
 
@@ -89,6 +128,8 @@ describe('TodoAddModal', () => {
     vi.mocked(useTodoStore).mockReturnValue(mockTodoStore)
     vi.mocked(useCategories).mockReturnValue(mockUseCategories)
     mockCreateTodo.mockResolvedValue(undefined)
+    vi.mocked(useKanbanStore).mockReturnValue(mockUseKanbanStore)
+    mockFetchKanbanColumns.mockResolvedValue(undefined)
   })
 
   it('モーダルが開いている時に表示される', () => {
@@ -117,6 +158,7 @@ describe('TodoAddModal', () => {
     expect(screen.getByText('期限日')).toBeInTheDocument()
     expect(screen.getByText('重要')).toBeInTheDocument()
     expect(screen.getByText('カテゴリ')).toBeInTheDocument()
+    expect(screen.getByText('Kanbanカラム')).toBeInTheDocument()
   })
 
   it('タイトルが必須項目として表示される', () => {
@@ -192,6 +234,7 @@ describe('TodoAddModal', () => {
         description: undefined,
         dueDate: undefined,
         isImportant: false,
+        kanbanColumnId: undefined,
         title: '新しいタスク',
       })
     })
@@ -352,6 +395,7 @@ describe('TodoAddModal', () => {
         description: '詳細な説明',
         dueDate: undefined,
         isImportant: true,
+        kanbanColumnId: undefined,
         title: '完全なタスク',
       })
     })

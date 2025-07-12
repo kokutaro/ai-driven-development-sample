@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@auth/prisma-adapter', () => ({
   PrismaAdapter: vi.fn(() => 'adapter'),
@@ -16,8 +16,18 @@ vi.mock('next-auth/providers/microsoft-entra-id', () => ({
 vi.mock('@/lib/db', () => ({ prisma: 'prisma' }))
 
 interface NextAuthCallbacks {
-  session: ({ session, user }: { session: { user?: { id?: string } }; user: { id: string } }) => Promise<{ user?: { id?: string } }>
-  signIn: (args: { account?: { provider: string }; profile?: { login?: string; name?: string; }; user: { name?: string } }) => Promise<boolean>
+  session: ({
+    session,
+    user,
+  }: {
+    session: { user?: { id?: string } }
+    user: { id: string }
+  }) => Promise<{ user?: { id?: string } }>
+  signIn: (args: {
+    account?: { provider: string }
+    profile?: { login?: string; name?: string }
+    user: { name?: string }
+  }) => Promise<boolean>
 }
 interface NextAuthConfig {
   adapter: unknown
@@ -66,7 +76,9 @@ describe('auth configuration', () => {
 
   it('session callbackがユーザーIDを設定する', async () => {
     await loadModule()
-    const session: { user?: { id?: string; name?: string } } = { user: { name: 'u' } }
+    const session: { user?: { id?: string; name?: string } } = {
+      user: { name: 'u' },
+    }
     const user = { id: 'id1' }
     const result = await capturedConfig!.callbacks.session({ session, user })
     expect(result.user?.id).toBe('id1')

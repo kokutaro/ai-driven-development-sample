@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   ActionIcon,
@@ -20,6 +20,7 @@ import type { Category } from '@/types/todo'
 
 import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
+import { useKanbanStore } from '@/stores/kanban-store'
 import { useTodoStore } from '@/stores/todo-store'
 
 interface TodoAddModalProps {
@@ -31,7 +32,7 @@ interface TodoAddModalProps {
  * TODOアイテム追加モーダルコンポーネント
  *
  * 新しいタスクを作成するためのモーダルダイアログです。
- * - タイトル、説明、期限日、重要度、カテゴリの入力
+ * - タイトル、説明、期限日、重要度、カテゴリ、Kanbanカラムの入力
  * - フォームバリデーション
  * - 作成成功時にモーダルを閉じる
  * - エラー処理
@@ -39,6 +40,7 @@ interface TodoAddModalProps {
 export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
   const { createTodo } = useTodoStore()
   const { categories, setCategories } = useCategories()
+  const { fetchKanbanColumns, kanbanColumns } = useKanbanStore()
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [selectKey, setSelectKey] = useState(0)
 
@@ -48,6 +50,7 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
       description: '',
       dueDate: undefined as Date | undefined,
       isImportant: false,
+      kanbanColumnId: '',
       title: '',
     },
     validate: {
@@ -62,6 +65,7 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
         description: values.description || undefined,
         dueDate: values.dueDate ?? undefined,
         isImportant: values.isImportant,
+        kanbanColumnId: values.kanbanColumnId || undefined,
         title: values.title,
       })
       form.reset()
@@ -90,6 +94,24 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
       })),
     [categories]
   )
+
+  const kanbanColumnOptions = useMemo(
+    () =>
+      kanbanColumns.map((column) => ({
+        label: column.name,
+        value: column.id,
+      })),
+    [kanbanColumns]
+  )
+
+  // モーダルが開かれた時にKanbanカラムを取得
+  useEffect(() => {
+    if (opened && kanbanColumns.length === 0) {
+      void fetchKanbanColumns().catch((error) => {
+        console.error('Kanbanカラムの取得に失敗しました:', error)
+      })
+    }
+  }, [opened, kanbanColumns.length, fetchKanbanColumns])
 
   return (
     <Modal
@@ -149,6 +171,14 @@ export function TodoAddModal({ onClose, opened }: TodoAddModalProps) {
               <IconPlus size={16} />
             </ActionIcon>
           </Group>
+
+          <Select
+            clearable
+            data={kanbanColumnOptions}
+            label="Kanbanカラム"
+            placeholder="カラムを選択..."
+            {...form.getInputProps('kanbanColumnId')}
+          />
 
           <Group justify="flex-end" mt="md">
             <Button onClick={onClose} variant="subtle">

@@ -336,7 +336,9 @@ describe('CategoryList', () => {
 
   it('カテゴリ作成エラー時にconsole.errorが呼ばれる', async () => {
     mockCreateCategory.mockRejectedValueOnce(new Error('err'))
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
 
     render(<CategoryList />)
     const addButton = screen.getByRole('button', { name: 'カテゴリを追加' })
@@ -354,7 +356,9 @@ describe('CategoryList', () => {
 
   it('カテゴリ更新エラー時にconsole.errorが呼ばれる', async () => {
     mockUpdateCategory.mockRejectedValueOnce(new Error('err'))
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
 
     render(<CategoryList />)
     const editButtons = screen.getAllByTestId('icon-edit')
@@ -370,7 +374,9 @@ describe('CategoryList', () => {
 
   it('カテゴリ削除エラー時にconsole.errorが呼ばれる', async () => {
     mockDeleteCategory.mockRejectedValueOnce(new Error('err'))
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
 
     render(<CategoryList />)
     const deleteButtons = screen.getAllByTestId('icon-trash')
