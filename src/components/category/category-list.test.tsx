@@ -297,4 +297,89 @@ describe('CategoryList', () => {
     ).not.toBeInTheDocument()
     expect(mockCreateCategory).not.toHaveBeenCalled()
   })
+
+  it('カテゴリを編集して保存できる', async () => {
+    render(<CategoryList />)
+    const editButtons = screen.getAllByTestId('icon-edit')
+    fireEvent.click(editButtons[0])
+
+    const nameInput = screen.getByPlaceholderText('カテゴリ名を入力...')
+    fireEvent.change(nameInput, { target: { value: '編集後' } })
+
+    const saveButton = screen.getByRole('button', { name: '保存' })
+    fireEvent.click(saveButton)
+
+    await waitFor(() => {
+      expect(mockUpdateCategory).toHaveBeenCalledWith('category-1', {
+        color: '#FF6B6B',
+        name: '編集後',
+      })
+    })
+  })
+
+  it('編集をキャンセルすると変更されない', () => {
+    render(<CategoryList />)
+    const editButtons = screen.getAllByTestId('icon-edit')
+    fireEvent.click(editButtons[0])
+
+    const nameInput = screen.getByPlaceholderText('カテゴリ名を入力...')
+    fireEvent.change(nameInput, { target: { value: '編集後' } })
+
+    const cancelButton = screen.getByRole('button', { name: 'キャンセル' })
+    fireEvent.click(cancelButton)
+
+    expect(
+      screen.queryByPlaceholderText('カテゴリ名を入力...')
+    ).not.toBeInTheDocument()
+    expect(mockUpdateCategory).not.toHaveBeenCalled()
+  })
+
+  it('カテゴリ作成エラー時にconsole.errorが呼ばれる', async () => {
+    mockCreateCategory.mockRejectedValueOnce(new Error('err'))
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    render(<CategoryList />)
+    const addButton = screen.getByRole('button', { name: 'カテゴリを追加' })
+    fireEvent.click(addButton)
+    const nameInput = screen.getByPlaceholderText('カテゴリ名を入力...')
+    fireEvent.change(nameInput, { target: { value: 'abc' } })
+    const saveButton = screen.getByRole('button', { name: '保存' })
+    fireEvent.click(saveButton)
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalled()
+    })
+    errorSpy.mockRestore()
+  })
+
+  it('カテゴリ更新エラー時にconsole.errorが呼ばれる', async () => {
+    mockUpdateCategory.mockRejectedValueOnce(new Error('err'))
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    render(<CategoryList />)
+    const editButtons = screen.getAllByTestId('icon-edit')
+    fireEvent.click(editButtons[0])
+    const saveButton = screen.getByRole('button', { name: '保存' })
+    fireEvent.click(saveButton)
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalled()
+    })
+    errorSpy.mockRestore()
+  })
+
+  it('カテゴリ削除エラー時にconsole.errorが呼ばれる', async () => {
+    mockDeleteCategory.mockRejectedValueOnce(new Error('err'))
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    render(<CategoryList />)
+    const deleteButtons = screen.getAllByTestId('icon-trash')
+    fireEvent.click(deleteButtons[0])
+    if (mockConfirmCallback) mockConfirmCallback()
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalled()
+    })
+    errorSpy.mockRestore()
+  })
 })
