@@ -4,6 +4,9 @@ import { vi } from 'vitest'
 // Prismaクライアントのモック
 import './__mocks__/prisma'
 
+// Auth機能のモック
+import './__mocks__/auth'
+
 // window.matchMedia のモック
 Object.defineProperty(globalThis, 'matchMedia', {
   value: vi.fn().mockImplementation((query) => ({

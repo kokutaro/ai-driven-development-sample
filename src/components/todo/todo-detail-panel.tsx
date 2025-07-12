@@ -19,6 +19,7 @@ import { DatePickerWithQuickSelect } from './date-picker-with-quick-select'
 
 import { CategoryCreateModal } from '@/components/category'
 import { useCategories } from '@/hooks/use-categories'
+import { useKanbanStore } from '@/stores/kanban-store'
 import { useTodoStore } from '@/stores/todo-store'
 import { type Category, type Todo } from '@/types/todo'
 
@@ -30,7 +31,7 @@ interface TodoDetailPanelProps {
  * TODO詳細パネルコンポーネント
  *
  * 選択されたタスクの詳細を表示・編集します。
- * - タイトル、説明、期限日、重要度、カテゴリの編集
+ * - タイトル、説明、期限日、重要度、カテゴリ、Kanbanカラムの編集
  * - リアルタイム保存
  * - サブタスク管理
  * - フォームバリデーション
@@ -38,6 +39,7 @@ interface TodoDetailPanelProps {
 export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
   const { updateTodo } = useTodoStore()
   const { categories, setCategories } = useCategories()
+  const { fetchKanbanColumns, kanbanColumns } = useKanbanStore()
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [selectKey, setSelectKey] = useState(0)
 
@@ -49,6 +51,7 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         ? new Date(todo.dueDate)
         : (undefined as Date | undefined),
       isImportant: todo.isImportant,
+      kanbanColumnId: todo.kanbanColumnId ?? '',
       title: todo.title,
     },
     validate: {
@@ -63,6 +66,7 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
       description: todo.description ?? '',
       dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
       isImportant: todo.isImportant,
+      kanbanColumnId: todo.kanbanColumnId ?? '',
       title: todo.title,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,7 +77,17 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
     todo.dueDate,
     todo.isImportant,
     todo.categoryId,
+    todo.kanbanColumnId,
   ])
+
+  // Kanbanカラムを取得
+  useEffect(() => {
+    if (kanbanColumns.length === 0) {
+      void fetchKanbanColumns().catch((error) => {
+        console.error('Kanbanカラムの取得に失敗しました:', error)
+      })
+    }
+  }, [kanbanColumns.length, fetchKanbanColumns])
 
   /**
    * 値を安全にISO文字列に変換する
@@ -151,6 +165,15 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         field === 'isImportant'
           ? (value as boolean)
           : currentValues.isImportant,
+      kanbanColumnId:
+        field === 'kanbanColumnId'
+          ? value === '' || value === null || value === undefined
+            ? undefined
+            : (value as string)
+          : currentValues.kanbanColumnId === '' ||
+              currentValues.kanbanColumnId === null
+            ? undefined
+            : currentValues.kanbanColumnId,
       title: field === 'title' ? (value as string) : currentValues.title,
     }
 
@@ -177,6 +200,10 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         }
         case 'isImportant': {
           form.setFieldValue(field, todo.isImportant)
+          break
+        }
+        case 'kanbanColumnId': {
+          form.setFieldValue(field, todo.kanbanColumnId ?? '')
           break
         }
         case 'title': {
@@ -211,6 +238,15 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
         value: category.id,
       })),
     [categories]
+  )
+
+  const kanbanColumnOptions = useMemo(
+    () =>
+      kanbanColumns.map((column) => ({
+        label: column.name,
+        value: column.id,
+      })),
+    [kanbanColumns]
   )
 
   return (
@@ -278,6 +314,17 @@ export function TodoDetailPanel({ todo }: TodoDetailPanelProps) {
           <IconPlus size={16} />
         </ActionIcon>
       </Group>
+
+      <Select
+        clearable
+        data={kanbanColumnOptions}
+        label="Kanbanカラム"
+        onChange={(value) =>
+          handleFieldChange('kanbanColumnId', value ?? undefined)
+        }
+        placeholder="カラムを選択..."
+        value={form.values.kanbanColumnId}
+      />
 
       <Divider />
 

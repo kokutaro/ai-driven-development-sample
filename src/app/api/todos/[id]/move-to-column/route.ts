@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import type { NextRequest } from 'next/server'
 
+import { getUserIdFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 const moveToColumnSchema = z.object({
@@ -22,8 +23,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // TODO: 認証機能実装後にユーザーIDを取得
-    const userId = 'user-1' // 仮のユーザーID
+    const userId = await getUserIdFromRequest()
     const { id } = params
 
     const body = await request.json()
@@ -141,6 +141,21 @@ export async function PATCH(
     }
 
     console.error('タスク移動エラー:', error)
+
+    // 認証エラーの場合
+    if (error instanceof Error && error.message === '認証が必要です') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'UNAUTHORIZED',
+            message: '認証が必要です',
+          },
+          success: false,
+        },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
       {
         error: {

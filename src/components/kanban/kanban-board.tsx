@@ -34,8 +34,13 @@ import { useTodoStore } from '@/stores/todo-store'
  * - カラム自体の並び替え
  */
 export function KanbanBoard() {
-  const { error, fetchKanbanColumns, isLoading, kanbanColumns } =
-    useKanbanStore()
+  const {
+    createDefaultColumns,
+    error,
+    fetchKanbanColumns,
+    isLoading,
+    kanbanColumns,
+  } = useKanbanStore()
   const { moveToKanbanColumn } = useTodoStore()
   const [activeId, setActiveId] = useState<string | undefined>(undefined)
   const [activeTask, setActiveTask] = useState<Todo | undefined>(undefined)
@@ -50,8 +55,19 @@ export function KanbanBoard() {
   )
 
   useEffect(() => {
-    void fetchKanbanColumns()
+    const initializeKanban = async () => {
+      await fetchKanbanColumns()
+    }
+
+    void initializeKanban()
   }, [fetchKanbanColumns])
+
+  // カラム取得後にカラムが空の場合もデフォルトカラムを作成
+  useEffect(() => {
+    if (!isLoading && kanbanColumns.length === 0) {
+      void createDefaultColumns()
+    }
+  }, [isLoading, kanbanColumns.length, createDefaultColumns])
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event

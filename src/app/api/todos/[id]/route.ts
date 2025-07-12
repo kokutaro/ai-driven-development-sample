@@ -80,6 +80,14 @@ export async function GET(
             name: true,
           },
         },
+        kanbanColumn: {
+          select: {
+            color: true,
+            id: true,
+            name: true,
+            order: true,
+          },
+        },
         reminders: {
           select: {
             id: true,
@@ -159,6 +167,14 @@ export async function PUT(
             color: true,
             id: true,
             name: true,
+          },
+        },
+        kanbanColumn: {
+          select: {
+            color: true,
+            id: true,
+            name: true,
+            order: true,
           },
         },
       },

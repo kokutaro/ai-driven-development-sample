@@ -17,9 +17,11 @@ global.PointerEvent = class PointerEvent extends Event {
 
 // ストアのモック
 const mockFetchKanbanColumns = vi.fn()
+const mockCreateDefaultColumns = vi.fn()
 const mockMoveToKanbanColumn = vi.fn()
 
 const mockKanbanStore = {
+  createDefaultColumns: mockCreateDefaultColumns,
   error: undefined,
   fetchKanbanColumns: mockFetchKanbanColumns,
   isLoading: false,
@@ -129,6 +131,7 @@ describe('KanbanBoard', () => {
     vi.clearAllMocks()
     // モックの状態をリセット
     Object.assign(mockKanbanStore, {
+      createDefaultColumns: mockCreateDefaultColumns,
       error: undefined,
       fetchKanbanColumns: mockFetchKanbanColumns,
       isLoading: false,
@@ -162,6 +165,7 @@ describe('KanbanBoard', () => {
       // Arrange - エラー状態のストアをモック
       const errorMessage = 'データの取得に失敗しました'
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: errorMessage,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,
@@ -198,6 +202,7 @@ describe('KanbanBoard', () => {
     it('空のkanbanColumnsでも正しく表示する', () => {
       // Arrange - 空のカラム配列をモック
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,
@@ -218,6 +223,7 @@ describe('KanbanBoard', () => {
     it('コンポーネントマウント時にfetchKanbanColumnsを呼び出す', async () => {
       // Arrange
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,
@@ -238,6 +244,7 @@ describe('KanbanBoard', () => {
     beforeEach(() => {
       // 正常状態のストアをセットアップ
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,
@@ -572,6 +579,7 @@ describe('KanbanBoard', () => {
   describe('DragOverlay表示', () => {
     beforeEach(() => {
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,
@@ -634,6 +642,7 @@ describe('KanbanBoard', () => {
       })
 
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,
@@ -694,6 +703,7 @@ describe('KanbanBoard', () => {
       ]
 
       Object.assign(mockKanbanStore, {
+        createDefaultColumns: mockCreateDefaultColumns,
         error: undefined,
         fetchKanbanColumns: mockFetchKanbanColumns,
         isLoading: false,

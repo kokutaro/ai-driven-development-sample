@@ -29,6 +29,10 @@ export const todoSchema = z.object({
       }
     }),
   isImportant: z.boolean().default(false),
+  kanbanColumnId: z
+    .union([z.string().cuid(), z.literal(''), z.null()])
+    .optional()
+    .transform((val) => (val === '' || val === null ? undefined : val)),
   title: z
     .string()
     .min(1, 'タイトルは必須です')
