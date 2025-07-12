@@ -38,9 +38,15 @@ vi.mock('@mantine/modals', async (importOriginal) => {
   }
 })
 
+// Mantine hooksのモック
+vi.mock('@mantine/hooks', () => ({
+  useMediaQuery: () => false, // 常にデスクトップサイズを返す
+}))
+
 const mockToggleTodo = vi.fn()
 const mockDeleteTodo = vi.fn()
 const mockSetSelectedTodo = vi.fn()
+const mockSetDrawerOpen = vi.fn()
 
 const mockTodoStore = {
   deleteTodo: mockDeleteTodo,
@@ -49,6 +55,7 @@ const mockTodoStore = {
 
 const mockUiStore = {
   selectedTodo: undefined,
+  setDrawerOpen: mockSetDrawerOpen,
   setSelectedTodo: mockSetSelectedTodo,
 }
 
