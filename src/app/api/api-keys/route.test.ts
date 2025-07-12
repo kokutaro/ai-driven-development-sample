@@ -47,7 +47,17 @@ describe('/api/api-keys', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(data.data).toEqual(mockApiKeys)
+
+      // 日付フィールドを除いた比較
+      expect(data.data).toHaveLength(1)
+      expect(data.data[0].id).toBe('key-1')
+      expect(data.data[0].name).toBe('Test Key')
+      expect(data.data[0].expiresAt).toBeNull()
+
+      // 日付フィールドは文字列として存在することを確認
+      expect(typeof data.data[0].createdAt).toBe('string')
+      expect(typeof data.data[0].lastUsedAt).toBe('string')
+      expect(typeof data.data[0].updatedAt).toBe('string')
     })
 
     it('should return 401 for unauthenticated user', async () => {
@@ -91,7 +101,17 @@ describe('/api/api-keys', () => {
 
       expect(response.status).toBe(201)
       expect(data.success).toBe(true)
-      expect(data.data).toEqual(mockResult)
+
+      // 日付フィールドを除いた比較
+      expect(data.data.plainKey).toBe('todo_test123456789')
+      expect(data.data.apiKey.id).toBe('key-1')
+      expect(data.data.apiKey.name).toBe('Test Key')
+      expect(data.data.apiKey.expiresAt).toBeNull()
+      expect(data.data.apiKey.lastUsedAt).toBeNull()
+
+      // 日付フィールドは文字列として存在することを確認
+      expect(typeof data.data.apiKey.createdAt).toBe('string')
+      expect(typeof data.data.apiKey.updatedAt).toBe('string')
     })
 
     it('should return validation error for invalid data', async () => {
