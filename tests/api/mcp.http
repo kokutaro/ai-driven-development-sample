@@ -1,0 +1,17 @@
+# MCP API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+
+###
+# GET /api/mcp - MCP endpoint
+GET {{baseUrl}}/mcp
+
+###
+# POST /api/mcp - MCP endpoint
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+
+{
+  "method": "example_method",
+  "params": {}
+}

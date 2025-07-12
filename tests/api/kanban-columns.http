@@ -1,0 +1,71 @@
+# Kanban Column API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+### Variables
+@kanbanColumnId = REPLACE_WITH_ACTUAL_KANBAN_COLUMN_ID
+
+###
+# GET /api/kanban-columns - Kanbanカラム一覧取得
+GET {{baseUrl}}/kanban-columns
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/kanban-columns - Kanbanカラム作成
+POST {{baseUrl}}/kanban-columns
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "新しいカラム",
+  "color": "#FF6B6B",
+  "order": 1
+}
+
+###
+# POST /api/kanban-columns - Kanbanカラム作成（order自動設定）
+POST {{baseUrl}}/kanban-columns
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "自動順序カラム",
+  "color": "#4ECDC4"
+}
+
+###
+# GET /api/kanban-columns/{id} - Kanbanカラム詳細取得
+GET {{baseUrl}}/kanban-columns/{{kanbanColumnId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PUT /api/kanban-columns/{id} - Kanbanカラム更新
+PUT {{baseUrl}}/kanban-columns/{{kanbanColumnId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "更新されたカラム",
+  "color": "#45B7D1"
+}
+
+###
+# DELETE /api/kanban-columns/{id} - Kanbanカラム削除
+DELETE {{baseUrl}}/kanban-columns/{{kanbanColumnId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PATCH /api/kanban-columns/reorder - Kanbanカラム並び替え
+PATCH {{baseUrl}}/kanban-columns/reorder
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "columnIds": ["column1", "column2", "column3"]
+}
+
+###
+# POST /api/kanban-columns/seed - Kanbanカラム初期データ作成
+POST {{baseUrl}}/kanban-columns/seed
+Authorization: Bearer {{authToken}}

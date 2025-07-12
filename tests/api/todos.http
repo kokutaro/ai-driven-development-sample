@@ -1,0 +1,89 @@
+# Todo API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+### Variables
+@todoId = REPLACE_WITH_ACTUAL_TODO_ID
+@categoryId = REPLACE_WITH_ACTUAL_CATEGORY_ID
+@subTaskId = REPLACE_WITH_ACTUAL_SUBTASK_ID
+
+###
+# GET /api/todos - タスク一覧取得
+GET {{baseUrl}}/todos
+Authorization: Bearer {{authToken}}
+
+###
+# GET /api/todos - タスク一覧取得（フィルタリング）
+GET {{baseUrl}}/todos?filter=today&page=1&limit=10&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{authToken}}
+
+###
+# GET /api/todos - タスク一覧取得（カテゴリフィルタ）
+GET {{baseUrl}}/todos?categoryId={{categoryId}}
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/todos - タスク作成
+POST {{baseUrl}}/todos
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "新しいタスク",
+  "description": "タスクの詳細説明",
+  "dueDate": "2024-12-31T23:59:59.000Z",
+  "isImportant": false,
+  "categoryId": "{{categoryId}}",
+  "kanbanColumnId": null
+}
+
+###
+# GET /api/todos/{id} - タスク詳細取得
+GET {{baseUrl}}/todos/{{todoId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PUT /api/todos/{id} - タスク更新
+PUT {{baseUrl}}/todos/{{todoId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "更新されたタスク",
+  "description": "更新された説明",
+  "dueDate": "2024-12-31T23:59:59.000Z",
+  "isImportant": true,
+  "categoryId": "{{categoryId}}"
+}
+
+###
+# PATCH /api/todos/{id}/toggle - タスク完了状態切り替え
+PATCH {{baseUrl}}/todos/{{todoId}}/toggle
+Authorization: Bearer {{authToken}}
+
+###
+# DELETE /api/todos/{id} - タスク削除
+DELETE {{baseUrl}}/todos/{{todoId}}
+Authorization: Bearer {{authToken}}
+
+###
+# PATCH /api/todos/{id}/move-to-column - タスクをKanbanカラムに移動
+PATCH {{baseUrl}}/todos/{{todoId}}/move-to-column
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "kanbanColumnId": "REPLACE_WITH_KANBAN_COLUMN_ID",
+  "order": 1
+}
+
+###
+# PATCH /api/todos/{id}/move-to-column - タスクをKanbanカラムから外す
+PATCH {{baseUrl}}/todos/{{todoId}}/move-to-column
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "kanbanColumnId": null
+}
