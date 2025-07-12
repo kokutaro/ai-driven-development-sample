@@ -47,7 +47,7 @@ export function Header() {
           placeholder="タスクを検索..."
           w={300}
         />
-        <ActionIcon size="lg" variant="subtle">
+        <ActionIcon component="a" href="/settings" size="lg" variant="subtle">
           <IconSettings size={18} />
         </ActionIcon>
         <ActionIcon size="lg" variant="subtle">

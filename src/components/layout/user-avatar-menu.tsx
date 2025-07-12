@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 import { Avatar, Menu } from '@mantine/core'
-import { IconLogout } from '@tabler/icons-react'
+import { IconLogout, IconSettings } from '@tabler/icons-react'
 import { signOut } from 'next-auth/react'
 
 import type { User } from '@/types/todo'
@@ -58,6 +58,13 @@ export function UserAvatarMenu({
         </Menu.Target>
 
         <Menu.Dropdown>
+          <Menu.Item
+            component="a"
+            href="/settings"
+            leftSection={<IconSettings size={16} />}
+          >
+            設定
+          </Menu.Item>
           <Menu.Item
             color="red"
             leftSection={<IconLogout size={16} />}
