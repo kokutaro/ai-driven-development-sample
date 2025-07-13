@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiKeyCreateModal } from './api-key-create-modal'
 
 import type { ApiKeyCreateResponse } from '@/schemas/api-key'
+
+import { render, screen } from '@/test-utils'
 
 /**
  * APIキー作成モーダル テスト

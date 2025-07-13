@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ApiKeyDisplayModal } from './api-key-display-modal'
 
 import type { ApiKeyCreateResponse } from '@/schemas/api-key'
+
+import { render, screen } from '@/test-utils'
 
 /**
  * APIキー表示モーダルコンポーネント テスト
