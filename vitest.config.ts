@@ -12,8 +12,6 @@ export default defineConfig({
   },
   test: {
     exclude: [
-      'tests/graphql/**',
-      'src/graphql/errors/**/__tests__/**',
       'node_modules/**',
     ],
     coverage: {
