@@ -74,7 +74,9 @@ describe('GetTodoByIdQueryHandler', () => {
       expect(result.success).toBe(true)
       expect(result.todo).toBe(mockTodo)
       expect(result.error).toBeUndefined()
-      expect(mockTodoRepository.findById).toHaveBeenCalledWith(todoId)
+      expect(mockTodoRepository.findById).toHaveBeenCalledWith(
+        TodoId.fromString(todoId)
+      )
     })
 
     it('TODOが見つからない場合、失敗結果を返す', async () => {

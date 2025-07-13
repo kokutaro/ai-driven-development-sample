@@ -11,6 +11,9 @@ export default defineConfig({
     },
   },
   test: {
+    exclude: [
+      'node_modules/**',
+    ],
     coverage: {
       exclude: [
         'src/tests/**/*.test.{ts,tsx}',

@@ -80,6 +80,30 @@ export interface SecurityContext {
   userRole?: string
 }
 
+/** デフォルトのセキュリティ設定 */
+const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
+  allowedExtensions: ['code', 'timestamp', 'category', 'severity', 'retryable'],
+  enableDataMasking: true,
+  hideInternalDetails: process.env.NODE_ENV === 'production',
+  includeDebugInfo: process.env.NODE_ENV === 'development',
+  includeStackTrace: process.env.NODE_ENV === 'development',
+  isProduction: process.env.NODE_ENV === 'production',
+  sensitiveFieldPatterns: [
+    /password/i,
+    /secret/i,
+    /token/i,
+    /key/i,
+    /credential/i,
+    /auth/i,
+    /session/i,
+    /cookie/i,
+    /private/i,
+    /confidential/i,
+    /internal/i,
+  ],
+  trustedIpRanges: ['127.0.0.1', '::1'],
+}
+
 /**
  * セキュリティ違反の型定義
  */
@@ -104,38 +128,7 @@ export class GraphQLSecurityFilter {
   private readonly logger = getLogger()
 
   constructor(config: Partial<SecurityConfig> = {}) {
-    this.config = {
-      allowedExtensions: config.allowedExtensions ?? [
-        'code',
-        'timestamp',
-        'category',
-        'severity',
-        'retryable',
-      ],
-      enableDataMasking: config.enableDataMasking ?? true,
-      hideInternalDetails:
-        config.hideInternalDetails ?? process.env.NODE_ENV === 'production',
-      includeDebugInfo:
-        config.includeDebugInfo ?? process.env.NODE_ENV === 'development',
-      includeStackTrace:
-        config.includeStackTrace ?? process.env.NODE_ENV === 'development',
-      isProduction:
-        config.isProduction ?? process.env.NODE_ENV === 'production',
-      sensitiveFieldPatterns: config.sensitiveFieldPatterns ?? [
-        /password/i,
-        /secret/i,
-        /token/i,
-        /key/i,
-        /credential/i,
-        /auth/i,
-        /session/i,
-        /cookie/i,
-        /private/i,
-        /confidential/i,
-        /internal/i,
-      ],
-      trustedIpRanges: config.trustedIpRanges ?? ['127.0.0.1', '::1'],
-    }
+    this.config = { ...DEFAULT_SECURITY_CONFIG, ...config }
   }
 
   /**
@@ -150,7 +143,7 @@ export class GraphQLSecurityFilter {
     permissions: string[] = []
   ): SecurityContext {
     const isTrustedSource = ipAddress
-      ? this.prototype.config.trustedIpRanges.includes(ipAddress)
+      ? DEFAULT_SECURITY_CONFIG.trustedIpRanges.includes(ipAddress)
       : false
 
     let securityLevel = SecurityLevel.PUBLIC

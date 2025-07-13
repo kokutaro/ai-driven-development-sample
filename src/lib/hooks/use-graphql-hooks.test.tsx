@@ -138,7 +138,7 @@ describe('GraphQL Hooks Integration Tests', () => {
       })
 
       // 初期状態のテスト
-      expect(result.current.stats).toBeNull()
+      expect(result.current.stats).toBeUndefined()
       expect(typeof result.current.isLoading).toBe('boolean')
       expect(typeof result.current.refetch).toBe('function')
     })

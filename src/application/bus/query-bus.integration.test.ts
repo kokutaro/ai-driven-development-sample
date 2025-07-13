@@ -130,7 +130,9 @@ describe('QueryBus Integration Tests', () => {
         '詳細取得テスト'
       )
       expect((result as { error?: string }).error).toBeUndefined()
-      expect(mockTodoRepository.findById).toHaveBeenCalledWith(todoId)
+      expect(mockTodoRepository.findById).toHaveBeenCalledWith(
+        TodoId.fromString(todoId)
+      )
     })
 
     it('GetTodoStatsQueryを正常に実行し、レスポンスを返す', async () => {
