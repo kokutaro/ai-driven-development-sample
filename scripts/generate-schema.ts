@@ -32,4 +32,12 @@ async function generateSchema() {
   }
 }
 
-await generateSchema()
+generateSchema()
+  .then(async () => {
+    // NOP
+  })
+  // eslint-disable-next-line unicorn/prefer-top-level-await
+  .catch(async (error) => {
+    // eslint-disable-next-line unicorn/no-process-exit
+    process.exit(1)
+  })
