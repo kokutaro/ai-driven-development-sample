@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import 'reflect-metadata'
 import { vi } from 'vitest'
 
 // Prismaクライアントのモック

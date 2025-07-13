@@ -336,10 +336,8 @@ describe('CategoryCreateModal', () => {
         'カテゴリ作成エラー:',
         expect.any(Error)
       )
+      expect(mockOnClose).not.toHaveBeenCalled()
     })
-
-    // モーダルは開いたまま
-    expect(mockOnClose).not.toHaveBeenCalled()
   })
 
   it('Escapeキーでモーダルが閉じない', () => {
