@@ -16,32 +16,46 @@ vi.mock('@/lib/db', () => ({
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
   getCurrentUser: vi.fn(),
+  getCurrentUserFromRequest: vi.fn(),
   getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getCurrentUser, getUserIdFromRequest } = await import('@/lib/auth')
+const {
+  getCurrentUser,
+  getCurrentUserFromRequest,
+  getUserIdFromRequest,
+  getUserIdFromRequestWithApiKey,
+} = await import('@/lib/auth')
 
 // モック関数の型付け
 const mockCount = vi.mocked(prisma.todo.count)
 const mockCreate = vi.mocked(prisma.todo.create)
 const mockFindMany = vi.mocked(prisma.todo.findMany)
 const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
 const mockGetUserIdFromRequest = vi.mocked(getUserIdFromRequest)
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
+  getUserIdFromRequestWithApiKey
+)
 
 describe('/api/todos', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetCurrentUser.mockResolvedValue({
+    const mockUser = {
       createdAt: new Date(),
       email: 'test@example.com',
       id: 'user-1',
       name: 'Test User',
       updatedAt: new Date(),
-    })
+    }
+    mockGetCurrentUser.mockResolvedValue(mockUser)
+    mockGetCurrentUserFromRequest.mockResolvedValue(mockUser)
     mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('GET /api/todos', () => {
@@ -157,7 +171,7 @@ describe('/api/todos', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest('http://localhost:3000/api/todos')
 
@@ -261,7 +275,9 @@ describe('/api/todos', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetUserIdFromRequest.mockRejectedValue(new Error('認証が必要です'))
+      mockGetUserIdFromRequestWithApiKey.mockRejectedValue(
+        new Error('認証が必要です')
+      )
 
       const request = new NextRequest('http://localhost:3000/api/todos', {
         body: JSON.stringify({ title: 'テスト' }),

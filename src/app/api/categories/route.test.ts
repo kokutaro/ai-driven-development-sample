@@ -14,17 +14,27 @@ vi.mock('@/lib/db', () => ({
 
 // Auth utilsのモック
 vi.mock('@/lib/auth', () => ({
-  getCurrentUser: vi.fn(),
+  getCurrentUserFromRequest: vi.fn(),
+  getUserIdFromRequest: vi.fn(),
+  getUserIdFromRequestWithApiKey: vi.fn(),
 }))
 
 // モックされたモジュールのインポート
 const { prisma } = await import('@/lib/db')
-const { getCurrentUser } = await import('@/lib/auth')
+const {
+  getCurrentUserFromRequest,
+  getUserIdFromRequest,
+  getUserIdFromRequestWithApiKey,
+} = await import('@/lib/auth')
 
 // モック関数の型付け
 const mockFindMany = vi.mocked(prisma.category.findMany)
 const mockCreate = vi.mocked(prisma.category.create)
-const mockGetCurrentUser = vi.mocked(getCurrentUser)
+const mockGetCurrentUserFromRequest = vi.mocked(getCurrentUserFromRequest)
+const mockGetUserIdFromRequest = vi.mocked(getUserIdFromRequest)
+const mockGetUserIdFromRequestWithApiKey = vi.mocked(
+  getUserIdFromRequestWithApiKey
+)
 
 describe('/api/categories', () => {
   const fixedDate = new Date('2024-01-01T00:00:00.000Z')
@@ -57,13 +67,15 @@ describe('/api/categories', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのモック設定
-    mockGetCurrentUser.mockResolvedValue({
+    mockGetCurrentUserFromRequest.mockResolvedValue({
       createdAt: fixedDate,
       email: 'test@example.com',
       id: 'user-1',
       name: 'Test User',
       updatedAt: fixedDate,
     })
+    mockGetUserIdFromRequest.mockResolvedValue('user-1')
+    mockGetUserIdFromRequestWithApiKey.mockResolvedValue('user-1')
   })
 
   describe('GET /api/categories', () => {
@@ -94,7 +106,7 @@ describe('/api/categories', () => {
 
     it('認証エラーの場合401を返す', async () => {
       // Arrange
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest('http://localhost:3000/api/categories')
 
@@ -205,7 +217,7 @@ describe('/api/categories', () => {
         color: '#45B7D1',
         name: '学習',
       }
-      mockGetCurrentUser.mockResolvedValue(undefined)
+      mockGetCurrentUserFromRequest.mockResolvedValue(undefined)
 
       const request = new NextRequest('http://localhost:3000/api/categories', {
         body: JSON.stringify(newCategoryData),

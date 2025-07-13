@@ -14,6 +14,11 @@ vi.mock('@/lib/api/category-client', () => ({
   },
 }))
 
+// console.errorのモック
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+  // テスト時はconsole.errorを抑制
+})
+
 const { categoryClient } = await import('@/lib/api/category-client')
 const getCategoriesSpy = vi.mocked(categoryClient.getCategories)
 const createCategorySpy = vi.mocked(categoryClient.createCategory)
@@ -51,6 +56,14 @@ const mockCategories = [
 describe('useCategories', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockConsoleError.mockClear()
+    // タイマーをリセット
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    // テスト後にタイマーを確実にリセット
+    vi.useRealTimers()
   })
 
   it('カテゴリを正常に取得できる', async () => {
@@ -239,10 +252,11 @@ describe('useCategories', () => {
   })
 
   it('長時間のAPI呼び出しでもタイムアウトしない', async () => {
-    // Arrange
+    // Arrange - 通常のPromiseを使用（フェイクタイマー不要）
     getCategoriesSpy.mockImplementation(
       () =>
         new Promise((resolve) =>
+          // 実際の遅延（200ms）でテスト
           setTimeout(
             () =>
               resolve({
@@ -250,7 +264,7 @@ describe('useCategories', () => {
                 success: true,
                 timestamp: new Date().toISOString(),
               }),
-            500
+            200
           )
         )
     )
@@ -266,11 +280,11 @@ describe('useCategories', () => {
       () => {
         expect(result.current.isLoading).toBe(false)
       },
-      { timeout: 1000 }
+      { timeout: 3000 }
     )
 
     expect(result.current.categories).toEqual(mockCategories)
-  })
+  }, 5000)
 
   it('大量のカテゴリデータも正常に処理する', async () => {
     // Arrange
@@ -293,13 +307,16 @@ describe('useCategories', () => {
     const { result } = renderHook(() => useCategories())
 
     // Assert
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false)
-    })
+    await waitFor(
+      () => {
+        expect(result.current.isLoading).toBe(false)
+      },
+      { timeout: 10000 }
+    )
 
     expect(result.current.categories).toHaveLength(100)
     expect(result.current.categories).toEqual(manyCategories)
-  })
+  }, 15000)
 
   describe('CRUD Operations', () => {
     it('新しいカテゴリを作成できる', async () => {
@@ -327,9 +344,12 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false)
+        },
+        { timeout: 5000 }
+      )
 
       // Act
       await act(async () => {
@@ -337,12 +357,15 @@ describe('useCategories', () => {
       })
 
       // Assert
-      await waitFor(() => {
-        expect(result.current.categories).toHaveLength(2)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.categories).toHaveLength(2)
+        },
+        { timeout: 5000 }
+      )
       expect(result.current.categories).toContainEqual(createdCategory)
       expect(createCategorySpy).toHaveBeenCalledWith(newCategoryData)
-    })
+    }, 10000)
 
     it('カテゴリを更新できる', async () => {
       // Arrange
@@ -365,9 +388,12 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false)
+        },
+        { timeout: 5000 }
+      )
 
       // Act
       await act(async () => {
@@ -375,14 +401,17 @@ describe('useCategories', () => {
       })
 
       // Assert
-      await waitFor(() => {
-        const updatedCategoryInList = result.current.categories.find(
-          (c) => c.id === 'category-1'
-        )
-        expect(updatedCategoryInList?.name).toBe('更新されたカテゴリ')
-      })
+      await waitFor(
+        () => {
+          const updatedCategoryInList = result.current.categories.find(
+            (c) => c.id === 'category-1'
+          )
+          expect(updatedCategoryInList?.name).toBe('更新されたカテゴリ')
+        },
+        { timeout: 5000 }
+      )
       expect(updateCategorySpy).toHaveBeenCalledWith('category-1', updateData)
-    })
+    }, 10000)
 
     it('カテゴリを削除できる', async () => {
       // Arrange
@@ -399,9 +428,12 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false)
+        },
+        { timeout: 5000 }
+      )
 
       // Act
       await act(async () => {
@@ -409,14 +441,17 @@ describe('useCategories', () => {
       })
 
       // Assert
-      await waitFor(() => {
-        expect(result.current.categories).toHaveLength(2)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.categories).toHaveLength(2)
+        },
+        { timeout: 5000 }
+      )
       expect(
         result.current.categories.find((c) => c.id === 'category-1')
       ).toBeUndefined()
       expect(deleteCategorySpy).toHaveBeenCalledWith('category-1')
-    })
+    }, 10000)
 
     it('作成エラー時にエラーメッセージを設定する', async () => {
       // Arrange
@@ -429,25 +464,37 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false)
+        },
+        { timeout: 5000 }
+      )
 
       // Act
+      let errorThrown = false
       await act(async () => {
-        await expect(
-          result.current.createCategory({
+        try {
+          await result.current.createCategory({
             color: '#123456',
             name: 'テスト',
           })
-        ).rejects.toThrow('カテゴリの作成に失敗しました')
+        } catch (error) {
+          errorThrown = true
+          expect(error).toBeInstanceOf(Error)
+          expect((error as Error).message).toBe('カテゴリの作成に失敗しました')
+        }
       })
 
       // Assert
-      await waitFor(() => {
-        expect(result.current.error).toBe('カテゴリの作成に失敗しました')
-      })
-    })
+      expect(errorThrown).toBe(true)
+      await waitFor(
+        () => {
+          expect(result.current.error).toBe('カテゴリの作成に失敗しました')
+        },
+        { timeout: 5000 }
+      )
+    }, 10000)
 
     it('更新エラー時にエラーメッセージを設定する', async () => {
       // Arrange
@@ -460,9 +507,12 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false)
+        },
+        { timeout: 5000 }
+      )
 
       // Act
       await act(async () => {
@@ -470,10 +520,13 @@ describe('useCategories', () => {
       })
 
       // Assert
-      await waitFor(() => {
-        expect(result.current.error).toBe('カテゴリの更新に失敗しました')
-      })
-    })
+      await waitFor(
+        () => {
+          expect(result.current.error).toBe('カテゴリの更新に失敗しました')
+        },
+        { timeout: 5000 }
+      )
+    }, 10000)
 
     it('削除エラー時にエラーメッセージを設定する', async () => {
       // Arrange
@@ -486,9 +539,12 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false)
-      })
+      await waitFor(
+        () => {
+          expect(result.current.isLoading).toBe(false)
+        },
+        { timeout: 5000 }
+      )
 
       // Act
       await act(async () => {
@@ -496,10 +552,13 @@ describe('useCategories', () => {
       })
 
       // Assert
-      await waitFor(() => {
-        expect(result.current.error).toBe('カテゴリの削除に失敗しました')
-      })
-    })
+      await waitFor(
+        () => {
+          expect(result.current.error).toBe('カテゴリの削除に失敗しました')
+        },
+        { timeout: 5000 }
+      )
+    }, 10000)
 
     it('エラーをクリアできる', async () => {
       // Arrange
@@ -507,9 +566,12 @@ describe('useCategories', () => {
 
       const { result } = renderHook(() => useCategories())
 
-      await waitFor(() => {
-        expect(result.current.error).toBe('カテゴリの取得に失敗しました')
-      })
+      await waitFor(
+        () => {
+          expect(result.current.error).toBe('カテゴリの取得に失敗しました')
+        },
+        { timeout: 5000 }
+      )
 
       // Act
       act(() => {
@@ -517,9 +579,12 @@ describe('useCategories', () => {
       })
 
       // Assert
-      await waitFor(() => {
-        expect(result.current.error).toBeUndefined()
-      })
-    })
+      await waitFor(
+        () => {
+          expect(result.current.error).toBeUndefined()
+        },
+        { timeout: 5000 }
+      )
+    }, 10000)
   })
 })

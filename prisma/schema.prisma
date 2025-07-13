@@ -22,6 +22,7 @@ model User {
   kanbanColumns KanbanColumn[]
   accounts      Account[]
   sessions      Session[]
+  apiKeys       ApiKey[]
 
   @@map("User")
 }
@@ -153,4 +154,20 @@ model KanbanColumn {
   todos Todo[]
 
   @@map("KanbanColumn")
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique
+  userId     String
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ApiKey")
 }

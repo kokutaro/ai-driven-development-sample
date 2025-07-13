@@ -1,0 +1,30 @@
+# Authentication API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+
+### NextAuth エンドポイント
+# Note: NextAuthのエンドポイントは通常ブラウザから使用されるため、
+# HTTPクライアントからの直接テストは制限されています。
+# 以下はNextAuthが提供する主要なエンドポイントの例です。
+
+###
+# GET /api/auth/providers - 利用可能な認証プロバイダ一覧
+GET {{baseUrl}}/auth/providers
+
+###
+# GET /api/auth/session - 現在のセッション情報
+GET {{baseUrl}}/auth/session
+
+###
+# GET /api/auth/csrf - CSRFトークン取得
+GET {{baseUrl}}/auth/csrf
+
+###
+# POST /api/auth/signin - サインイン（通常はブラウザから使用）
+# このエンドポイントは通常HTMLフォームから使用されます
+# POST {{baseUrl}}/auth/signin
+
+###
+# POST /api/auth/signout - サインアウト（通常はブラウザから使用）
+# このエンドポイントは通常HTMLフォームから使用されます
+# POST {{baseUrl}}/auth/signout

@@ -1,0 +1,44 @@
+# SubTask API Tests
+# Base URL
+@baseUrl = http://localhost:3000/api
+@authToken = YOUR_AUTH_TOKEN_HERE
+
+### Variables
+@todoId = REPLACE_WITH_ACTUAL_TODO_ID
+@subTaskId = REPLACE_WITH_ACTUAL_SUBTASK_ID
+
+###
+# GET /api/todos/{id}/subtasks - サブタスク一覧取得
+GET {{baseUrl}}/todos/{{todoId}}/subtasks
+Authorization: Bearer {{authToken}}
+
+###
+# POST /api/todos/{id}/subtasks - サブタスク作成
+POST {{baseUrl}}/todos/{{todoId}}/subtasks
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "新しいサブタスク"
+}
+
+###
+# PUT /api/todos/{id}/subtasks/{subId} - サブタスク更新
+PUT {{baseUrl}}/todos/{{todoId}}/subtasks/{{subTaskId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "更新されたサブタスク",
+  "isCompleted": true
+}
+
+###
+# PATCH /api/todos/{id}/subtasks/{subId} - サブタスク完了状態切り替え
+PATCH {{baseUrl}}/todos/{{todoId}}/subtasks/{{subTaskId}}
+Authorization: Bearer {{authToken}}
+
+###
+# DELETE /api/todos/{id}/subtasks/{subId} - サブタスク削除
+DELETE {{baseUrl}}/todos/{{todoId}}/subtasks/{{subTaskId}}
+Authorization: Bearer {{authToken}}

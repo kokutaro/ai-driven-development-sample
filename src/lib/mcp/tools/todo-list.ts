@@ -167,5 +167,8 @@ function getFilterDisplayName(filter: string): string {
     upcoming: '今後の予定',
   }
 
-  return displayNames[filter] || filter
+  return Object.prototype.hasOwnProperty.call(displayNames, filter)
+    ? // eslint-disable-next-line security/detect-object-injection
+      displayNames[filter]
+    : filter
 }

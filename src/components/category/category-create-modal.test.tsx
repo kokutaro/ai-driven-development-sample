@@ -29,6 +29,7 @@ const mockUseCategories = {
 describe('CategoryCreateModal', () => {
   const mockOnClose = vi.fn()
   const mockOnCategoryCreated = vi.fn()
+  let consoleSpy: ReturnType<typeof vi.spyOn> | undefined
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -41,6 +42,13 @@ describe('CategoryCreateModal', () => {
       updatedAt: new Date(),
       userId: 'user-1',
     })
+  })
+
+  afterEach(() => {
+    if (consoleSpy) {
+      consoleSpy.mockRestore()
+      consoleSpy = undefined
+    }
   })
 
   it('モーダルが開いている時に表示される', () => {
@@ -301,7 +309,7 @@ describe('CategoryCreateModal', () => {
   it('カテゴリ作成エラー時でもモーダルは開いたまま', async () => {
     // Arrange
     mockCreateCategory.mockRejectedValue(new Error('作成失敗'))
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
       // テスト中はコンソールエラーを無効化
     })
 
@@ -321,22 +329,17 @@ describe('CategoryCreateModal', () => {
     const createButton = screen.getByText('作成')
     fireEvent.click(createButton)
 
-    // Assert
+    // Assert - 複数のwaitForを1つに統合してflakyさを解消
     await waitFor(() => {
+      expect(mockCreateCategory).toHaveBeenCalled()
       expect(consoleSpy).toHaveBeenCalledWith(
         'カテゴリ作成エラー:',
         expect.any(Error)
       )
     })
 
-    await waitFor(() => {
-      expect(mockCreateCategory).toHaveBeenCalled()
-    })
-
     // モーダルは開いたまま
     expect(mockOnClose).not.toHaveBeenCalled()
-
-    consoleSpy.mockRestore()
   })
 
   it('Escapeキーでモーダルが閉じない', () => {

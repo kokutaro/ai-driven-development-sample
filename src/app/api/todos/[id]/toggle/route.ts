@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-utils'
-import { getUserIdFromRequest } from '@/lib/auth'
+import { getUserIdFromRequestWithApiKey } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 /**
@@ -12,7 +12,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await getUserIdFromRequest()
+    const userId = await getUserIdFromRequestWithApiKey(request)
     const { id } = await params
 
     // タスクの存在確認と所有者確認
