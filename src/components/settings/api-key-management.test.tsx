@@ -123,8 +123,11 @@ describe('ApiKeyManagement', () => {
 
     render(<ApiKeyManagement />)
 
-    const closeButton = screen.getByRole('button', { name: /close/i })
-    fireEvent.click(closeButton)
+    // Alert内のCloseButtonを取得（MantineのAlertコンポーネント内にある）
+    const closeButton = document.querySelector('.mantine-Alert-closeButton')
+    expect(closeButton).toBeInTheDocument()
+
+    fireEvent.click(closeButton!)
 
     expect(mockStore.clearError).toHaveBeenCalledOnce()
   })

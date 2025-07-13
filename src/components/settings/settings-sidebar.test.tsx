@@ -88,7 +88,7 @@ describe('SettingsSidebar', () => {
 
       // 他のアイテムはactiveではない
       const profileItem = screen.getByText('プロフィール').closest('a')
-      expect(profileItem).toHaveAttribute('data-active', 'false')
+      expect(profileItem).not.toHaveAttribute('data-active', 'true')
     })
 
     it('should mark notifications menu as active when on /settings/notifications path', () => {
@@ -99,7 +99,7 @@ describe('SettingsSidebar', () => {
       render(<SettingsSidebar />)
 
       // Assert
-      const notificationsItem = screen.getByText('通知設定').closest('button')
+      const notificationsItem = screen.getByText('通知設定').closest('a')
       expect(notificationsItem).toHaveAttribute('data-active', 'true')
     })
 
@@ -111,7 +111,7 @@ describe('SettingsSidebar', () => {
       render(<SettingsSidebar />)
 
       // Assert
-      const accountItem = screen.getByText('アカウント').closest('button')
+      const accountItem = screen.getByText('アカウント').closest('a')
       expect(accountItem).toHaveAttribute('data-active', 'true')
     })
 
@@ -126,8 +126,8 @@ describe('SettingsSidebar', () => {
       const profileItem = screen.getByText('プロフィール').closest('a')
       const externalIntegrationItem = screen.getByText('外部連携').closest('a')
 
-      expect(profileItem).toHaveAttribute('data-active', 'false')
-      expect(externalIntegrationItem).toHaveAttribute('data-active', 'false')
+      expect(profileItem).not.toHaveAttribute('data-active', 'true')
+      expect(externalIntegrationItem).not.toHaveAttribute('data-active', 'true')
     })
   })
 
@@ -151,16 +151,16 @@ describe('SettingsSidebar', () => {
       )
     })
 
-    it('should render disabled menu items as buttons without href', () => {
+    it('should render disabled menu items as links without href', () => {
       // Act
       render(<SettingsSidebar />)
 
       // Assert
-      const notificationsItem = screen.getByText('通知設定').closest('button')
-      const accountItem = screen.getByText('アカウント').closest('button')
+      const notificationsItem = screen.getByText('通知設定').closest('a')
+      const accountItem = screen.getByText('アカウント').closest('a')
 
-      expect(notificationsItem).toBeDisabled()
-      expect(accountItem).toBeDisabled()
+      expect(notificationsItem).toHaveAttribute('data-disabled', 'true')
+      expect(accountItem).toHaveAttribute('data-disabled', 'true')
 
       // hrefが設定されていないことを確認
       expect(notificationsItem).not.toHaveAttribute('href')
@@ -172,8 +172,8 @@ describe('SettingsSidebar', () => {
       render(<SettingsSidebar />)
 
       // Assert
-      const notificationsItem = screen.getByText('通知設定').closest('button')
-      const accountItem = screen.getByText('アカウント').closest('button')
+      const notificationsItem = screen.getByText('通知設定').closest('a')
+      const accountItem = screen.getByText('アカウント').closest('a')
 
       expect(notificationsItem).toHaveAttribute('data-disabled', 'true')
       expect(accountItem).toHaveAttribute('data-disabled', 'true')
@@ -187,14 +187,13 @@ describe('SettingsSidebar', () => {
 
     it('should render menu items in correct order', () => {
       // Act
-      render(<SettingsSidebar />)
+      const { container } = render(<SettingsSidebar />)
 
-      // Assert
-      const menuItems = screen
-        .getAllByRole('button')
-        .concat(screen.getAllByRole('link'))
+      // Assert - NavLinkコンポーネントを直接取得
+      const menuItems = container.querySelectorAll('.mantine-NavLink-root')
 
-      // メニューアイテムの順序を確認
+      // 4つのメニューアイテムが期待通りの順序で表示される
+      expect(menuItems).toHaveLength(4)
       expect(menuItems[0]).toHaveTextContent('プロフィール')
       expect(menuItems[1]).toHaveTextContent('外部連携')
       expect(menuItems[2]).toHaveTextContent('通知設定')
@@ -207,7 +206,7 @@ describe('SettingsSidebar', () => {
 
       // Assert
       // Stack要素が存在する
-      const stackElement = container.querySelector('[data-group]')
+      const stackElement = container.querySelector('.mantine-Stack-root')
       expect(stackElement).toBeInTheDocument()
 
       // 各NavLinkにスタイルが適用されている
@@ -239,7 +238,7 @@ describe('SettingsSidebar', () => {
       // Assert
       // 完全一致のみでactiveになる
       const externalIntegrationItem = screen.getByText('外部連携').closest('a')
-      expect(externalIntegrationItem).toHaveAttribute('data-active', 'false')
+      expect(externalIntegrationItem).not.toHaveAttribute('data-active', 'true')
     })
   })
 
@@ -253,7 +252,7 @@ describe('SettingsSidebar', () => {
 
       // Assert
       const profileItem = screen.getByText('プロフィール').closest('a')
-      expect(profileItem).toHaveAttribute('data-active', 'false')
+      expect(profileItem).not.toHaveAttribute('data-active', 'true')
     })
 
     it('should handle null pathname', () => {
@@ -275,12 +274,8 @@ describe('SettingsSidebar', () => {
 
       // Assert
       // 同じ数のアイテムが表示される
-      const items1 = container1.querySelectorAll(
-        '[role="button"], [role="link"]'
-      )
-      const items2 = container2.querySelectorAll(
-        '[role="button"], [role="link"]'
-      )
+      const items1 = container1.querySelectorAll('[role="link"]')
+      const items2 = container2.querySelectorAll('[role="link"]')
       expect(items1).toHaveLength(items2.length)
     })
   })

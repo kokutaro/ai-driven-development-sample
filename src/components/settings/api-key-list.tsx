@@ -146,6 +146,7 @@ export function ApiKeyList({ apiKeys, isLoading }: ApiKeyListProps) {
 
             <Tooltip label="APIキーを削除">
               <ActionIcon
+                aria-label="APIキーを削除"
                 color="red"
                 loading={deletingId === apiKey.id}
                 onClick={() => handleDelete(apiKey)}

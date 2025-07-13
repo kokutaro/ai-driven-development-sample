@@ -61,14 +61,14 @@ export const useApiKeyStore = create<ApiKeyStore>((set, _get) => ({
 
       return result
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'APIキーの作成に失敗しました'
       set({
-        error:
-          error instanceof Error
-            ? error.message
-            : 'APIキーの作成に失敗しました',
+        error: errorMessage,
         isLoading: false,
       })
-      throw error
+      // 非Error例外の場合は適切なErrorオブジェクトを投げる
+      throw error instanceof Error ? error : new Error(errorMessage)
     }
   },
 
@@ -94,14 +94,14 @@ export const useApiKeyStore = create<ApiKeyStore>((set, _get) => ({
         isLoading: false,
       }))
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'APIキーの削除に失敗しました'
       set({
-        error:
-          error instanceof Error
-            ? error.message
-            : 'APIキーの削除に失敗しました',
+        error: errorMessage,
         isLoading: false,
       })
-      throw error
+      // 非Error例外の場合は適切なErrorオブジェクトを投げる
+      throw error instanceof Error ? error : new Error(errorMessage)
     }
   },
 

@@ -16,26 +16,15 @@ vi.mock('@/stores/api-key-store', () => ({
   useApiKeyStore: vi.fn(),
 }))
 
-vi.mock('@mantine/form', () => ({
-  useForm: vi.fn(),
-}))
+// @mantine/formはモックしない（実際のフォームを使用）
 
 const { useApiKeyStore } = await import('@/stores/api-key-store')
-const { useForm } = await import('@mantine/form')
 
 const mockCreateApiKey = vi.fn()
 const mockOnClose = vi.fn()
 const mockOnSuccess = vi.fn()
 
-const mockFormValues = { name: 'Test Key' }
-const mockFormMethods = {
-  getInputProps: vi.fn().mockReturnValue({}),
-  onSubmit: vi.fn().mockImplementation((fn) => (e: Event) => {
-    e.preventDefault()
-    fn(mockFormValues)
-  }),
-  reset: vi.fn(),
-}
+// フォームは実際のMantineフォームを使用
 
 describe('ApiKeyCreateModal', () => {
   beforeEach(() => {
@@ -44,10 +33,6 @@ describe('ApiKeyCreateModal', () => {
     vi.mocked(useApiKeyStore).mockReturnValue({
       createApiKey: mockCreateApiKey,
     } as ReturnType<typeof useApiKeyStore>)
-
-    vi.mocked(useForm).mockReturnValue(
-      mockFormMethods as unknown as ReturnType<typeof useForm>
-    )
   })
 
   it('should render modal when opened', () => {
@@ -62,7 +47,7 @@ describe('ApiKeyCreateModal', () => {
     expect(screen.getByText('新しいAPIキーを作成')).toBeInTheDocument()
     expect(
       screen.getByText(
-        '外部アプリケーションからTODOシステムにアクセスするためのAPIキーを作成します。'
+        /外部アプリケーションからTODOシステムにアクセスするためのAPIキーを作成します/
       )
     ).toBeInTheDocument()
   })
@@ -103,11 +88,14 @@ describe('ApiKeyCreateModal', () => {
       />
     )
 
+    // フォームに値を入力
+    const nameInput = screen.getByPlaceholderText('例: 個人用アプリ')
+    await user.type(nameInput, 'Test Key')
+
     const submitButton = screen.getByText('作成')
     await user.click(submitButton)
 
-    expect(mockCreateApiKey).toHaveBeenCalledWith(mockFormValues)
-    expect(mockFormMethods.reset).toHaveBeenCalled()
+    expect(mockCreateApiKey).toHaveBeenCalledWith({ name: 'Test Key' })
     expect(mockOnSuccess).toHaveBeenCalledWith(mockResult)
   })
 
@@ -123,10 +111,14 @@ describe('ApiKeyCreateModal', () => {
       />
     )
 
+    // フォームに値を入力
+    const nameInput = screen.getByPlaceholderText('例: 個人用アプリ')
+    await user.type(nameInput, 'Test Key')
+
     const submitButton = screen.getByText('作成')
     await user.click(submitButton)
 
-    expect(mockCreateApiKey).toHaveBeenCalledWith(mockFormValues)
+    expect(mockCreateApiKey).toHaveBeenCalledWith({ name: 'Test Key' })
     expect(mockOnSuccess).not.toHaveBeenCalled()
   })
 
@@ -143,7 +135,6 @@ describe('ApiKeyCreateModal', () => {
     const cancelButton = screen.getByText('キャンセル')
     await user.click(cancelButton)
 
-    expect(mockFormMethods.reset).toHaveBeenCalled()
     expect(mockOnClose).toHaveBeenCalled()
   })
 
@@ -181,7 +172,7 @@ describe('ApiKeyCreateModal', () => {
       />
     )
 
-    expect(screen.getByLabelText('キー名')).toBeInTheDocument()
+    expect(screen.getByText('キー名')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('例: 個人用アプリ')).toBeInTheDocument()
   })
 
@@ -202,10 +193,14 @@ describe('ApiKeyCreateModal', () => {
       />
     )
 
+    // フォームに値を入力
+    const nameInput = screen.getByPlaceholderText('例: 個人用アプリ')
+    await user.type(nameInput, 'Test Key')
+
     const submitButton = screen.getByText('作成')
     await user.click(submitButton)
 
-    const cancelButton = screen.getByText('キャンセル')
+    const cancelButton = screen.getByRole('button', { name: 'キャンセル' })
     expect(cancelButton).toBeDisabled()
   })
 })

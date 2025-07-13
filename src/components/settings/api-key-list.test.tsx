@@ -16,6 +16,7 @@ vi.mock('@mantine/modals', () => ({
   modals: {
     openConfirmModal: vi.fn(),
   },
+  ModalsProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
 // API key storeをモック
@@ -42,7 +43,7 @@ const mockApiKeys: ApiKeyResponse[] = [
   },
   {
     createdAt: new Date('2024-01-01'),
-    expiresAt: new Date('2025-01-01'),
+    expiresAt: new Date('2025-12-31'), // より確実に将来の日付
     id: 'key2',
     lastUsedAt: null,
     name: 'Test API Key 2',
@@ -51,12 +52,12 @@ const mockApiKeys: ApiKeyResponse[] = [
 ]
 
 const expiredApiKey: ApiKeyResponse = {
-  createdAt: new Date('2024-01-01'),
-  expiresAt: new Date('2023-01-01'), // 期限切れ
+  createdAt: new Date('2023-01-01'),
+  expiresAt: new Date('2023-12-01'), // 期限切れ
   id: 'expired-key',
   lastUsedAt: null,
   name: 'Expired Key',
-  updatedAt: new Date('2024-01-01'),
+  updatedAt: new Date('2023-01-01'),
 }
 
 describe('ApiKeyList', () => {
@@ -70,7 +71,9 @@ describe('ApiKeyList', () => {
   describe('loading state', () => {
     it('should show skeleton when loading', () => {
       render(<ApiKeyList apiKeys={[]} isLoading={true} />)
-      expect(screen.getAllByTestId('skeleton')).toHaveLength(3)
+      // Skeleton コンポーネントが3つ表示されることを確認
+      const skeletons = document.querySelectorAll('.mantine-Skeleton-root')
+      expect(skeletons).toHaveLength(3)
     })
   })
 
