@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiKeyList } from './api-key-list'
 
 import type { ApiKeyResponse } from '@/schemas/api-key'
+
+import { render, screen } from '@/test-utils'
 
 /**
  * APIキー一覧コンポーネント テスト
