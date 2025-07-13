@@ -1,0 +1,30 @@
+# TODO作成のミューテーション定義（現在のリゾルバーに対応）
+
+mutation CreateTodo($title: String!) {
+  createTodo(title: $title) {
+    id
+    title
+    description
+    status
+    priority
+    isCompleted
+    isImportant
+    dueDate
+    categoryId
+    userId
+    order
+    completionRate
+    isOverdue
+    createdAt
+    updatedAt
+    subTasks {
+      id
+      title
+      completed
+      order
+      todoId
+      createdAt
+      updatedAt
+    }
+  }
+}

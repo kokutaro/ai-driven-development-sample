@@ -1,0 +1,35 @@
+# TODO関連のGraphQLクエリ定義（リゾルバー実装に対応）
+
+# 基本的なTODO一覧取得（現在のリゾルバーに対応）
+query Todos {
+  todos {
+    id
+    title
+    description
+    status
+    priority
+    isCompleted
+    isImportant
+    dueDate
+    categoryId
+    userId
+    order
+    completionRate
+    isOverdue
+    createdAt
+    updatedAt
+    subTasks {
+      id
+      title
+      completed
+      order
+      todoId
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query Hello {
+  hello
+}

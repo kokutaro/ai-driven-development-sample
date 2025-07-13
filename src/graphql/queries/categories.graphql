@@ -1,0 +1,12 @@
+# カテゴリ関連のGraphQLクエリ定義
+
+query Categories {
+  categories {
+    id
+    name
+    color
+    userId
+    createdAt
+    updatedAt
+  }
+}

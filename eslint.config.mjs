@@ -146,6 +146,7 @@ const eslintConfig = tseslint.config(
       '**/coverage/**',
       '**/mcp-server/**',
       '**/.yarn/**',
+      'src/graphql/generated/**/*',
     ],
   }
 )

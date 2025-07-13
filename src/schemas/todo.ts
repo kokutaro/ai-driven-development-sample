@@ -44,7 +44,7 @@ export const todoUpdateSchema = todoSchema.partial()
 export const todoQuerySchema = z.object({
   categoryId: z.string().cuid().optional(),
   filter: z
-    .enum(['today', 'important', 'upcoming', 'completed', 'all'])
+    .enum(['today', 'important', 'upcoming', 'completed', 'pending', 'all'])
     .default('all'),
   limit: z.coerce.number().min(1).max(100).default(50),
   page: z.coerce.number().min(1).default(1),
