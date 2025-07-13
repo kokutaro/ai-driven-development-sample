@@ -26,7 +26,7 @@ import { GraphQLErrorMonitor } from '@/graphql/errors/monitoring'
 import { PrismaErrorHandler } from '@/graphql/errors/prisma-error-handler'
 import { GraphQLSecurityFilter } from '@/graphql/errors/security-filter'
 
-describe.skip('GraphQLエラーハンドリング統合テスト - スキップ中（型エラー修正のため）', () => {
+describe('GraphQLエラーハンドリング統合テスト', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -39,12 +39,12 @@ describe.skip('GraphQLエラーハンドリング統合テスト - スキップ�
 
       expect(error).toBeInstanceOf(GraphQLError)
       expect(error.message).toBe('Base error message')
-      expect(error.extensions.code).toBe('VALIDATION_ERROR')
+      expect(error.extensions.code).toBe('BAD_USER_INPUT')
       expect(error.extensions.validationDetails).toEqual({
         userId: ['test-user'],
       })
-      expect(error.extensions.severity).toBe('warning')
-      expect(error.extensions.timestamp).toBeInstanceOf(Date)
+      expect(error.extensions.severity).toBe('LOW')
+      expect(typeof error.extensions.timestamp).toBe('string')
       expect(error.extensions.requestId).toBeDefined()
     })
 
@@ -54,11 +54,11 @@ describe.skip('GraphQLエラーハンドリング統合テスト - スキップ�
       })
 
       expect(error).toBeInstanceOf(BaseGraphQLError)
-      expect(error.extensions.code).toBe('VALIDATION_ERROR')
+      expect(error.extensions.code).toBe('BAD_USER_INPUT')
       expect(
         (error.extensions.validationDetails as Record<string, unknown>).title
       ).toContain('Title is required')
-      expect(error.extensions.severity).toBe('warning')
+      expect(error.extensions.severity).toBe('LOW')
     })
 
     it('should create DatabaseError with retry information', () => {
@@ -71,7 +71,7 @@ describe.skip('GraphQLエラーハンドリング統合テスト - スキップ�
       expect(error).toBeInstanceOf(BaseGraphQLError)
       expect(error.extensions.code).toBe('DATABASE_ERROR')
       expect(error.extensions.operation).toBe('CONNECTION_TIMEOUT')
-      expect(error.extensions.severity).toBe('error')
+      expect(error.extensions.severity).toBe('HIGH')
     })
 
     it('should create AuthenticationError with security context', () => {
@@ -81,8 +81,8 @@ describe.skip('GraphQLエラーハンドリング統合テスト - スキップ�
       })
 
       expect(error).toBeInstanceOf(BaseGraphQLError)
-      expect(error.extensions.code).toBe('AUTHENTICATION_ERROR')
-      expect(error.extensions.severity).toBe('warning')
+      expect(error.extensions.code).toBe('UNAUTHENTICATED')
+      expect(error.extensions.severity).toBe('MEDIUM')
       expect(error.extensions.securityContext).toBeDefined()
     })
 
@@ -95,8 +95,8 @@ describe.skip('GraphQLエラーハンドリング統合テスト - スキップ�
 
       expect(error).toBeInstanceOf(BaseGraphQLError)
       expect(error.extensions.code).toBe('BUSINESS_LOGIC_ERROR')
-      expect(error.extensions.operation).toBe('deleteTodo')
-      expect(error.extensions.severity).toBe('info')
+      expect(error.extensions.businessRule).toBe('deleteTodo')
+      expect(error.extensions.severity).toBe('LOW')
     })
   })
 

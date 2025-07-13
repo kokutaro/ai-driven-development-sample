@@ -10,10 +10,10 @@ describe('GraphQL API Integration Tests', () => {
   describe('Basic Setup Tests', () => {
     it('should validate that GraphQL packages are installed', async () => {
       // パッケージが正常にインストールされているかテスト
-      await expect(() => import('graphql')).resolves.toBeDefined()
-      await expect(() => import('type-graphql')).resolves.toBeDefined()
-      await expect(() => import('@apollo/client')).resolves.toBeDefined()
-      await expect(() => import('graphql-scalars')).resolves.toBeDefined()
+      await expect(import('graphql')).resolves.toBeDefined()
+      await expect(import('type-graphql')).resolves.toBeDefined()
+      await expect(import('@apollo/client')).resolves.toBeDefined()
+      await expect(import('graphql-scalars')).resolves.toBeDefined()
     })
 
     it('should validate that TypeScript decorators are working', async () => {

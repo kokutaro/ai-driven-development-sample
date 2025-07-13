@@ -121,7 +121,7 @@ describe('GraphQL Resolver Integration Tests - TDD Implementation', () => {
         url: '/graphql',
       } as NextApiRequest,
       session: {
-        expires: '2024-12-31',
+        expires: '2030-12-31', // Far future date to avoid expiry issues
         user: {
           email: 'test@example.com',
           id: 'test-user-1',
@@ -495,7 +495,7 @@ describe('GraphQL Resolver Integration Tests - TDD Implementation', () => {
       mockContext.dataloaders.categoryLoader.load = categoryLoaderSpy
       mockContext.dataloaders.subTaskLoader.load = subTaskLoaderSpy
 
-      const _result = await execute({
+      await execute({
         contextValue: mockContext,
         document: parse(COMPLEX_QUERY),
         schema,
