@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client'
 import * as ApolloReactCommon from '@apollo/client'
 import * as ApolloReactHooks from '@apollo/client'
-export type Maybe<T> = T | null | undefined
-export type InputMaybe<T> = T | null | undefined
+export type Maybe<T> = T | undefined
+export type InputMaybe<T> = T | undefined
 export type Exact<T extends { [key: string]: unknown }> = {
   [K in keyof T]: T[K]
 }
@@ -153,13 +153,13 @@ export type TodoFieldsFragment = {
   __typename?: 'Todo'
   id: string
   title: string
-  description: string | null | undefined
+  description: string | undefined
   status: TodoStatus
   priority: TodoPriority
   isCompleted: boolean
   isImportant: boolean
-  dueDate: any | null | undefined
-  categoryId: string | null | undefined
+  dueDate: any | undefined
+  categoryId: string | undefined
   userId: string
   order: number
   completionRate: number
@@ -188,13 +188,13 @@ export type CreateTodoMutation = {
     __typename?: 'Todo'
     id: string
     title: string
-    description: string | null | undefined
+    description: string | undefined
     status: TodoStatus
     priority: TodoPriority
     isCompleted: boolean
     isImportant: boolean
-    dueDate: any | null | undefined
-    categoryId: string | null | undefined
+    dueDate: any | undefined
+    categoryId: string | undefined
     userId: string
     order: number
     completionRate: number
@@ -237,13 +237,13 @@ export type TodosQuery = {
     __typename?: 'Todo'
     id: string
     title: string
-    description: string | null | undefined
+    description: string | undefined
     status: TodoStatus
     priority: TodoPriority
     isCompleted: boolean
     isImportant: boolean
-    dueDate: any | null | undefined
-    categoryId: string | null | undefined
+    dueDate: any | undefined
+    categoryId: string | undefined
     userId: string
     order: number
     completionRate: number

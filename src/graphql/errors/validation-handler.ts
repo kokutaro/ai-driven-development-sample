@@ -10,7 +10,7 @@ export interface FieldValidationError {
   code: string
   field: string
   message: string
-  value?: any
+  value?: unknown
 }
 
 /**
@@ -86,6 +86,7 @@ export class GraphQLValidationHandler {
       title: 'タイトル',
     }
 
+    // eslint-disable-next-line security/detect-object-injection
     return fieldNameMap[fieldName] || fieldName
   }
 
@@ -103,9 +104,12 @@ export class GraphQLValidationHandler {
       const fieldPath = issue.path.join('.')
       const localizedMessage = this.getJapaneseErrorMessage(issue)
 
+      // eslint-disable-next-line security/detect-object-injection
       if (!validationDetails[fieldPath]) {
+        // eslint-disable-next-line security/detect-object-injection
         validationDetails[fieldPath] = []
       }
+      // eslint-disable-next-line security/detect-object-injection
       validationDetails[fieldPath].push(localizedMessage)
 
       fieldErrors.push({
@@ -128,16 +132,16 @@ export class GraphQLValidationHandler {
    * 単一フィールドのバリデーション
    */
   static validateField(
-    value: any,
-    schema: any,
+    value: unknown,
+    schema: { parse: (value: unknown) => unknown },
     fieldName: string
   ): ValidationResult {
     try {
       schema.parse(value)
       return { isValid: true }
-    } catch (error: any) {
-      if (error.issues) {
-        const fieldErrors = error.issues.map((issue: ZodIssue) => ({
+    } catch (error: unknown) {
+      if (this.isZodError(error)) {
+        const fieldErrors = error.issues.map((issue) => ({
           code: issue.code,
           field: fieldName,
           message: this.getJapaneseErrorMessage(issue),
@@ -317,5 +321,17 @@ export class GraphQLValidationHandler {
         return `最小値 ${minimum} を満たしてください`
       }
     }
+  }
+
+  /**
+   * エラーがZodErrorかどうかをチェック
+   */
+  private static isZodError(error: unknown): error is ZodError {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'issues' in error &&
+      Array.isArray((error as { issues: unknown }).issues)
+    )
   }
 }

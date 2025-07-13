@@ -23,7 +23,18 @@ export interface PrismaErrorInfo {
   clientVersion?: string
   code: string
   message: string
-  meta?: any
+  meta?: Record<string, unknown>
+}
+
+/**
+ * Prismaエラーオブジェクトの型定義
+ */
+export interface PrismaErrorObject {
+  clientVersion?: string
+  code: string
+  message: string
+  meta?: unknown
+  stack?: string
 }
 
 /**
@@ -81,7 +92,7 @@ export class PrismaErrorHandler {
       return false
     }
 
-    const errorObj = error as any
+    const errorObj = error as Record<string, unknown>
 
     // PrismaClientKnownRequestError
     if (errorObj instanceof Prisma.PrismaClientKnownRequestError) {
@@ -119,12 +130,12 @@ export class PrismaErrorHandler {
   /**
    * Prismaエラーをログ用にサニタイズ
    */
-  public static sanitizePrismaErrorForLogging(error: unknown): any {
+  public static sanitizePrismaErrorForLogging(error: unknown): unknown {
     if (!this.isPrismaError(error)) {
       return error
     }
 
-    const prismaError = error as any
+    const prismaError = error as PrismaErrorObject
 
     return {
       clientVersion: prismaError.clientVersion,
@@ -223,7 +234,7 @@ export class PrismaErrorHandler {
         return {
           error: new ValidationError(
             '値が有効範囲外です',
-            { valueOutOfRange: prismaError.meta },
+            { valueOutOfRange: toStringArray(prismaError.meta) },
             {
               operation,
               prismaCode: prismaError.code,
@@ -238,8 +249,8 @@ export class PrismaErrorHandler {
         // Record not found
         return {
           error: new ResourceNotFoundError(
-            resourceType || 'リソース',
-            resourceId || 'unknown',
+            resourceType ?? 'リソース',
+            resourceId ?? 'unknown',
             {
               cause: prismaError.meta?.cause,
               operation,
@@ -257,8 +268,8 @@ export class PrismaErrorHandler {
           error: new ValidationError(
             '一意制約違反: 既に存在する値が指定されました',
             {
-              modelName: prismaError.meta?.modelName,
-              uniqueConstraint: prismaError.meta?.target,
+              modelName: toStringArray(prismaError.meta?.modelName),
+              uniqueConstraint: toStringArray(prismaError.meta?.target),
             },
             {
               operation,
@@ -276,8 +287,8 @@ export class PrismaErrorHandler {
           error: new ValidationError(
             '関連データの制約エラー: 参照先のデータが存在しません',
             {
-              foreignKey: prismaError.meta?.field_name,
-              modelName: prismaError.meta?.modelName,
+              foreignKey: toSafeStringArray(prismaError.meta?.field_name),
+              modelName: toStringArray(prismaError.meta?.modelName),
             },
             {
               operation,
@@ -295,8 +306,8 @@ export class PrismaErrorHandler {
           error: new ValidationError(
             'データ制約違反が発生しました',
             {
-              constraint: prismaError.meta?.constraint,
-              modelName: prismaError.meta?.modelName,
+              constraint: toSafeStringArray(prismaError.meta?.constraint),
+              modelName: toStringArray(prismaError.meta?.modelName),
             },
             {
               operation,
@@ -316,9 +327,9 @@ export class PrismaErrorHandler {
           error: new ValidationError(
             'データ形式エラー: 無効な値が指定されました',
             {
-              field: prismaError.meta?.field_name,
-              modelName: prismaError.meta?.modelName,
-              value: prismaError.meta?.field_value,
+              field: toSafeStringArray(prismaError.meta?.field_name),
+              modelName: toStringArray(prismaError.meta?.modelName),
+              value: toStringArray(prismaError.meta?.field_value),
             },
             {
               operation,
@@ -426,11 +437,11 @@ export class PrismaErrorHandler {
         // Record not found in delete/update operation
         return {
           error: new ResourceNotFoundError(
-            resourceType || 'レコード',
-            resourceId || 'unknown',
+            resourceType ?? 'レコード',
+            resourceId ?? 'unknown',
             {
               cause: prismaError.meta?.cause,
-              operation: operation || 'delete/update',
+              operation: operation ?? 'delete/update',
               prismaCode: prismaError.code,
             }
           ),
@@ -558,7 +569,7 @@ export class PrismaErrorHandler {
   /**
    * Prismaエラーのメタデータをサニタイズ
    */
-  private static sanitizeMetadata(meta: any): any {
+  private static sanitizeMetadata(meta: unknown): unknown {
     if (!meta || typeof meta !== 'object') {
       return meta
     }
@@ -570,8 +581,9 @@ export class PrismaErrorHandler {
     const sensitiveFields = ['password', 'token', 'secret', 'key', 'credential']
 
     for (const field of sensitiveFields) {
-      if (field in sanitized) {
-        sanitized[field] = '[REDACTED]'
+      if (Object.prototype.hasOwnProperty.call(sanitized, field)) {
+        // eslint-disable-next-line security/detect-object-injection
+        ;(sanitized as Record<string, unknown>)[field] = '[REDACTED]'
       }
     }
 
@@ -583,26 +595,30 @@ export class PrismaErrorHandler {
  * Prismaエラーを捕捉してGraphQLエラーに変換するデコレーター
  */
 export function HandlePrismaError(operation?: string, resourceType?: string) {
-  return function (
-    target: any,
+  return function <T extends (...args: unknown[]) => Promise<unknown>>(
+    target: unknown,
     propertyName: string,
-    descriptor: PropertyDescriptor
-  ) {
-    const method = descriptor.value
+    descriptor: TypedPropertyDescriptor<T>
+  ): TypedPropertyDescriptor<T> {
+    const originalMethod = descriptor.value!
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (
+      this: unknown,
+      ...args: unknown[]
+    ): Promise<unknown> {
       try {
-        return await method.apply(this, args)
+        const result = await originalMethod.apply(this, args)
+        return result
       } catch (error) {
         const transformResult = PrismaErrorHandler.transformPrismaError(
           error,
-          operation || propertyName,
+          operation ?? propertyName,
           resourceType
         )
 
         throw transformResult.error
       }
-    }
+    } as T
 
     return descriptor
   }
@@ -629,4 +645,27 @@ export async function withPrismaErrorHandling<T>(
 
     throw transformResult.error
   }
+}
+
+/**
+ * unknown型をstring[]に安全に変換するヘルパー関数（単一値用）
+ */
+function toSafeStringArray(value: unknown): string[] {
+  if (typeof value === 'string') {
+    return [value]
+  }
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string')
+  }
+  return []
+}
+
+/**
+ * unknown型をstring[]に安全に変換するヘルパー関数
+ */
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string')
+  }
+  return []
 }

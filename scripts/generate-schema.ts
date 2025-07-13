@@ -28,8 +28,8 @@ async function generateSchema() {
     )
   } catch (error) {
     console.error('❌ スキーマ生成エラー:', error)
-    process.exit(1)
+    throw new Error('スキーマ生成に失敗しました')
   }
 }
 
-generateSchema()
+await generateSchema()

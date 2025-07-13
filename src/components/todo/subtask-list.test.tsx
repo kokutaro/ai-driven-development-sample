@@ -18,12 +18,10 @@ vi.mock('@tabler/icons-react', () => ({
 // Mantine modalsのモック
 let mockConfirmCallback: (() => void) | undefined = undefined
 vi.mock('@mantine/modals', async (importOriginal) => {
-  const actual = await importOriginal() as {
-    openConfirmModal?: unknown
-    [key: string]: unknown
-  }
+  const originalModule = await importOriginal()
+  const typedModule = originalModule as Record<string, unknown>
   return {
-    ...actual,
+    ...typedModule,
     openConfirmModal: vi.fn((options: { onConfirm?: () => void }) => {
       mockConfirmCallback = options.onConfirm
     }),

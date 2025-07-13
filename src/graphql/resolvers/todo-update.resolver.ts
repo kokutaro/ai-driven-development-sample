@@ -13,7 +13,7 @@ import {
   withOptimisticLocking,
 } from '../context/graphql-context'
 import { withPrismaErrorHandling } from '../errors/prisma-error-handler'
-import { Todo } from '../types/todo.types'
+import { Todo, TodoPriority, TodoStatus } from '../types/todo.types'
 
 import type { GraphQLContext } from '../context/graphql-context'
 
@@ -45,8 +45,8 @@ export class TodoUpdateResolver {
     const startTime = Date.now()
 
     // 1. 認証チェック
-    const session = requireAuth(context)
-    const userId = getUserId(context)
+    const _session = requireAuth(context)
+    const _userId = getUserId(context)
 
     // 2. 入力バリデーション
     if (!id || typeof id !== 'string') {
@@ -113,8 +113,8 @@ export class TodoUpdateResolver {
     const startTime = Date.now()
 
     // 1. 認証チェック
-    const session = requireAuth(context)
-    const userId = getUserId(context)
+    const _session = requireAuth(context)
+    const _userId = getUserId(context)
 
     // 2. 現在のTodo状態を取得
     const currentTodo = await context.prisma.todo.findUnique({
@@ -164,11 +164,11 @@ export class TodoUpdateResolver {
 
         // GraphQL型への変換
         return {
-          categoryId: updatedTodo.categoryId,
+          categoryId: updatedTodo.categoryId ?? undefined,
           completionRate: updatedTodo.isCompleted ? 100 : 0,
           createdAt: updatedTodo.createdAt,
-          description: updatedTodo.description,
-          dueDate: updatedTodo.dueDate,
+          description: updatedTodo.description ?? undefined,
+          dueDate: updatedTodo.dueDate ?? undefined,
           id: updatedTodo.id,
           isCompleted: updatedTodo.isCompleted,
           isImportant: updatedTodo.isImportant,
@@ -176,8 +176,8 @@ export class TodoUpdateResolver {
             ? new Date() > updatedTodo.dueDate && !updatedTodo.isCompleted
             : false,
           order: updatedTodo.order,
-          priority: updatedTodo.priority as any,
-          status: updatedTodo.status as any,
+          priority: TodoPriority.MEDIUM,
+          status: TodoStatus.PENDING,
           subTasks: [],
           title: updatedTodo.title,
           updatedAt: updatedTodo.updatedAt,
@@ -201,8 +201,8 @@ export class TodoUpdateResolver {
     const startTime = Date.now()
 
     // 1. 認証チェック
-    const session = requireAuth(context)
-    const userId = getUserId(context)
+    const _session = requireAuth(context)
+    const _userId = getUserId(context)
 
     // 2. 入力バリデーション
     if (!id || typeof id !== 'string') {
@@ -272,11 +272,11 @@ export class TodoUpdateResolver {
 
         // GraphQL型への変換
         return {
-          categoryId: updatedTodo.categoryId,
+          categoryId: updatedTodo.categoryId ?? undefined,
           completionRate: 0,
           createdAt: updatedTodo.createdAt,
-          description: updatedTodo.description,
-          dueDate: updatedTodo.dueDate,
+          description: updatedTodo.description ?? undefined,
+          dueDate: updatedTodo.dueDate ?? undefined,
           id: updatedTodo.id,
           isCompleted: updatedTodo.isCompleted,
           isImportant: updatedTodo.isImportant,
@@ -284,8 +284,8 @@ export class TodoUpdateResolver {
             ? new Date() > updatedTodo.dueDate && !updatedTodo.isCompleted
             : false,
           order: updatedTodo.order,
-          priority: updatedTodo.priority as any,
-          status: updatedTodo.status as any,
+          priority: TodoPriority.MEDIUM,
+          status: TodoStatus.PENDING,
           subTasks: [],
           title: updatedTodo.title,
           updatedAt: updatedTodo.updatedAt,

@@ -14,9 +14,15 @@ import type { StructuredLogger } from './logger'
  * アラートアクションの型定義
  */
 export interface AlertAction {
-  config: Record<string, any>
+  config: Record<string, unknown>
   type: 'email' | 'slack' | 'sms' | 'webhook'
 }
+
+export type AlertActionConfig =
+  | EmailAlertConfig
+  | SlackAlertConfig
+  | SmsAlertConfig
+  | WebhookAlertConfig
 
 /**
  * アラート条件の型定義
@@ -42,6 +48,14 @@ export interface AlertRule {
   timeWindow: number // 秒
   type: 'pattern' | 'rate' | 'threshold'
   value: number
+}
+
+/**
+ * アラートアクション設定の具体的な型定義
+ */
+export interface EmailAlertConfig {
+  recipients: string[]
+  subject?: string
 }
 
 /**
@@ -82,13 +96,41 @@ export interface HealthCheckResult {
   timestamp: string
 }
 
+export interface SlackAlertConfig {
+  channel?: string
+  webhookUrl: string
+}
+
+export interface SmsAlertConfig {
+  phoneNumber: string
+  provider?: string
+}
+
+/**
+ * 時系列メトリクスデータの型定義
+ */
+export interface TimeSeriesMetric {
+  [key: string]: unknown
+  timestamp: string
+  type: string
+}
+
+export interface WebhookAlertConfig {
+  headers?: Record<string, string>
+  method?: 'POST' | 'PUT'
+  url: string
+}
+
 /**
  * エラー監視システム
  */
 export class GraphQLErrorMonitor {
   private readonly alertConditions = new Map<string, AlertCondition>()
   private healthCheckInterval?: NodeJS.Timeout
-  private readonly healthChecks = new Map<string, Function>()
+  private readonly healthChecks = new Map<
+    string,
+    () => boolean | Promise<boolean>
+  >()
   private readonly logger: StructuredLogger
   private readonly metricsBuffer: ErrorMetrics[] = []
 
@@ -132,11 +174,13 @@ export class GraphQLErrorMonitor {
         const checkResult = await checkFn()
         const duration = Date.now() - startTime
 
+        // eslint-disable-next-line security/detect-object-injection
         result.checks[name] = {
           duration,
           status: checkResult ? 'pass' : 'fail',
         }
       } catch (error) {
+        // eslint-disable-next-line security/detect-object-injection
         result.checks[name] = {
           message: error instanceof Error ? error.message : String(error),
           status: 'fail',
@@ -190,10 +234,7 @@ export class GraphQLErrorMonitor {
       error.severity === ErrorSeverity.CRITICAL ||
       error.severity === ErrorSeverity.HIGH
     ) {
-      this.logger.error(
-        'High severity GraphQL error detected',
-        error.toLogData()
-      )
+      this.logger.error('High severity GraphQL error detected', error)
     }
   }
 
@@ -216,7 +257,7 @@ export class GraphQLErrorMonitor {
     // パフォーマンス閾値チェック
     if (duration > 5000) {
       // 5秒以上
-      this.logger.warn('Slow GraphQL operation detected', metrics)
+      this.logger.warn('Slow GraphQL operation detected', undefined, metrics)
     }
 
     this.updateTimeSeriesMetrics('performance', metrics)
@@ -263,7 +304,7 @@ export class GraphQLErrorMonitor {
     const averageResponseTime =
       recentMetrics
         .filter((m) => m.duration)
-        .reduce((sum, m) => sum + (m.duration || 0), 0) / totalRequests
+        .reduce((sum, m) => sum + (m.duration ?? 0), 0) / totalRequests
 
     return {
       averageResponseTime,
@@ -276,14 +317,14 @@ export class GraphQLErrorMonitor {
    * アラート条件をチェック
    */
   private checkAlertConditions(metrics: ErrorMetrics): void {
-    for (const [id, condition] of this.alertConditions) {
+    for (const [_id, condition] of this.alertConditions) {
       if (!condition.enabled) continue
 
       // クールダウン期間チェック
       if (this.isInCooldown(condition)) continue
 
       if (this.evaluateAlertRule(condition.condition, metrics)) {
-        this.triggerAlert(condition, metrics)
+        void this.triggerAlert(condition, metrics)
       }
     }
   }
@@ -337,7 +378,7 @@ export class GraphQLErrorMonitor {
   /**
    * アラートルールを評価
    */
-  private evaluateAlertRule(rule: AlertRule, metrics: ErrorMetrics): boolean {
+  private evaluateAlertRule(rule: AlertRule, _metrics: ErrorMetrics): boolean {
     const timeWindow = rule.timeWindow * 1000 // ミリ秒に変換
     const now = Date.now()
     const windowStart = now - timeWindow
@@ -439,19 +480,35 @@ export class GraphQLErrorMonitor {
   ): Promise<void> {
     switch (action.type) {
       case 'email': {
-        await this.sendEmailAlert(action.config, condition, metrics)
+        await this.sendEmailAlert(
+          action.config as unknown as EmailAlertConfig,
+          condition,
+          metrics
+        )
         break
       }
       case 'slack': {
-        await this.sendSlackAlert(action.config, condition, metrics)
+        await this.sendSlackAlert(
+          action.config as unknown as SlackAlertConfig,
+          condition,
+          metrics
+        )
         break
       }
       case 'sms': {
-        await this.sendSmsAlert(action.config, condition, metrics)
+        await this.sendSmsAlert(
+          action.config as unknown as SmsAlertConfig,
+          condition,
+          metrics
+        )
         break
       }
       case 'webhook': {
-        await this.sendWebhookAlert(action.config, condition, metrics)
+        await this.sendWebhookAlert(
+          action.config as unknown as WebhookAlertConfig,
+          condition,
+          metrics
+        )
         break
       }
     }
@@ -487,7 +544,9 @@ export class GraphQLErrorMonitor {
     let consecutiveCount = 0
     for (let i = metrics.length - 1; i >= 0; i--) {
       if (
+        // eslint-disable-next-line security/detect-object-injection
         metrics[i].severity === ErrorSeverity.CRITICAL ||
+        // eslint-disable-next-line security/detect-object-injection
         metrics[i].severity === ErrorSeverity.HIGH
       ) {
         consecutiveCount++
@@ -496,6 +555,21 @@ export class GraphQLErrorMonitor {
       }
     }
     return consecutiveCount
+  }
+
+  /**
+   * オブジェクトがErrorMetricsの構造を持つかチェック
+   */
+  private isErrorMetrics(data: unknown): data is ErrorMetrics {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'category' in data &&
+      'count' in data &&
+      'errorCode' in data &&
+      'severity' in data &&
+      'timestamp' in data
+    )
   }
 
   /**
@@ -515,7 +589,7 @@ export class GraphQLErrorMonitor {
    * メールアラートを送信（プレースホルダー）
    */
   private async sendEmailAlert(
-    config: any,
+    config: EmailAlertConfig,
     condition: AlertCondition,
     metrics: ErrorMetrics
   ): Promise<void> {
@@ -531,7 +605,7 @@ export class GraphQLErrorMonitor {
    * Slackアラートを送信
    */
   private async sendSlackAlert(
-    config: any,
+    config: SlackAlertConfig,
     condition: AlertCondition,
     metrics: ErrorMetrics
   ): Promise<void> {
@@ -546,17 +620,17 @@ export class GraphQLErrorMonitor {
             {
               short: true,
               title: 'Operation',
-              value: metrics.operationName || 'Unknown',
+              value: metrics.operationName ?? 'Unknown',
             },
             {
               short: true,
               title: 'Request ID',
-              value: metrics.requestId || 'Unknown',
+              value: metrics.requestId ?? 'Unknown',
             },
             {
               short: true,
               title: 'User ID',
-              value: metrics.userId || 'Unknown',
+              value: metrics.userId ?? 'Unknown',
             },
           ],
           timestamp: Math.floor(new Date(metrics.timestamp).getTime() / 1000),
@@ -576,7 +650,7 @@ export class GraphQLErrorMonitor {
    * SMSアラートを送信（プレースホルダー）
    */
   private async sendSmsAlert(
-    config: any,
+    config: SmsAlertConfig,
     condition: AlertCondition,
     metrics: ErrorMetrics
   ): Promise<void> {
@@ -592,7 +666,7 @@ export class GraphQLErrorMonitor {
    * Webhookアラートを送信
    */
   private async sendWebhookAlert(
-    config: any,
+    config: WebhookAlertConfig,
     condition: AlertCondition,
     metrics: ErrorMetrics
   ): Promise<void> {
@@ -623,7 +697,7 @@ export class GraphQLErrorMonitor {
       actions: [
         {
           config: {
-            webhookUrl: process.env.SLACK_WEBHOOK_URL || '',
+            webhookUrl: process.env.SLACK_WEBHOOK_URL ?? '',
           },
           type: 'slack',
         },
@@ -647,7 +721,7 @@ export class GraphQLErrorMonitor {
       actions: [
         {
           config: {
-            url: process.env.MONITORING_WEBHOOK_URL || '',
+            url: process.env.MONITORING_WEBHOOK_URL ?? '',
           },
           type: 'webhook',
         },
@@ -671,12 +745,18 @@ export class GraphQLErrorMonitor {
    * ヘルスチェックを開始
    */
   private startHealthChecks(): void {
-    this.healthCheckInterval = setInterval(async () => {
-      const health = await this.performHealthCheck()
+    this.healthCheckInterval = setInterval(() => {
+      void (async () => {
+        const health = await this.performHealthCheck()
 
-      if (health.status !== 'healthy') {
-        this.logger.warn('Health check failed', health)
-      }
+        if (health.status !== 'healthy') {
+          this.logger.warn(
+            'Health check failed',
+            undefined,
+            health as unknown as Record<string, unknown>
+          )
+        }
+      })()
     }, 30_000) // 30秒ごと
   }
 
@@ -708,7 +788,7 @@ export class GraphQLErrorMonitor {
     condition: AlertCondition,
     metrics: ErrorMetrics
   ): Promise<void> {
-    this.logger.warn('Alert triggered', {
+    this.logger.warn('Alert triggered', undefined, {
       alertId: condition.id,
       alertName: condition.name,
       metrics,
@@ -721,10 +801,14 @@ export class GraphQLErrorMonitor {
       try {
         await this.executeAlertAction(action, condition, metrics)
       } catch (error) {
-        this.logger.error('Failed to execute alert action', error, {
-          actionType: action.type,
-          alertId: condition.id,
-        })
+        this.logger.error(
+          'Failed to execute alert action',
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            actionType: action.type,
+            alertId: condition.id,
+          }
+        )
       }
     }
   }
@@ -732,13 +816,16 @@ export class GraphQLErrorMonitor {
   /**
    * 時系列メトリクスを更新
    */
-  private updateTimeSeriesMetrics(key: string, data: any): void {
+  private updateTimeSeriesMetrics(key: string, data: TimeSeriesMetric): void {
     if (!this.metricsStore.has(key)) {
       this.metricsStore.set(key, [])
     }
 
     const metrics = this.metricsStore.get(key)!
-    metrics.push(data)
+    // TimeSeriesMetricをErrorMetricsに変換する際の型安全性を保つ
+    if (this.isErrorMetrics(data)) {
+      metrics.push(data)
+    }
 
     // 古いメトリクスを削除（24時間以上古い）
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
@@ -752,15 +839,13 @@ export class GraphQLErrorMonitor {
 /**
  * グローバル監視インスタンス
  */
-let globalMonitor: GraphQLErrorMonitor | null = null
+let globalMonitor: GraphQLErrorMonitor | undefined = undefined
 
 /**
  * グローバル監視システムを取得
  */
 export function getErrorMonitor(): GraphQLErrorMonitor {
-  if (!globalMonitor) {
-    globalMonitor = initializeErrorMonitoring()
-  }
+  globalMonitor ??= initializeErrorMonitoring()
   return globalMonitor
 }
 
@@ -768,8 +853,6 @@ export function getErrorMonitor(): GraphQLErrorMonitor {
  * 監視システムを初期化
  */
 export function initializeErrorMonitoring(): GraphQLErrorMonitor {
-  if (!globalMonitor) {
-    globalMonitor = new GraphQLErrorMonitor()
-  }
+  globalMonitor ??= new GraphQLErrorMonitor()
   return globalMonitor
 }

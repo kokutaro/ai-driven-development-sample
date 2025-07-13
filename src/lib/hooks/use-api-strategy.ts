@@ -69,7 +69,10 @@ export function useCategoriesUnified(strategy: ApiStrategy = 'rest') {
     categories: [],
     error: undefined,
     isLoading: false,
-    refetch: async () => {},
+    refetch: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
   }
 }
 
@@ -107,7 +110,10 @@ export function useStatsUnified(strategy: ApiStrategy = 'graphql') {
   return {
     error: undefined,
     isLoading: false,
-    refetch: async () => {},
+    refetch: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
     stats: undefined,
   }
 }
@@ -126,11 +132,20 @@ export function useTodoMutationsUnified(strategy: ApiStrategy = 'rest') {
 
   // RESTの場合は既存のフックを使用（実際の実装では既存のTodoStoreを呼び出す）
   return {
-    createTodo: async () => {},
-    deleteTodo: async () => {},
+    createTodo: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
+    deleteTodo: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
     hasError: false,
     isLoading: false,
-    updateTodo: async () => {},
+    updateTodo: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
   }
 }
 
@@ -150,11 +165,17 @@ export function useTodosUnified(strategy: ApiStrategy = 'rest') {
   // この例では基本的な構造のみ提供
   return {
     error: undefined,
-    fetchMore: async () => {},
+    fetchMore: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
     hasNextPage: false,
     hasPreviousPage: false,
     isLoading: false,
-    refetch: async () => {},
+    refetch: async () => {
+      // Mock implementation - no operation needed for disabled strategy
+      return undefined
+    },
     todos: [],
     total: 0,
   }

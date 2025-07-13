@@ -45,10 +45,10 @@ export interface LogEntry {
   duration?: number
   environment: string
   errorCode?: string
-  extra?: Record<string, any>
+  extra?: Record<string, unknown>
   level: LogLevel
   message: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   operationName?: string
   requestId?: string
   service: string
@@ -120,7 +120,7 @@ export interface PerformanceMetrics {
  * セキュリティイベントの型定義
  */
 export interface SecurityEvent {
-  details: Record<string, any>
+  details: Record<string, unknown>
   ipAddress?: string
   requestId?: string
   severity: 'critical' | 'high' | 'low' | 'medium'
@@ -176,7 +176,7 @@ export class StructuredLogger {
   debug(
     message: string,
     error?: BaseGraphQLError | Error,
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
   ): void {
     if (this.shouldLog(LogLevel.DEBUG)) {
       this.log(LogLevel.DEBUG, message, error, extra)
@@ -189,7 +189,7 @@ export class StructuredLogger {
   error(
     message: string,
     error?: BaseGraphQLError | Error,
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
   ): void {
     if (this.shouldLog(LogLevel.ERROR)) {
       this.log(LogLevel.ERROR, message, error, extra)
@@ -202,7 +202,7 @@ export class StructuredLogger {
   fatal(
     message: string,
     error?: BaseGraphQLError | Error,
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
   ): void {
     if (this.shouldLog(LogLevel.FATAL)) {
       this.log(LogLevel.FATAL, message, error, extra)
@@ -212,7 +212,7 @@ export class StructuredLogger {
   /**
    * 情報ログを出力
    */
-  info(message: string, extra?: Record<string, any>): void {
+  info(message: string, extra?: Record<string, unknown>): void {
     if (this.shouldLog(LogLevel.INFO)) {
       this.log(LogLevel.INFO, message, undefined, extra)
     }
@@ -228,7 +228,7 @@ export class StructuredLogger {
       action?: string
       entityId?: string
       entityType?: string
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
       userId?: string
     }
   ): void {
@@ -239,7 +239,7 @@ export class StructuredLogger {
       message: `Business event: ${message}`,
       metadata: {
         action: context.action,
-        businessData: this.maskSensitiveData(context.metadata || {}),
+        businessData: this.maskSensitiveData(context.metadata ?? {}),
         entityId: context.entityId,
         entityType: context.entityType,
         eventType,
@@ -275,7 +275,7 @@ export class StructuredLogger {
   logHealthCheck(
     component: string,
     status: 'degraded' | 'healthy' | 'unhealthy',
-    details: Record<string, any>
+    details: Record<string, unknown>
   ): void {
     const entry: LogEntry = {
       category: 'health_check',
@@ -376,7 +376,7 @@ export class StructuredLogger {
   logRequestTrace(
     operationName: string,
     query: string,
-    variables: any,
+    variables: unknown,
     context: {
       duration: number
       errorCount: number
@@ -446,7 +446,7 @@ export class StructuredLogger {
   warn(
     message: string,
     error?: BaseGraphQLError | Error,
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
   ): void {
     if (this.shouldLog(LogLevel.WARN)) {
       this.log(LogLevel.WARN, message, error, extra)
@@ -473,12 +473,12 @@ export class StructuredLogger {
       level: this.severityToLogLevel(error.severity),
       message: `GraphQL Error: ${error.message}`,
       operationName:
-        context?.operationName || (error.extensions.operationName as string),
-      requestId: context?.requestId || (error.extensions.requestId as string),
+        context?.operationName ?? (error.extensions.operationName as string),
+      requestId: context?.requestId ?? (error.extensions.requestId as string),
       service: this.config.serviceName,
       severity: error.severity,
       timestamp: new Date().toISOString(),
-      userId: context?.userId || (error.extensions.userId as string),
+      userId: context?.userId ?? (error.extensions.userId as string),
       version: this.config.version,
     }
 
@@ -502,7 +502,7 @@ export class StructuredLogger {
     level: LogLevel,
     message: string,
     error?: BaseGraphQLError | Error,
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
   ): LogEntry {
     const entry: LogEntry = {
       environment: this.config.environment,
@@ -544,7 +544,7 @@ export class StructuredLogger {
 
     // 追加情報の追加
     if (extra) {
-      entry.extra = this.maskSensitiveData(extra)
+      entry.extra = this.maskSensitiveData(extra) as Record<string, unknown>
     }
 
     return entry
@@ -637,7 +637,7 @@ export class StructuredLogger {
     level: LogLevel,
     message: string,
     error?: BaseGraphQLError | Error,
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
   ): void {
     const entry = this.createLogEntry(level, message, error, extra)
     this.outputLog(entry)
@@ -646,16 +646,18 @@ export class StructuredLogger {
   /**
    * 機密データをマスク
    */
-  private maskSensitiveData(data: any): any {
+  private maskSensitiveData(data: unknown): unknown {
     if (!this.config.maskSensitiveData) return data
     if (!data || typeof data !== 'object') return data
 
-    const masked = { ...data }
+    const masked = { ...(data as Record<string, unknown>) }
 
     for (const [key, value] of Object.entries(masked)) {
       if (this.isSensitiveField(key)) {
+        // eslint-disable-next-line security/detect-object-injection
         masked[key] = '[REDACTED]'
       } else if (typeof value === 'object' && value !== null) {
+        // eslint-disable-next-line security/detect-object-injection
         masked[key] = this.maskSensitiveData(value)
       }
     }
@@ -703,7 +705,7 @@ export class StructuredLogger {
    */
   private outputToCloudWatch(entry: LogEntry): void {
     // 実際の実装では AWS CloudWatch Logs API を使用
-    const logEvent = {
+    const _logEvent = {
       message: this.formatLogEntry(entry),
       timestamp: new Date(entry.timestamp).getTime(),
     }
@@ -742,11 +744,11 @@ export class StructuredLogger {
    */
   private outputToDatadog(entry: LogEntry): void {
     // 実際の実装では Datadog ログ API を使用
-    const datadogLog = {
+    const _datadogLog = {
       level: entry.level,
       message: entry.message,
       service: entry.service,
-      source: this.config.datadogOutput?.source || 'nodejs',
+      source: this.config.datadogOutput?.source ?? 'nodejs',
       tags: [
         `env:${entry.environment}`,
         `version:${entry.version}`,
@@ -764,7 +766,7 @@ export class StructuredLogger {
   private outputToElastic(entry: LogEntry): void {
     // 実際の実装では Elasticsearch クライアントを使用
     // バッチ処理、再試行ロジック、エラーハンドリングも含める
-    const elasticDoc = {
+    const _elasticDoc = {
       '@timestamp': entry.timestamp,
       level: entry.level,
       message: entry.message,
@@ -780,7 +782,7 @@ export class StructuredLogger {
   private outputToFile(entry: LogEntry): void {
     // 実際の実装では fs モジュールまたはログライブラリを使用
     // ログローテーション、圧縮、バックアップなどの機能も含める
-    const formatted = this.formatLogEntry(entry)
+    const _formatted = this.formatLogEntry(entry)
     // fs.appendFileSync(this.config.fileOutput?.path || 'app.log', formatted + '\n')
   }
 
@@ -859,15 +861,13 @@ export class StructuredLogger {
 /**
  * デフォルトロガーインスタンス
  */
-let defaultLogger: null | StructuredLogger = null
+let defaultLogger: StructuredLogger | undefined = undefined
 
 /**
  * デフォルトロガーを取得
  */
 export function getLogger(): StructuredLogger {
-  if (!defaultLogger) {
-    defaultLogger = new StructuredLogger()
-  }
+  defaultLogger ??= new StructuredLogger()
   return defaultLogger
 }
 
@@ -887,7 +887,7 @@ export function initializeLogger(
 export function logError(
   message: string,
   error?: BaseGraphQLError | Error,
-  extra?: Record<string, any>
+  extra?: Record<string, unknown>
 ): void {
   const logger = getLogger()
   logger.error(message, error, extra)
@@ -896,7 +896,10 @@ export function logError(
 /**
  * 情報をログするヘルパー関数
  */
-export function logInfo(message: string, extra?: Record<string, any>): void {
+export function logInfo(
+  message: string,
+  extra?: Record<string, unknown>
+): void {
   const logger = getLogger()
   logger.info(message, extra)
 }
@@ -907,7 +910,7 @@ export function logInfo(message: string, extra?: Record<string, any>): void {
 export function logWarning(
   message: string,
   error?: BaseGraphQLError | Error,
-  extra?: Record<string, any>
+  extra?: Record<string, unknown>
 ): void {
   const logger = getLogger()
   logger.warn(message, error, extra)

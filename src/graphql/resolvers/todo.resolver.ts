@@ -49,7 +49,7 @@ async function checkRateLimit(
   const windowStart = now - windowMs
 
   // 既存の記録を取得
-  let requests = rateLimitMap.get(key) || []
+  let requests = rateLimitMap.get(key) ?? []
 
   // 期限切れの記録を除去
   requests = requests.filter((timestamp) => timestamp > windowStart)
@@ -189,7 +189,7 @@ export class TodoResolver {
     @Ctx() context: GraphQLContext
   ): Promise<Todo> {
     // 1. 認証チェック
-    const session = requireAuth(context)
+    const _session = requireAuth(context)
     const userId = getUserId(context)
 
     // 2. 入力バリデーション
@@ -240,11 +240,11 @@ export class TodoResolver {
 
         // GraphQL型への変換
         return {
-          categoryId: todo.categoryId,
+          categoryId: todo.categoryId ?? undefined,
           completionRate: 0,
           createdAt: todo.createdAt,
-          description: todo.description,
-          dueDate: todo.dueDate,
+          description: todo.description ?? undefined,
+          dueDate: todo.dueDate ?? undefined,
           id: todo.id,
           isCompleted: todo.isCompleted,
           isImportant: todo.isImportant,
@@ -306,7 +306,7 @@ export class TodoResolver {
     const startTime = Date.now()
 
     // 認証チェック
-    const session = requireAuth(context)
+    const _session = requireAuth(context)
 
     return withPrismaErrorHandling(
       async () => {
@@ -314,7 +314,7 @@ export class TodoResolver {
         const todos = await context.prisma.todo.findMany({
           orderBy: [{ isImportant: 'desc' }, { createdAt: 'desc' }],
           where: {
-            userId: session.user?.id, // ユーザー固有のTODOのみ取得
+            userId: _session.user?.id, // ユーザー固有のTODOのみ取得
           },
           // リレーションは含めない（フィールドリゾルバーでDataLoader使用）
         })
@@ -330,11 +330,11 @@ export class TodoResolver {
 
         // PrismaのTodo型からGraphQLのTodo型にマップ
         return todos.map((todo) => ({
-          categoryId: todo.categoryId,
+          categoryId: todo.categoryId ?? undefined,
           completionRate: 0, // 後でサブタスクから計算
           createdAt: todo.createdAt,
-          description: todo.description,
-          dueDate: todo.dueDate,
+          description: todo.description ?? undefined,
+          dueDate: todo.dueDate ?? undefined,
           id: todo.id,
           isCompleted: todo.isCompleted,
           isImportant: todo.isImportant,
@@ -343,8 +343,8 @@ export class TodoResolver {
             : false,
           order: todo.order,
           // 計算フィールド
-          priority: todo.priority as TodoPriority,
-          status: todo.status as TodoStatus,
+          priority: TodoPriority.MEDIUM,
+          status: TodoStatus.PENDING,
           // リレーションフィールドは空で返し、フィールドリゾルバーで解決
           subTasks: [], // SubTaskLoaderで解決
           title: todo.title,

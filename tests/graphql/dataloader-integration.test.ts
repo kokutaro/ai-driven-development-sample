@@ -7,7 +7,11 @@
 import { execute, parse } from 'graphql'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { DataLoaderContext } from '@/graphql/context/dataloader-context'
+import type { GraphQLContext } from '@/graphql/context/graphql-context'
 import type { PrismaClient } from '@prisma/client'
+import type { GraphQLSchema } from 'graphql'
+import type { NextRequest } from 'next/server'
 
 import { buildGraphQLSchema } from '@/graphql/schema/schema.builder'
 
@@ -29,14 +33,16 @@ const mockPrisma = {
 
 // NextRequestのモック
 const mockRequest = {
+  cookies: new Map(),
   headers: new Headers(),
   method: 'POST',
+  nextUrl: new URL('http://localhost:3000/api/graphql'),
   url: 'http://localhost:3000/api/graphql',
-} as unknown as Request
+} as unknown as NextRequest
 
 describe('DataLoader GraphQL Integration Tests', () => {
-  let schema: any
-  let context: any
+  let schema: GraphQLSchema
+  let context: GraphQLContext
 
   beforeAll(async () => {
     // GraphQLスキーマを構築
@@ -47,27 +53,44 @@ describe('DataLoader GraphQL Integration Tests', () => {
     vi.clearAllMocks()
 
     // GraphQLコンテキストを作成（DataLoader統合済み）
-    context = {
-      commandBus: {},
-      dataloaders: {
-        categoryLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-        },
-        subTaskLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-        },
-        userLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-        },
+    const mockDataloaders = {
+      categoryLoader: {
+        batchLoadCategories: vi.fn(),
+        clear: vi.fn(),
+        clearAll: vi.fn(),
+        load: vi.fn(),
+        loadMany: vi.fn(),
       },
-      prisma: mockPrisma,
-      queryBus: {},
-      req: mockRequest,
-      session: null,
-    }
+      clearAllCaches: vi.fn(),
+      getStats: vi.fn(() => ({
+        requestId: 'test-request',
+        timestamp: new Date(),
+      })),
+      subTaskLoader: {
+        batchLoadSubTasks: vi.fn(),
+        clear: vi.fn(),
+        clearAll: vi.fn(),
+        load: vi.fn(),
+        loadMany: vi.fn(),
+      },
+      userLoader: {
+        batchLoadUsers: vi.fn(),
+        clear: vi.fn(),
+        clearAll: vi.fn(),
+        load: vi.fn(),
+        loadMany: vi.fn(),
+      },
+    } as unknown as DataLoaderContext
+
+    context = {
+      commandBus: {} as unknown,
+      dataloaders: mockDataloaders,
+      prisma: mockPrisma as unknown as PrismaClient,
+      queryBus: {} as unknown,
+      req: mockRequest as unknown,
+      res: undefined,
+      session: undefined,
+    } as GraphQLContext
   })
 
   describe('Todos Query with DataLoader', () => {
@@ -116,7 +139,7 @@ describe('DataLoader GraphQL Integration Tests', () => {
         .fn()
         .mockImplementation((id: string) => {
           return Promise.resolve(
-            mockCategories.find((cat) => cat.id === id) || null
+            mockCategories.find((cat) => cat.id === id) ?? null
           )
         })
 
@@ -162,7 +185,7 @@ describe('DataLoader GraphQL Integration Tests', () => {
       )
 
       // レスポンスデータの検証
-      const todos = result.data?.todos
+      const todos = result.data?.todos as Array<Record<string, unknown>>
       expect(todos[0].category).toEqual({
         color: '#FF6B6B',
         id: 'cat1',
@@ -258,15 +281,18 @@ describe('DataLoader GraphQL Integration Tests', () => {
       expect(context.dataloaders.subTaskLoader.load).toHaveBeenCalledTimes(2) // subTasks + completionRate
 
       // レスポンスデータの検証
-      const todos = result.data?.todos
-      expect(todos[0].subTasks).toHaveLength(2)
-      expect(todos[0].subTasks[0]).toEqual({
-        completed: false,
-        id: 'sub1',
-        order: 1,
-        title: 'SubTask 1',
-      })
-      expect(todos[0].completionRate).toBe(50) // 2つ中1つ完了なので50%
+      const todos = result.data?.todos as Array<Record<string, unknown>>
+      const firstTodo = todos[0]
+      expect(firstTodo.subTasks).toHaveLength(2)
+      expect((firstTodo.subTasks as Array<Record<string, unknown>>)[0]).toEqual(
+        {
+          completed: false,
+          id: 'sub1',
+          order: 1,
+          title: 'SubTask 1',
+        }
+      )
+      expect(firstTodo.completionRate).toBe(50) // 2つ中1つ完了なので50%
     })
 
     it('should handle todos without categories or subTasks', async () => {
@@ -320,9 +346,11 @@ describe('DataLoader GraphQL Integration Tests', () => {
 
       // Assert
       expect(result.errors).toBeUndefined()
-      expect(result.data?.todos[0].category).toBeNull()
-      expect(result.data?.todos[0].subTasks).toEqual([])
-      expect(result.data?.todos[0].completionRate).toBe(0)
+      const todos = result.data?.todos as Array<Record<string, unknown>>
+      const firstTodo = todos[0]
+      expect(firstTodo.category).toBeNull()
+      expect(firstTodo.subTasks).toEqual([])
+      expect(firstTodo.completionRate).toBe(0)
 
       // categoryIdがnullなのでcategoryLoaderは呼ばれない
       expect(context.dataloaders.categoryLoader.load).not.toHaveBeenCalled()
@@ -367,7 +395,7 @@ describe('DataLoader GraphQL Integration Tests', () => {
         .mockImplementation((id: string) => {
           categoryLoadCalls.push(id)
           return Promise.resolve(
-            mockCategories.find((cat) => cat.id === id) || null
+            mockCategories.find((cat) => cat.id === id) ?? null
           )
         })
 

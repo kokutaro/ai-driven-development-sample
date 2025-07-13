@@ -641,6 +641,16 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'MEDIUM',
     userMessage: 'サービスがタイムアウトしました',
   },
+  [ExternalServiceErrorCodes.SERVICE_UNAVAILABLE]: {
+    category: 'EXTERNAL_SERVICE',
+    code: ExternalServiceErrorCodes.SERVICE_UNAVAILABLE,
+    description: 'Service unavailable',
+    httpStatus: 503,
+    logLevel: 'error',
+    retryable: true,
+    severity: 'HIGH',
+    userMessage: 'サービスが利用できません',
+  },
   [ExternalServiceErrorCodes.STORAGE_SERVICE_ERROR]: {
     category: 'EXTERNAL_SERVICE',
     code: ExternalServiceErrorCodes.STORAGE_SERVICE_ERROR,
@@ -702,6 +712,7 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'MEDIUM',
     userMessage: 'リクエスト制限に達しました',
   },
+
   [NetworkErrorCodes.REQUEST_TIMEOUT]: {
     category: 'NETWORK',
     code: NetworkErrorCodes.REQUEST_TIMEOUT,
@@ -712,7 +723,6 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'MEDIUM',
     userMessage: 'リクエストがタイムアウトしました',
   },
-
   [NetworkErrorCodes.TOO_MANY_REQUESTS]: {
     category: 'RATE_LIMIT',
     code: NetworkErrorCodes.TOO_MANY_REQUESTS,
@@ -774,6 +784,7 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'LOW',
     userMessage: 'サブタスクが見つかりません',
   },
+
   [ResourceErrorCodes.TODO_NOT_FOUND]: {
     category: 'RESOURCE_NOT_FOUND',
     code: ResourceErrorCodes.TODO_NOT_FOUND,
@@ -784,7 +795,6 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'LOW',
     userMessage: 'タスクが見つかりません',
   },
-
   [ResourceErrorCodes.USER_NOT_FOUND]: {
     category: 'RESOURCE_NOT_FOUND',
     code: ResourceErrorCodes.USER_NOT_FOUND,
@@ -846,6 +856,7 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'MEDIUM',
     userMessage: 'システムメンテナンス中です',
   },
+
   [SystemErrorCodes.MEMORY_LIMIT_EXCEEDED]: {
     category: 'SYSTEM',
     code: SystemErrorCodes.MEMORY_LIMIT_EXCEEDED,
@@ -856,7 +867,6 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'CRITICAL',
     userMessage: 'メモリ不足エラー',
   },
-
   // バリデーションエラー
   [ValidationErrorCodes.BAD_USER_INPUT]: {
     category: 'VALIDATION',
@@ -867,6 +877,17 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     retryable: false,
     severity: 'LOW',
     userMessage: '入力内容に問題があります',
+  },
+  // 不足していたエラーコードマッピングを追加
+  [ValidationErrorCodes.CONSTRAINT_VIOLATION]: {
+    category: 'VALIDATION',
+    code: ValidationErrorCodes.CONSTRAINT_VIOLATION,
+    description: 'Constraint violation',
+    httpStatus: 400,
+    logLevel: 'warn',
+    retryable: false,
+    severity: 'MEDIUM',
+    userMessage: '制約違反エラー',
   },
   [ValidationErrorCodes.DUPLICATE_VALUE]: {
     category: 'VALIDATION',
@@ -898,6 +919,7 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'LOW',
     userMessage: '入力値が短すぎます',
   },
+
   [ValidationErrorCodes.INVALID_DATE]: {
     category: 'VALIDATION',
     code: ValidationErrorCodes.INVALID_DATE,
@@ -918,7 +940,6 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
     severity: 'LOW',
     userMessage: 'メールアドレスの形式が正しくありません',
   },
-
   [ValidationErrorCodes.INVALID_ENUM_VALUE]: {
     category: 'VALIDATION',
     code: ValidationErrorCodes.INVALID_ENUM_VALUE,
@@ -966,6 +987,7 @@ export const ErrorCodeInfoMap: Record<ErrorCode, ErrorCodeInfo> = {
  */
 export function getErrorCodeInfo(code: ErrorCode): ErrorCodeInfo {
   if (Object.prototype.hasOwnProperty.call(ErrorCodeInfoMap, code)) {
+    // eslint-disable-next-line security/detect-object-injection
     return ErrorCodeInfoMap[code]
   }
   return ErrorCodeInfoMap[SystemErrorCodes.INTERNAL_SERVER_ERROR]

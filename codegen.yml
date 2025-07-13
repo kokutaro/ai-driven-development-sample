@@ -37,5 +37,5 @@ generates:
         object: false
 
       # その他の設定
-      maybeValue: 'T | null | undefined'
-      inputMaybeValue: 'T | null | undefined'
+      maybeValue: 'T | undefined'
+      inputMaybeValue: 'T | undefined'

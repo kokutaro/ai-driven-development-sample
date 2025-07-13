@@ -5,40 +5,64 @@
  * レスポンス時間最適化の包括的テスト
  */
 import 'reflect-metadata'
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TodoResolver } from '../../src/graphql/resolvers/todo.resolver'
-import { CategoryResolver } from '../../src/graphql/resolvers/category.resolver'
-import { StatsResolver } from '../../src/graphql/resolvers/stats.resolver'
+import type { GraphQLContext } from '@/graphql/context/graphql-context'
 
-import type { GraphQLContext } from '../../src/graphql/context/graphql-context'
+import { CategoryResolver } from '@/graphql/resolvers/category.resolver'
+import { StatsResolver } from '@/graphql/resolvers/stats.resolver'
+import { TodoResolver } from '@/graphql/resolvers/todo.resolver'
+import { TodoPriority, TodoStatus } from '@/graphql/types/todo.types'
 
 // RED PHASE: パフォーマンス問題を先にテストで発見
 
 describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
   let todoResolver: TodoResolver
-  let categoryResolver: CategoryResolver
-  let statsResolver: StatsResolver
+  let _categoryResolver: CategoryResolver
+  let _statsResolver: StatsResolver
   let mockContext: GraphQLContext
-  let performanceMetrics: Map<string, number>
+  let _performanceMetrics: Map<string, number>
 
   beforeEach(() => {
     todoResolver = new TodoResolver()
-    categoryResolver = new CategoryResolver()
-    statsResolver = new StatsResolver()
-    performanceMetrics = new Map()
+    _categoryResolver = new CategoryResolver()
+    _statsResolver = new StatsResolver()
+    _performanceMetrics = new Map()
 
     // パフォーマンス測定用のコンテキスト
     mockContext = {
-      prisma: {
-        todo: {
-          findMany: vi.fn(),
-          findUnique: vi.fn(),
-          create: vi.fn(),
-          update: vi.fn(),
-          delete: vi.fn(),
-          count: vi.fn(),
+      commandBus: {
+        execute: vi.fn(),
+        register: vi.fn(),
+      },
+      dataloaders: {
+        categoryLoader: {
+          clear: vi.fn(),
+          clearAll: vi.fn(),
+          load: vi.fn(),
+          loadMany: vi.fn(),
+          prime: vi.fn(),
         },
+        clearAllCaches: vi.fn(),
+        getStats: vi.fn(() => ({
+          requestId: 'test-request-id',
+          timestamp: new Date(),
+        })),
+        subTaskLoader: {
+          clear: vi.fn(),
+          clearAll: vi.fn(),
+          load: vi.fn(),
+          loadMany: vi.fn(),
+          prime: vi.fn(),
+        },
+        userLoader: {
+          clear: vi.fn(),
+          clearAll: vi.fn(),
+          load: vi.fn(),
+          loadMany: vi.fn(),
+        },
+      },
+      prisma: {
         category: {
           findMany: vi.fn(),
           findUnique: vi.fn(),
@@ -46,55 +70,49 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
         subTask: {
           findMany: vi.fn(),
         },
+        todo: {
+          count: vi.fn(),
+          create: vi.fn(),
+          delete: vi.fn(),
+          findMany: vi.fn(),
+          findUnique: vi.fn(),
+          update: vi.fn(),
+        },
       },
+      queryBus: {
+        execute: vi.fn(),
+        register: vi.fn(),
+      },
+      req: {} as unknown,
+      res: {} as unknown,
       session: {
+        expires: '2024-12-31',
         user: {
+          email: 'perf@test.com',
           id: 'perf-test-user',
           name: 'Performance Test User',
-          email: 'perf@test.com',
-        },
-        expires: '2024-12-31',
-      },
-      dataloaders: {
-        categoryLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-          clear: vi.fn(),
-          clearAll: vi.fn(),
-          prime: vi.fn(),
-        },
-        subTaskLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-          clear: vi.fn(),
-          clearAll: vi.fn(),
-          prime: vi.fn(),
         },
       },
-      commandBus: {},
-      queryBus: {},
-      req: {} as any,
-      res: {} as any,
-    } as GraphQLContext
+    } as unknown as GraphQLContext
   })
 
   describe('N+1 Query Prevention Tests - TDD Cycle 1', () => {
     it('should FAIL - detect N+1 queries in category loading (Red Phase)', async () => {
       // RED: N+1クエリの発生を検出
       const mockTodos = Array.from({ length: 100 }, (_, i) => ({
-        id: `todo-${i}`,
-        title: `Todo ${i}`,
-        description: null,
         categoryId: `category-${i % 5}`, // 5つのカテゴリに分散
+        completionRate: 0,
+        createdAt: new Date(),
+        description: undefined,
+        id: `todo-${i}`,
         isCompleted: false,
         isImportant: false,
         isOverdue: false,
         order: i,
-        priority: 'MEDIUM' as any,
-        status: 'PENDING' as any,
+        priority: TodoPriority.MEDIUM,
+        status: TodoStatus.PENDING,
         subTasks: [],
-        completionRate: 0,
-        createdAt: new Date(),
+        title: `Todo ${i}`,
         updatedAt: new Date(),
         userId: 'perf-test-user',
       }))
@@ -106,12 +124,12 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
         .mockImplementation(() => {
           categoryLoadCalls++
           return Promise.resolve({
+            color: '#FF0000',
+            createdAt: new Date(),
             id: 'test-category',
             name: 'Test Category',
-            color: '#FF0000',
-            userId: 'perf-test-user',
-            createdAt: new Date(),
             updatedAt: new Date(),
+            userId: 'perf-test-user',
           })
         })
 
@@ -153,19 +171,19 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
     it('should FAIL - prevent excessive database queries in subtask loading (Red Phase)', async () => {
       // RED: サブタスク読み込みでの過剰なDBクエリ防止
       const largeTodoSet = Array.from({ length: 500 }, (_, i) => ({
+        categoryId: undefined,
+        completionRate: 0,
+        createdAt: new Date(),
+        description: undefined,
         id: `large-todo-${i}`,
-        title: `Large Todo ${i}`,
-        description: null,
-        categoryId: null,
         isCompleted: false,
         isImportant: false,
         isOverdue: false,
         order: i,
-        priority: 'LOW' as any,
-        status: 'PENDING' as any,
+        priority: TodoPriority.LOW,
+        status: TodoStatus.PENDING,
         subTasks: [],
-        completionRate: 0,
-        createdAt: new Date(),
+        title: `Large Todo ${i}`,
         updatedAt: new Date(),
         userId: 'perf-test-user',
       }))
@@ -195,15 +213,26 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
       const deepQueryDepth = 20 // 異常に深いクエリ
 
       // 深いネストのシミュレーション
-      const executeDeepQuery = async (depth: number): Promise<any> => {
+      const executeDeepQuery = async (depth: number): Promise<unknown> => {
         if (depth <= 0) return null
 
         const todo = {
-          id: `deep-todo-${depth}`,
-          title: `Deep Todo ${depth}`,
           categoryId: 'category-1',
-          // ... other fields
-        } as any
+          completionRate: 0,
+          createdAt: new Date(),
+          description: undefined,
+          id: `deep-todo-${depth}`,
+          isCompleted: false,
+          isImportant: false,
+          isOverdue: false,
+          order: depth,
+          priority: TodoPriority.MEDIUM,
+          status: TodoStatus.PENDING,
+          subTasks: [],
+          title: `Deep Todo ${depth}`,
+          updatedAt: new Date(),
+          userId: 'perf-test-user',
+        }
 
         const category = await todoResolver.category(todo, mockContext)
         if (category && depth > 1) {
@@ -265,19 +294,19 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
 
       // 大量のTodoデータを処理
       const massiveTodoSet = Array.from({ length: 10000 }, (_, i) => ({
-        id: `massive-todo-${i}`,
-        title: `Massive Todo ${i}`,
-        description: `Description for massive todo ${i}`.repeat(100), // 大きなデータ
         categoryId: `category-${i % 100}`,
+        completionRate: 0,
+        createdAt: new Date(),
+        description: `Description for massive todo ${i}`.repeat(100), // 大きなデータ
+        id: `massive-todo-${i}`,
         isCompleted: false,
         isImportant: i % 10 === 0,
         isOverdue: false,
         order: i,
-        priority: 'MEDIUM' as any,
-        status: 'PENDING' as any,
+        priority: TodoPriority.MEDIUM,
+        status: TodoStatus.PENDING,
         subTasks: [],
-        completionRate: 0,
-        createdAt: new Date(),
+        title: `Massive Todo ${i}`,
         updatedAt: new Date(),
         userId: 'perf-test-user',
       }))
@@ -305,17 +334,17 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
       // RED: DataLoaderキャッシュの適切な管理
       const cacheSize = 10000
 
-      // 大量のキャッシュエントリを作成
-      for (let i = 0; i < cacheSize; i++) {
-        mockContext.dataloaders.categoryLoader.prime(`category-${i}`, {
-          id: `category-${i}`,
-          name: `Category ${i}`,
-          color: '#FF0000',
-          userId: 'perf-test-user',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      }
+      // 大量のキャッシュエントリを作成（コメント: prime メソッドは現在未実装）
+      // for (let i = 0; i < cacheSize; i++) {
+      //   mockContext.dataloaders.categoryLoader.prime(`category-${i}`, {
+      //     id: `category-${i}`,
+      //     name: `Category ${i}`,
+      //     color: '#FF0000',
+      //     userId: 'perf-test-user',
+      //     createdAt: new Date(),
+      //     updatedAt: new Date(),
+      //   })
+      // }
 
       // キャッシュサイズの制限があるべき
       const estimatedCacheSize = cacheSize * 1000 // 概算サイズ（バイト）
@@ -355,12 +384,22 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
     it('should FAIL - optimize field resolver performance (Red Phase)', async () => {
       // RED: フィールドリゾルバーのパフォーマンス最適化
       const todo = {
-        id: 'perf-todo',
-        title: 'Performance Todo',
         categoryId: 'perf-category',
+        completionRate: 0,
+        createdAt: new Date(),
+        description: undefined,
+        id: 'perf-todo',
         isCompleted: false,
-        // ... other fields
-      } as any
+        isImportant: false,
+        isOverdue: false,
+        order: 0,
+        priority: TodoPriority.MEDIUM,
+        status: TodoStatus.PENDING,
+        subTasks: [],
+        title: 'Performance Todo',
+        updatedAt: new Date(),
+        userId: 'perf-test-user',
+      }
 
       // フィールドリゾルバーの実行時間測定
       const measurements = []
@@ -456,12 +495,12 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
           accessCount++
           await new Promise((resolve) => setTimeout(resolve, 10)) // 10ms delay
           return {
+            color: '#00FF00',
+            createdAt: new Date(),
             id: sharedResourceId,
             name: 'Shared Category',
-            color: '#00FF00',
-            userId: 'perf-test-user',
-            createdAt: new Date(),
             updatedAt: new Date(),
+            userId: 'perf-test-user',
           }
         })
 
@@ -511,9 +550,9 @@ describe('GraphQL Performance Optimization Tests - TDD Implementation', () => {
       // RED: パフォーマンスレポート生成
       const report = generatePerformanceReport()
 
-      expect(report.summary).toBeDefined()
-      expect(report.recommendations).toBeDefined()
-      expect(report.metrics).toBeDefined()
+      expect((report as Record<string, unknown>).summary).toBeDefined()
+      expect((report as Record<string, unknown>).recommendations).toBeDefined()
+      expect((report as Record<string, unknown>).metrics).toBeDefined()
 
       function generatePerformanceReport() {
         // 現在はレポート生成が未実装

@@ -5,15 +5,16 @@
  * TDD Red-Green-Refactor サイクルを実装します。
  */
 import 'reflect-metadata'
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TodoResolver } from '../../src/graphql/resolvers/todo.resolver'
+import type { GraphQLContext } from '@/graphql/context/graphql-context'
+
 import {
   requireAuth,
   requireResourceOwnership,
-} from '../../src/graphql/context/graphql-context'
-
-import type { GraphQLContext } from '../../src/graphql/context/graphql-context'
+} from '@/graphql/context/graphql-context'
+import { TodoResolver } from '@/graphql/resolvers/todo.resolver'
+import { TodoPriority, TodoStatus } from '@/graphql/types/todo.types'
 
 // RED PHASE: 失敗するテストから開始
 
@@ -26,49 +27,66 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
 
     // GraphQLコンテキストをモック
     mockContext = {
-      prisma: {
-        todo: {
-          findMany: vi.fn(),
-          findUnique: vi.fn(),
-          create: vi.fn(),
-          update: vi.fn(),
-          delete: vi.fn(),
-          count: vi.fn(),
+      commandBus: {
+        execute: vi.fn(),
+        register: vi.fn(),
+      },
+      dataloaders: {
+        categoryLoader: {
+          clear: vi.fn(),
+          clearAll: vi.fn(),
+          load: vi.fn(),
+          loadMany: vi.fn(),
+          prime: vi.fn(),
         },
+        clearAllCaches: vi.fn(),
+        getStats: vi.fn(() => ({
+          requestId: 'test-request-id',
+          timestamp: new Date(),
+        })),
+        subTaskLoader: {
+          clear: vi.fn(),
+          clearAll: vi.fn(),
+          load: vi.fn().mockResolvedValue([]),
+          loadMany: vi.fn(),
+          prime: vi.fn(),
+        },
+        userLoader: {
+          clear: vi.fn(),
+          clearAll: vi.fn(),
+          load: vi.fn(),
+          loadMany: vi.fn(),
+        },
+      },
+      prisma: {
         category: {
           findMany: vi.fn(),
           findUnique: vi.fn(),
         },
+        todo: {
+          count: vi.fn(),
+          create: vi.fn(),
+          delete: vi.fn(),
+          findMany: vi.fn(),
+          findUnique: vi.fn(),
+          update: vi.fn(),
+        },
       },
+      queryBus: {
+        execute: vi.fn(),
+        register: vi.fn(),
+      },
+      req: {} as unknown,
+      res: {} as unknown,
       session: {
+        expires: '2024-12-31',
         user: {
+          email: 'test@example.com',
           id: 'test-user-1',
           name: 'Test User',
-          email: 'test@example.com',
-        },
-        expires: '2024-12-31',
-      },
-      dataloaders: {
-        categoryLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-          clear: vi.fn(),
-          clearAll: vi.fn(),
-          prime: vi.fn(),
-        },
-        subTaskLoader: {
-          load: vi.fn().mockResolvedValue([]),
-          loadMany: vi.fn(),
-          clear: vi.fn(),
-          clearAll: vi.fn(),
-          prime: vi.fn(),
         },
       },
-      commandBus: {},
-      queryBus: {},
-      req: {} as any,
-      res: {} as any,
-    } as GraphQLContext
+    } as unknown as GraphQLContext
   })
 
   describe('Basic Resolver Functionality - TDD Cycle 1', () => {
@@ -99,7 +117,7 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
       // RED: 認証チェックが未実装
       const unauthenticatedContext = {
         ...mockContext,
-        session: null,
+        session: undefined,
       }
 
       try {
@@ -115,19 +133,19 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
 
   describe('Field Resolver Tests - TDD Cycle 2', () => {
     const mockTodo = {
-      id: 'test-todo-1',
-      title: 'Test Todo',
-      description: 'Test Description',
       categoryId: 'test-category-1',
+      completionRate: 0,
+      createdAt: new Date(),
+      description: 'Test Description',
+      id: 'test-todo-1',
       isCompleted: false,
       isImportant: false,
       isOverdue: false,
       order: 0,
-      priority: 'MEDIUM' as any,
-      status: 'PENDING' as any,
+      priority: TodoPriority.MEDIUM,
+      status: TodoStatus.PENDING,
       subTasks: [],
-      completionRate: 0,
-      createdAt: new Date(),
+      title: 'Test Todo',
       updatedAt: new Date(),
       userId: 'test-user-1',
     }
@@ -135,12 +153,12 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
     it('should FAIL - category field resolver should use DataLoader (Red Phase)', async () => {
       // RED: DataLoaderが正しく呼ばれていない
       const mockCategory = {
+        color: '#FF6B6B',
+        createdAt: new Date(),
         id: 'test-category-1',
         name: 'Work',
-        color: '#FF6B6B',
-        userId: 'test-user-1',
-        createdAt: new Date(),
         updatedAt: new Date(),
+        userId: 'test-user-1',
       }
 
       mockContext.dataloaders.categoryLoader.load = vi
@@ -154,12 +172,12 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
         'test-category-1'
       )
       expect(result).toEqual({
+        color: '#FF6B6B',
+        createdAt: expect.any(Date),
         id: 'test-category-1',
         name: 'Work',
-        color: '#FF6B6B',
-        userId: 'test-user-1',
-        createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
+        userId: 'test-user-1',
       })
     })
 
@@ -173,21 +191,21 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
       // サブタスクがある場合の計算
       const mockSubTasks = [
         {
+          createdAt: new Date(),
           id: '1',
-          title: 'Sub 1',
           isCompleted: true,
           order: 1,
+          title: 'Sub 1',
           todoId: 'test-todo-1',
-          createdAt: new Date(),
           updatedAt: new Date(),
         },
         {
+          createdAt: new Date(),
           id: '2',
-          title: 'Sub 2',
           isCompleted: false,
           order: 2,
+          title: 'Sub 2',
           todoId: 'test-todo-1',
-          createdAt: new Date(),
           updatedAt: new Date(),
         },
       ]
@@ -207,12 +225,12 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
       // RED: サブタスクのマッピング確認
       const mockSubTasks = [
         {
+          createdAt: new Date(),
           id: '1',
-          title: 'Sub 1',
           isCompleted: true,
           order: 1,
+          title: 'Sub 1',
           todoId: 'test-todo-1',
-          createdAt: new Date(),
           updatedAt: new Date(),
         },
       ]
@@ -225,12 +243,12 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
 
       expect(result).toEqual([
         {
-          id: '1',
-          title: 'Sub 1',
           completed: true,
-          order: 1,
-          todoId: 'test-todo-1',
           createdAt: expect.any(Date),
+          id: '1',
+          order: 1,
+          title: 'Sub 1',
+          todoId: 'test-todo-1',
           updatedAt: expect.any(Date),
         },
       ])
@@ -242,20 +260,20 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
       // RED: ユーザーフィルタリングの確認
       const mockTodos = [
         {
-          id: 'todo-1',
-          title: 'Todo 1',
-          description: null,
           categoryId: null,
+          createdAt: new Date(),
+          description: null,
+          dueDate: null,
+          id: 'todo-1',
           isCompleted: false,
           isImportant: true,
-          order: 0,
-          dueDate: null,
           kanbanColumnId: null,
-          userId: 'test-user-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          order: 0,
           priority: 'HIGH',
           status: 'PENDING',
+          title: 'Todo 1',
+          updatedAt: new Date(),
+          userId: 'test-user-1',
         },
       ]
 
@@ -265,10 +283,10 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
 
       // Prismaクエリが正しいパラメータで呼ばれることを確認
       expect(mockContext.prisma.todo.findMany).toHaveBeenCalledWith({
+        orderBy: [{ isImportant: 'desc' }, { createdAt: 'desc' }],
         where: {
           userId: 'test-user-1',
         },
-        orderBy: [{ isImportant: 'desc' }, { createdAt: 'desc' }],
       })
 
       expect(result).toHaveLength(1)
@@ -295,7 +313,7 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
       // RED: 認証機能のテスト
       const unauthenticatedContext = {
         ...mockContext,
-        session: null,
+        session: undefined,
       }
 
       expect(() => requireAuth(unauthenticatedContext)).toThrow(

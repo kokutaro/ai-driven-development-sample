@@ -38,7 +38,7 @@ export class StatsResolver {
   @Query(() => TodoStats)
   async todoStats(
     @Arg('filter', () => StatsFilter, { nullable: true }) filter?: StatsFilter,
-    @Ctx() context?: GraphQLContext
+    @Ctx() _context?: GraphQLContext
   ): Promise<TodoStats> {
     // 暫定的な実装 - 認証チェックを簡略化
     // 現在はモックデータを返す（将来的には既存の統計サービスと統合）

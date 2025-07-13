@@ -4,7 +4,7 @@
  * TDDアプローチでApollo Server 3.x から 4.x への移行をテストします。
  * 移行前後でAPIの動作が変わらないことを確認します。
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 describe('Apollo Server Migration Tests', () => {
   describe('Pre-migration Tests (Apollo Server 3.x)', () => {
@@ -16,10 +16,10 @@ describe('Apollo Server Migration Tests', () => {
     it('should define GraphQL schema requirements', () => {
       // Schema should continue to work after migration
       const schemaRequirements = {
-        hasQueryType: true,
         hasMutationType: true,
-        supportsIntrospection: true,
+        hasQueryType: true,
         hasTypeDefinitions: true,
+        supportsIntrospection: true,
       }
 
       expect(schemaRequirements.hasQueryType).toBe(true)
@@ -31,10 +31,10 @@ describe('Apollo Server Migration Tests', () => {
     it('should verify context creation requirements', () => {
       // Context creation should work with new API
       const contextRequirements = {
+        supportsCustomData: true,
         supportsRequest: true,
         supportsResponse: true,
         supportsSession: true,
-        supportsCustomData: true,
       }
 
       expect(contextRequirements.supportsRequest).toBe(true)
@@ -48,11 +48,11 @@ describe('Apollo Server Migration Tests', () => {
     it('should support new ApolloServer constructor syntax', () => {
       // Apollo Server 4.x uses different constructor
       const apolloServer4Requirements = {
-        usesApolloServerFrom: '@apollo/server',
-        supportsTypeDefs: true,
-        supportsResolvers: true,
-        supportsPlugins: true,
         supportsIntrospection: true,
+        supportsPlugins: true,
+        supportsResolvers: true,
+        supportsTypeDefs: true,
+        usesApolloServerFrom: '@apollo/server',
       }
 
       expect(apolloServer4Requirements.usesApolloServerFrom).toBe(
@@ -67,10 +67,10 @@ describe('Apollo Server Migration Tests', () => {
     it('should support startServerAndCreateNextHandler pattern', () => {
       // Apollo Server 4.x uses different Next.js integration
       const handlerRequirements = {
-        usesStartServerAndCreateNextHandler: true,
+        supportsAsync: true,
         supportsNextRequest: true,
         supportsNextResponse: true,
-        supportsAsync: true,
+        usesStartServerAndCreateNextHandler: true,
       }
 
       expect(handlerRequirements.usesStartServerAndCreateNextHandler).toBe(true)
@@ -82,9 +82,9 @@ describe('Apollo Server Migration Tests', () => {
     it('should support new context function signature', () => {
       // Context function signature changes in Apollo Server 4.x
       const contextRequirements = {
+        maintainsBackwardCompatibility: true,
         receivesRequestAndResponse: true,
         supportsAsyncContext: true,
-        maintainsBackwardCompatibility: true,
       }
 
       expect(contextRequirements.receivesRequestAndResponse).toBe(true)
@@ -95,10 +95,10 @@ describe('Apollo Server Migration Tests', () => {
     it('should support enhanced landing page options', () => {
       // Apollo Server 4.x has better landing page configuration
       const landingPageRequirements = {
-        supportsEmbeddedPlayground: true,
-        supportsStudioSandbox: true,
         supportsCustomLandingPage: true,
         supportsDisabledLandingPage: true,
+        supportsEmbeddedPlayground: true,
+        supportsStudioSandbox: true,
       }
 
       expect(landingPageRequirements.supportsEmbeddedPlayground).toBe(true)
@@ -110,10 +110,10 @@ describe('Apollo Server Migration Tests', () => {
     it('should provide better error handling', () => {
       // Apollo Server 4.x has improved error handling
       const errorHandlingRequirements = {
-        supportsCustomErrorFormatting: true,
-        supportsErrorExtensions: true,
         supportsBetterStackTraces: true,
+        supportsCustomErrorFormatting: true,
         supportsErrorCodes: true,
+        supportsErrorExtensions: true,
       }
 
       expect(errorHandlingRequirements.supportsCustomErrorFormatting).toBe(true)

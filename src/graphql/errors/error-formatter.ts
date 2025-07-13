@@ -368,7 +368,9 @@ export class GraphQLErrorFormatter {
   /**
    * 許可された拡張フィールドのみをフィルタリング
    */
-  private filterAllowedExtensions(extensions: Record<string, unknown>): Record<string, unknown> {
+  private filterAllowedExtensions(
+    extensions: Record<string, unknown>
+  ): Record<string, unknown> {
     if (!this.config.security.maskSensitiveData || !extensions) {
       return extensions
     }
@@ -379,6 +381,7 @@ export class GraphQLErrorFormatter {
     if (allowed && Array.isArray(allowed)) {
       for (const key of allowed) {
         if (Object.hasOwnProperty.call(extensions, key)) {
+          // eslint-disable-next-line security/detect-object-injection
           filtered[key] = extensions[key]
         }
       }

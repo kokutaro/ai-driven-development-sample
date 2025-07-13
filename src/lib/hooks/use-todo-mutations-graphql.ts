@@ -12,6 +12,70 @@ import type {
 } from '@/graphql/types/todo.types'
 
 /**
+ * GraphQLレスポンスの基本型
+ */
+interface BaseResponse {
+  message: string
+  success: boolean
+}
+
+/**
+ * CreateTodoレスポンス型
+ */
+interface CreateTodoResponse extends BaseResponse {
+  todo?: Todo
+}
+
+/**
+ * DeleteTodoレスポンス型
+ */
+type DeleteTodoResponse = BaseResponse
+
+/**
+ * Todo型定義
+ */
+interface Todo {
+  category?: {
+    color: string
+    id: string
+    name: string
+  }
+  completionRate: number
+  createdAt: string
+  description?: string
+  dueDate?: string
+  id: string
+  isOverdue: boolean
+  priority: string
+  status: string
+  subTasks: {
+    completed: boolean
+    id: string
+    order: number
+    title: string
+  }[]
+  title: string
+  updatedAt: string
+}
+
+/**
+ * TodoListキャッシュ型定義
+ */
+interface TodoListCache {
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  todos: Todo[]
+  total: number
+}
+
+/**
+ * UpdateTodoレスポンス型
+ */
+interface UpdateTodoResponse extends BaseResponse {
+  todo?: Todo
+}
+
+/**
  * Todo作成ミューテーション
  */
 const CREATE_TODO = gql`
@@ -109,20 +173,23 @@ export function useCreateTodoGraphQL() {
           // 新しいTodoをキャッシュに追加
           cache.modify({
             fields: {
-              todos(
-                existingTodos = {
+              todos(existingTodos: unknown): TodoListCache {
+                const defaultTodos: TodoListCache = {
                   hasNextPage: false,
                   hasPreviousPage: false,
                   todos: [],
                   total: 0,
                 }
-              ) {
-                const newTodo = data.createTodo.todo
-                return {
-                  ...existingTodos,
-                  todos: [newTodo, ...existingTodos.todos],
-                  total: existingTodos.total + 1,
+                const actualTodos =
+                  (existingTodos as TodoListCache | undefined) ?? defaultTodos
+                const newTodo = data.createTodo.todo!
+                const result: TodoListCache = {
+                  hasNextPage: actualTodos.hasNextPage,
+                  hasPreviousPage: actualTodos.hasPreviousPage,
+                  todos: [newTodo, ...actualTodos.todos],
+                  total: actualTodos.total + 1,
                 }
+                return result
               },
             },
           })
@@ -134,7 +201,8 @@ export function useCreateTodoGraphQL() {
   const createTodo = async (input: CreateTodoInput) => {
     try {
       const result = await createTodoMutation({ variables: { input } })
-      return result.data?.createTodo
+      const response = result.data?.createTodo
+      return response ? (response as CreateTodoResponse) : undefined
     } catch (error_) {
       throw new Error(
         error_ instanceof Error ? error_.message : 'Failed to create todo'
@@ -145,7 +213,7 @@ export function useCreateTodoGraphQL() {
   return {
     createTodo,
     data: data?.createTodo,
-    error: error?.message || null,
+    error: error?.message ?? undefined,
     isLoading: loading,
   }
 }
@@ -165,21 +233,24 @@ export function useDeleteTodoGraphQL() {
         if (data?.deleteTodo?.success && variables?.id) {
           cache.modify({
             fields: {
-              todos(
-                existingTodos = {
+              todos(existingTodos: unknown): TodoListCache {
+                const defaultTodos: TodoListCache = {
                   hasNextPage: false,
                   hasPreviousPage: false,
                   todos: [],
                   total: 0,
                 }
-              ) {
-                return {
-                  ...existingTodos,
-                  todos: existingTodos.todos.filter(
-                    (todo: any) => todo.id !== variables.id
+                const actualTodos =
+                  (existingTodos as TodoListCache | undefined) ?? defaultTodos
+                const result: TodoListCache = {
+                  hasNextPage: actualTodos.hasNextPage,
+                  hasPreviousPage: actualTodos.hasPreviousPage,
+                  todos: actualTodos.todos.filter(
+                    (todo: { id: string }) => todo.id !== variables.id
                   ),
-                  total: Math.max(0, existingTodos.total - 1),
+                  total: Math.max(0, actualTodos.total - 1),
                 }
+                return result
               },
             },
           })
@@ -196,7 +267,8 @@ export function useDeleteTodoGraphQL() {
   const deleteTodo = async (id: string) => {
     try {
       const result = await deleteTodoMutation({ variables: { id } })
-      return result.data?.deleteTodo
+      const response = result.data?.deleteTodo
+      return response ? (response as DeleteTodoResponse) : undefined
     } catch (error_) {
       throw new Error(
         error_ instanceof Error ? error_.message : 'Failed to delete todo'
@@ -207,7 +279,7 @@ export function useDeleteTodoGraphQL() {
   return {
     data: data?.deleteTodo,
     deleteTodo,
-    error: error?.message || null,
+    error: error?.message ?? undefined,
     isLoading: loading,
   }
 }
@@ -231,8 +303,8 @@ export function useTodoMutationsGraphQL() {
     // 削除
     deleteTodo: deleteMutation.deleteTodo,
     hasError: !!(
-      createMutation.error ||
-      updateMutation.error ||
+      createMutation.error ??
+      updateMutation.error ??
       deleteMutation.error
     ),
     isCreating: createMutation.isLoading,
@@ -267,7 +339,8 @@ export function useUpdateTodoGraphQL() {
   const updateTodo = async (id: string, input: UpdateTodoInput) => {
     try {
       const result = await updateTodoMutation({ variables: { id, input } })
-      return result.data?.updateTodo
+      const response = result.data?.updateTodo
+      return response ? (response as UpdateTodoResponse) : undefined
     } catch (error_) {
       throw new Error(
         error_ instanceof Error ? error_.message : 'Failed to update todo'
@@ -277,7 +350,7 @@ export function useUpdateTodoGraphQL() {
 
   return {
     data: data?.updateTodo,
-    error: error?.message || null,
+    error: error?.message ?? undefined,
     isLoading: loading,
     updateTodo,
   }

@@ -481,7 +481,7 @@ function createPrismaError(
       // Unique constraint failed
       return new ValidationError(
         'データの重複エラー: 既に存在する値が指定されました',
-        { uniqueConstraint: prismaError.meta?.target },
+        { uniqueConstraint: prismaError.meta?.target as string[] },
         extensions
       )
     }
@@ -489,7 +489,7 @@ function createPrismaError(
       // Foreign key constraint failed
       return new ValidationError(
         '関連データの制約エラー: 参照先のデータが存在しません',
-        { foreignKey: prismaError.meta?.field_name },
+        { foreignKey: prismaError.meta?.field_name as string[] },
         extensions
       )
     }

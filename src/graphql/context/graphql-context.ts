@@ -337,7 +337,7 @@ export function requireResourceOwnership(
   context: GraphQLContext,
   resourceUserId: string
 ): void {
-  const session = requireAuth(context)
+  const _session = requireAuth(context)
 
   // リソースユーザーIDの検証
   if (!resourceUserId || typeof resourceUserId !== 'string') {

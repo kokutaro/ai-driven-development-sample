@@ -3,12 +3,14 @@
  *
  * N+1クエリ問題の解決とパフォーマンス最適化をテストします。
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { PrismaClient } from '@prisma/client'
+
+import { DataLoaderContext } from '@/graphql/context/dataloader-context'
 import { CategoryLoader } from '@/graphql/dataloaders/category.loader'
 import { SubTaskLoader } from '@/graphql/dataloaders/subtask.loader'
 import { UserLoader } from '@/graphql/dataloaders/user.loader'
-import { DataLoaderContext } from '@/graphql/context/dataloader-context'
-import { PrismaClient } from '@prisma/client'
 
 // Prismaクライアントのモック
 const mockPrisma = {
@@ -32,8 +34,8 @@ describe('DataLoader Integration Tests', () => {
     it('should batch load categories by IDs', async () => {
       // Arrange
       const mockCategories = [
-        { id: 'cat1', name: 'Work', color: '#FF6B6B', userId: 'user1' },
-        { id: 'cat2', name: 'Personal', color: '#4ECDC4', userId: 'user1' },
+        { color: '#FF6B6B', id: 'cat1', name: 'Work', userId: 'user1' },
+        { color: '#4ECDC4', id: 'cat2', name: 'Personal', userId: 'user1' },
       ]
 
       mockPrisma.category.findMany = vi.fn().mockResolvedValue(mockCategories)
@@ -65,7 +67,7 @@ describe('DataLoader Integration Tests', () => {
       mockPrisma.category.findMany = vi
         .fn()
         .mockResolvedValue([
-          { id: 'cat1', name: 'Work', color: '#FF6B6B', userId: 'user1' },
+          { color: '#FF6B6B', id: 'cat1', name: 'Work', userId: 'user1' },
         ])
 
       const categoryLoader = new CategoryLoader(mockPrisma)
@@ -78,9 +80,9 @@ describe('DataLoader Integration Tests', () => {
 
       // Assert
       expect(results[0]).toEqual({
+        color: '#FF6B6B',
         id: 'cat1',
         name: 'Work',
-        color: '#FF6B6B',
         userId: 'user1',
       })
       expect(results[1]).toBeNull()
@@ -91,9 +93,9 @@ describe('DataLoader Integration Tests', () => {
     it('should batch load subtasks by todo IDs', async () => {
       // Arrange
       const mockSubTasks = [
-        { id: 'sub1', title: 'Task 1', todoId: 'todo1', isCompleted: false },
-        { id: 'sub2', title: 'Task 2', todoId: 'todo1', isCompleted: true },
-        { id: 'sub3', title: 'Task 3', todoId: 'todo2', isCompleted: false },
+        { id: 'sub1', isCompleted: false, title: 'Task 1', todoId: 'todo1' },
+        { id: 'sub2', isCompleted: true, title: 'Task 2', todoId: 'todo1' },
+        { id: 'sub3', isCompleted: false, title: 'Task 3', todoId: 'todo2' },
       ]
 
       mockPrisma.subTask.findMany = vi.fn().mockResolvedValue(mockSubTasks)
@@ -115,8 +117,8 @@ describe('DataLoader Integration Tests', () => {
 
       expect(mockPrisma.subTask.findMany).toHaveBeenCalledTimes(1)
       expect(mockPrisma.subTask.findMany).toHaveBeenCalledWith({
-        where: { todoId: { in: ['todo1', 'todo2', 'todo3'] } },
         orderBy: { order: 'asc' },
+        where: { todoId: { in: ['todo1', 'todo2', 'todo3'] } },
       })
     })
   })
@@ -125,8 +127,8 @@ describe('DataLoader Integration Tests', () => {
     it('should batch load users by IDs', async () => {
       // Arrange
       const mockUsers = [
-        { id: 'user1', email: 'user1@example.com', name: 'User 1' },
-        { id: 'user2', email: 'user2@example.com', name: 'User 2' },
+        { email: 'user1@example.com', id: 'user1', name: 'User 1' },
+        { email: 'user2@example.com', id: 'user2', name: 'User 2' },
       ]
 
       mockPrisma.user.findMany = vi.fn().mockResolvedValue(mockUsers)
@@ -146,14 +148,14 @@ describe('DataLoader Integration Tests', () => {
 
       expect(mockPrisma.user.findMany).toHaveBeenCalledTimes(1)
       expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
-        where: { id: { in: ['user1', 'user2'] } },
         select: {
-          id: true,
-          email: true,
-          name: true,
           createdAt: true,
+          email: true,
+          id: true,
+          name: true,
           updatedAt: true,
         },
+        where: { id: { in: ['user1', 'user2'] } },
       })
     })
   })
@@ -185,8 +187,8 @@ describe('DataLoader Integration Tests', () => {
     it('should reduce database queries with DataLoader', async () => {
       // Arrange
       const mockCategories = [
-        { id: 'cat1', name: 'Work', color: '#FF6B6B', userId: 'user1' },
-        { id: 'cat2', name: 'Personal', color: '#4ECDC4', userId: 'user1' },
+        { color: '#FF6B6B', id: 'cat1', name: 'Work', userId: 'user1' },
+        { color: '#4ECDC4', id: 'cat2', name: 'Personal', userId: 'user1' },
       ]
 
       mockPrisma.category.findMany = vi.fn().mockResolvedValue(mockCategories)
@@ -214,8 +216,8 @@ describe('DataLoader Integration Tests', () => {
         // 実際のDBクエリをシミュレート（10ms遅延）
         await new Promise((resolve) => setTimeout(resolve, 10))
         return [
-          { id: 'cat1', name: 'Work', color: '#FF6B6B', userId: 'user1' },
-          { id: 'cat2', name: 'Personal', color: '#4ECDC4', userId: 'user1' },
+          { color: '#FF6B6B', id: 'cat1', name: 'Work', userId: 'user1' },
+          { color: '#4ECDC4', id: 'cat2', name: 'Personal', userId: 'user1' },
         ]
       })
 
@@ -255,7 +257,7 @@ describe('DataLoader Integration Tests', () => {
       mockPrisma.category.findMany = vi
         .fn()
         .mockResolvedValueOnce([
-          { id: 'cat1', name: 'Work', color: '#FF6B6B', userId: 'user1' },
+          { color: '#FF6B6B', id: 'cat1', name: 'Work', userId: 'user1' },
         ])
         .mockRejectedValueOnce(new Error('DB Error'))
 
@@ -269,9 +271,9 @@ describe('DataLoader Integration Tests', () => {
 
       // Assert
       expect(result1).toEqual({
+        color: '#FF6B6B',
         id: 'cat1',
         name: 'Work',
-        color: '#FF6B6B',
         userId: 'user1',
       })
       await expect(categoryLoader.load('cat2')).rejects.toThrow('DB Error')

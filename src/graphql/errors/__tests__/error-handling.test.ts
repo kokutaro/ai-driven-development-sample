@@ -4,7 +4,7 @@
  * プロダクション準備のための包括的なエラーシナリオテスト
  * エラーフォーマット、セキュリティ、監視、国際化の統合テスト
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mock } from 'vitest'
 
 import {
   AuthenticationError,
@@ -23,13 +23,20 @@ import { GraphQLSecurityFilter, SecurityLevel } from '../security-filter'
 import { GraphQLValidationHandler } from '../validation-handler'
 
 import type { SecurityContext } from '../security-filter'
+import type { ZodError } from '../validation-handler'
 
 describe('GraphQLエラーハンドリング統合テスト', () => {
   let errorFormatter: GraphQLErrorFormatter
   let securityFilter: GraphQLSecurityFilter
   let monitor: GraphQLErrorMonitor
   let i18n: GraphQLErrorI18n
-  let mockLogger: any
+  let mockLogger: {
+    debug: Mock
+    error: Mock
+    fatal: Mock
+    info: Mock
+    warn: Mock
+  }
 
   beforeEach(() => {
     // モックロガーの設定
@@ -150,7 +157,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
         'システムエラーが発生しました。管理者にお問い合わせください。'
       )
       expect(formatted.extensions?.stackTrace).toBeUndefined()
-      expect(Object.keys(formatted.extensions || {})).toEqual([
+      expect(Object.keys(formatted.extensions ?? {})).toEqual([
         'code',
         'timestamp',
       ])
@@ -231,7 +238,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
 
   describe('バリデーションエラーハンドリング', () => {
     it('Zodエラーが日本語メッセージに変換される', () => {
-      const zodError = {
+      const zodError: ZodError = {
         issues: [
           {
             code: 'too_small',
@@ -239,6 +246,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
             minimum: 1,
             path: ['title'],
             type: 'string',
+            validation: undefined,
           },
           {
             code: 'invalid_string',
@@ -247,7 +255,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
             validation: 'email',
           },
         ],
-      } as any
+      }
 
       const validationError = GraphQLValidationHandler.transformZodError(
         zodError,
@@ -257,7 +265,11 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
       expect(validationError.message).toContain('フィールド')
       expect(validationError.extensions.validationDetails).toBeDefined()
 
-      const details = validationError.extensions.validationDetails as any[]
+      const details = validationError.extensions.validationDetails as Array<{
+        code: string
+        field: string
+        message: string
+      }>
       expect(details).toHaveLength(2)
       expect(details[0].message).toContain('1文字以上')
       expect(details[1].message).toContain('有効なメールアドレス')
@@ -265,19 +277,19 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
 
     it('フィールドレベルバリデーションが動作する', () => {
       const mockSchema = {
-        parse: vi.fn().mockImplementation((value) => {
+        parse: vi.fn().mockImplementation((value: string) => {
           if (!value || value.length < 3) {
-            throw {
-              issues: [
-                {
-                  code: 'too_small',
-                  message: 'Too short',
-                  minimum: 3,
-                  path: ['username'],
-                  type: 'string',
-                },
-              ],
-            }
+            const error = new Error('Validation failed')
+            ;(error as unknown as { issues: unknown[] }).issues = [
+              {
+                code: 'too_small',
+                message: 'Too short',
+                minimum: 3,
+                path: ['username'],
+                type: 'string',
+              },
+            ]
+            throw error
           }
           return value
         }),
@@ -312,8 +324,8 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
 
       const result = securityFilter.filterError(error, securityContext)
 
-      expect(result.filtered.extensions.password).toBe('[REDACTED]')
-      expect(result.filtered.extensions.apiKey).toBe('[REDACTED]')
+      expect(result.filtered?.extensions?.password).toBe('[REDACTED]')
+      expect(result.filtered?.extensions?.apiKey).toBe('[REDACTED]')
       expect(result.securityViolations.length).toBeGreaterThan(0)
       expect(result.riskLevel).toBe('medium')
     })

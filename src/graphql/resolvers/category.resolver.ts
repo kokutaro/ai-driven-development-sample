@@ -18,7 +18,7 @@ export class CategoryResolver {
    * @returns カテゴリリスト
    */
   @Query(() => [Category])
-  async categories(@Ctx() context?: GraphQLContext): Promise<Category[]> {
+  async categories(@Ctx() _context?: GraphQLContext): Promise<Category[]> {
     // 暫定的な実装 - 認証チェックを簡略化
     return [
       {

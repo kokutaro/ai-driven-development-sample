@@ -62,13 +62,13 @@ export interface LocaleConfig {
  * 文脈情報の型定義
  */
 export interface MessageContext {
-  constraint?: any
+  constraint?: boolean | number | string
   fieldName?: string
   operation?: string
   resourceType?: string
   timeOfDay?: 'afternoon' | 'evening' | 'morning' | 'night'
   userRole?: string
-  value?: any
+  value?: boolean | number | string
 }
 
 /**
@@ -193,7 +193,7 @@ export class GraphQLErrorI18n {
     template: ErrorMessageTemplate,
     context: MessageContext,
     locale: SupportedLocale,
-    politeness: PolitenessLevel
+    _politeness: PolitenessLevel
   ): ErrorMessageTemplate {
     let message = template.message
     let userMessage = template.userMessage
@@ -228,7 +228,7 @@ export class GraphQLErrorI18n {
   /**
    * 値を地域設定に基づいてフォーマット
    */
-  private formatValue(value: any, locale: SupportedLocale): string {
+  private formatValue(value: unknown, locale: SupportedLocale): string {
     if (typeof value === 'number') {
       return new Intl.NumberFormat(locale).format(value)
     }
@@ -253,8 +253,8 @@ export class GraphQLErrorI18n {
    */
   private getChineseCategoryMessage(
     category: ErrorCategory,
-    severity: ErrorSeverity,
-    context: MessageContext
+    _severity: ErrorSeverity,
+    _context: MessageContext
   ): string {
     const isTraditional =
       this.localeConfig.locale === SupportedLocale.CHINESE_TRADITIONAL
@@ -458,6 +458,18 @@ export class GraphQLErrorI18n {
         [PolitenessLevel.FORMAL]: '外部サービスで問題が発生いたしました',
         [PolitenessLevel.POLITE]: '外部サービスエラーが発生しました',
       },
+      [ErrorCategory.NETWORK]: {
+        [PolitenessLevel.BUSINESS]: 'ネットワーク接続エラーが発生しています',
+        [PolitenessLevel.CASUAL]: 'ネットワークエラー',
+        [PolitenessLevel.FORMAL]: 'ネットワーク接続に問題が発生いたしました',
+        [PolitenessLevel.POLITE]: 'ネットワークエラーが発生しました',
+      },
+      [ErrorCategory.RATE_LIMIT]: {
+        [PolitenessLevel.BUSINESS]: 'レート制限に達しています',
+        [PolitenessLevel.CASUAL]: 'アクセス制限中',
+        [PolitenessLevel.FORMAL]: 'アクセス回数の制限に達しております',
+        [PolitenessLevel.POLITE]: 'アクセス制限に達しています',
+      },
       [ErrorCategory.RESOURCE_NOT_FOUND]: {
         [PolitenessLevel.BUSINESS]: 'リソースが存在しません',
         [PolitenessLevel.FORMAL]: '見つけることができませんでした',
@@ -477,12 +489,20 @@ export class GraphQLErrorI18n {
       },
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return (
-      messages[category]?.[politeness] ??
-      messages[ErrorCategory.SYSTEM]?.[politeness] ??
-      'エラーが発生しました'
-    )
+    // 型安全なメッセージ取得
+    // eslint-disable-next-line security/detect-object-injection
+    const categoryMessages = messages[category]
+    const systemMessages = messages[ErrorCategory.SYSTEM]
+
+    if (categoryMessages && politeness in categoryMessages) {
+      return categoryMessages[politeness as keyof typeof categoryMessages]
+    }
+
+    if (systemMessages && politeness in systemMessages) {
+      return systemMessages[politeness as keyof typeof systemMessages]
+    }
+
+    return 'エラーが発生しました'
   }
 
   /**
@@ -494,7 +514,7 @@ export class GraphQLErrorI18n {
     context: MessageContext
   ): string {
     const politeness = this.localeConfig.politenessLevel
-    const timeGreeting = this.getTimeBasedGreeting(SupportedLocale.JAPANESE)
+    const _timeGreeting = this.getTimeBasedGreeting(SupportedLocale.JAPANESE)
 
     const base = this.getJapaneseBaseMessage(category, politeness)
     const severityModifier = this.getJapaneseSeverityModifier(severity)

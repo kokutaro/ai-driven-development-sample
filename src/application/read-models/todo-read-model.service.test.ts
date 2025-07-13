@@ -9,6 +9,7 @@ import type {
 } from './todo-read-model.interface'
 import type { TodoEntity } from '@/domain/entities/todo-entity'
 
+import { SubTaskEntity } from '@/domain/entities/subtask-entity'
 import { Priority } from '@/domain/value-objects/priority'
 import { TodoId } from '@/domain/value-objects/todo-id'
 import { TodoStatus } from '@/domain/value-objects/todo-status'
@@ -94,10 +95,34 @@ describe('TodoReadModelService', () => {
       // Arrange
       const todoEntity = createMockTodoEntity({
         subTasks: [
-          { isCompleted: true, title: 'サブタスク1' },
-          { isCompleted: false, title: 'サブタスク2' },
-          { isCompleted: true, title: 'サブタスク3' },
-        ] as Array<{ isCompleted: boolean; title: string }>,
+          SubTaskEntity.fromData({
+            createdAt: new Date('2024-01-01'),
+            id: TodoId.fromString('550e8400-e29b-41d4-a716-446655440010'),
+            isCompleted: true,
+            order: 0,
+            title: 'サブタスク1',
+            todoId: TodoId.fromString('550e8400-e29b-41d4-a716-446655440001'),
+            updatedAt: new Date('2024-01-01'),
+          }),
+          SubTaskEntity.fromData({
+            createdAt: new Date('2024-01-01'),
+            id: TodoId.fromString('550e8400-e29b-41d4-a716-446655440011'),
+            isCompleted: false,
+            order: 1,
+            title: 'サブタスク2',
+            todoId: TodoId.fromString('550e8400-e29b-41d4-a716-446655440001'),
+            updatedAt: new Date('2024-01-01'),
+          }),
+          SubTaskEntity.fromData({
+            createdAt: new Date('2024-01-01'),
+            id: TodoId.fromString('550e8400-e29b-41d4-a716-446655440012'),
+            isCompleted: true,
+            order: 2,
+            title: 'サブタスク3',
+            todoId: TodoId.fromString('550e8400-e29b-41d4-a716-446655440001'),
+            updatedAt: new Date('2024-01-01'),
+          }),
+        ],
       })
 
       // Act

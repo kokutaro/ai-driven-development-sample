@@ -5,94 +5,150 @@
  * SQL Injection、XSS、権限エスカレーション防止を含む
  */
 import 'reflect-metadata'
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { TodoResolver } from '../../src/graphql/resolvers/todo.resolver'
+import type { CommandBus } from '@/application/bus/command-bus.interface'
+import type { QueryBus } from '@/application/bus/query-bus.interface'
+import type { DataLoaderContext } from '@/graphql/context/dataloader-context'
+import type { GraphQLContext } from '@/graphql/context/graphql-context'
+import type { PrismaClient } from '@prisma/client'
+import type { NextApiRequest } from 'next'
+
 import {
-  requireAuth,
-  requireResourceOwnership,
-  requireAdminRole,
-  requirePermission,
   getUserId,
-} from '../../src/graphql/context/graphql-context'
+  requireAdminRole,
+  requireAuth,
+  requirePermission,
+  requireResourceOwnership,
+} from '@/graphql/context/graphql-context'
+import { TodoResolver } from '@/graphql/resolvers/todo.resolver'
 
-import type { GraphQLContext } from '../../src/graphql/context/graphql-context'
+/**
+ * DataLoaderモックの型定義
+ */
+type _MockDataLoader = Record<string, unknown>
+
+/**
+ * DataLoaderコンテキストモックの型定義
+ */
+interface _MockDataLoaderContext {
+  categoryLoader: unknown
+  clearAllCaches: unknown
+  getStats: unknown
+  subTaskLoader: unknown
+  userLoader: unknown
+}
+
+/**
+ * Prismaモックの型定義
+ */
+type _MockPrismaClient = Record<string, Record<string, unknown>>
 
 // RED PHASE: セキュリティ脆弱性をテストで先に発見する
 
 describe('GraphQL Authentication & Authorization Security Tests', () => {
-  let todoResolver: TodoResolver
+  let _todoResolver: TodoResolver
   let mockContext: GraphQLContext
   let adminContext: GraphQLContext
   let unauthorizedContext: GraphQLContext
 
   beforeEach(() => {
-    todoResolver = new TodoResolver()
+    _todoResolver = new TodoResolver()
 
     // 通常ユーザーのコンテキスト
+    const mockCommandBus = {
+      execute: (() => Promise.resolve()) as unknown,
+      register: (() => undefined) as unknown,
+    }
+    const mockQueryBus = {
+      execute: (() => Promise.resolve()) as unknown,
+      register: (() => undefined) as unknown,
+    }
+    const mockDataLoaderContext = {
+      categoryLoader: {
+        batchLoadCategories: (() => Promise.resolve([])) as unknown,
+        clear: (() => undefined) as unknown,
+        clearAll: (() => undefined) as unknown,
+        load: (() => Promise.resolve(null)) as unknown,
+        loadMany: (() => Promise.resolve([])) as unknown,
+      } as unknown,
+      clearAllCaches: (() => undefined) as unknown,
+      getStats: (() => ({
+        requestId: 'test-request-id',
+        timestamp: new Date(),
+      })) as unknown,
+      subTaskLoader: {
+        batchLoadSubTasks: (() => Promise.resolve([])) as unknown,
+        clear: (() => undefined) as unknown,
+        clearAll: (() => undefined) as unknown,
+        load: (() => Promise.resolve(null)) as unknown,
+        loadMany: (() => Promise.resolve([])) as unknown,
+      } as unknown,
+      userLoader: {
+        batchLoadUsers: (() => Promise.resolve([])) as unknown,
+        clear: (() => undefined) as unknown,
+        clearAll: (() => undefined) as unknown,
+        load: (() => Promise.resolve(null)) as unknown,
+        loadMany: (() => Promise.resolve([])) as unknown,
+      } as unknown,
+    }
+    const mockRequest = {
+      cookies: {},
+      headers: {},
+      method: 'POST',
+      query: {},
+      url: '/graphql',
+    } as NextApiRequest
+
     mockContext = {
+      commandBus: mockCommandBus as CommandBus,
+      dataloaders: mockDataLoaderContext as DataLoaderContext,
       prisma: {
         todo: {
-          findMany: vi.fn(),
-          findUnique: vi.fn(),
-          create: vi.fn(),
-          update: vi.fn(),
-          delete: vi.fn(),
-          count: vi.fn(),
+          create: (() => Promise.resolve({})) as unknown,
+          delete: (() => Promise.resolve({})) as unknown,
+          findMany: (() => Promise.resolve([])) as unknown,
+          findUnique: (() => Promise.resolve(null)) as unknown,
+          update: (() => Promise.resolve({})) as unknown,
         },
         user: {
-          findUnique: vi.fn(),
+          create: (() => Promise.resolve({})) as unknown,
+          delete: (() => Promise.resolve({})) as unknown,
+          findMany: (() => Promise.resolve([])) as unknown,
+          findUnique: (() => Promise.resolve(null)) as unknown,
+          update: (() => Promise.resolve({})) as unknown,
         },
-      },
+      } as unknown as PrismaClient,
+      queryBus: mockQueryBus as QueryBus,
+      req: mockRequest,
+      res: undefined,
       session: {
-        user: {
-          id: 'user-123',
-          name: 'Regular User',
-          email: 'user@example.com',
-          role: 'user',
-          permissions: ['read:own_todos', 'write:own_todos'],
-        },
         expires: '2024-12-31',
-      },
-      dataloaders: {
-        categoryLoader: {
-          load: vi.fn(),
-          loadMany: vi.fn(),
-          clear: vi.fn(),
-          clearAll: vi.fn(),
-          prime: vi.fn(),
-        },
-        subTaskLoader: {
-          load: vi.fn().mockResolvedValue([]),
-          loadMany: vi.fn(),
-          clear: vi.fn(),
-          clearAll: vi.fn(),
-          prime: vi.fn(),
+        user: {
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
         },
       },
-      commandBus: {},
-      queryBus: {},
-      req: {} as any,
-      res: {} as any,
-    } as GraphQLContext
+    }
 
     // 管理者ユーザーのコンテキスト
     adminContext = {
       ...mockContext,
       session: {
+        expires: '2024-12-31',
         user: {
+          email: 'admin@example.com',
           id: 'admin-456',
           name: 'Admin User',
-          email: 'admin@example.com',
-          role: 'admin',
           permissions: [
             'read:all_todos',
             'write:all_todos',
             'delete:all_todos',
             'admin:manage_users',
           ],
+          role: 'admin',
         },
-        expires: '2024-12-31',
       },
     } as GraphQLContext
 
@@ -100,14 +156,14 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
     unauthorizedContext = {
       ...mockContext,
       session: {
+        expires: '2024-12-31',
         user: {
+          email: 'guest@example.com',
           id: 'guest-789',
           name: 'Guest User',
-          email: 'guest@example.com',
-          role: 'guest',
           permissions: ['read:public_todos'],
+          role: 'guest',
         },
-        expires: '2024-12-31',
       },
     } as GraphQLContext
   })
@@ -115,11 +171,11 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
   describe('Authentication Security Tests - TDD Cycle 1', () => {
     it('should FAIL - reject null/undefined session (Red Phase)', () => {
       // RED: null/undefinedセッションを適切に拒否
-      const nullContext = { ...mockContext, session: null }
+      const nullContext = { ...mockContext, session: undefined }
       const undefinedContext = { ...mockContext, session: undefined }
 
       expect(() => requireAuth(nullContext)).toThrow()
-      expect(() => requireAuth(undefinedContext as any)).toThrow()
+      expect(() => requireAuth(undefinedContext)).toThrow()
     })
 
     it('should FAIL - reject session without user (Red Phase)', () => {
@@ -136,7 +192,7 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
       // RED: null/undefined userを拒否
       const nullUserContext = {
         ...mockContext,
-        session: { user: null, expires: '2024-12-31' },
+        session: { expires: '2024-12-31', user: undefined },
       } as GraphQLContext
 
       expect(() => requireAuth(nullUserContext)).toThrow()
@@ -144,15 +200,15 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
 
     it('should FAIL - handle malformed session data (Red Phase)', () => {
       // RED: 不正な形式のセッションデータを適切に処理
-      const malformedContexts = [
-        { ...mockContext, session: 'invalid-string' as any },
-        { ...mockContext, session: 123 as any },
-        { ...mockContext, session: [] as any },
-        { ...mockContext, session: { user: 'invalid-user' } as any },
+      const malformedContexts: unknown[] = [
+        { ...mockContext, session: 'invalid-string' },
+        { ...mockContext, session: 123 },
+        { ...mockContext, session: [] },
+        { ...mockContext, session: { user: 'invalid-user' } },
       ]
 
       malformedContexts.forEach((context) => {
-        expect(() => requireAuth(context)).toThrow()
+        expect(() => requireAuth(context as GraphQLContext)).toThrow()
       })
     })
 
@@ -161,8 +217,8 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
       const expiredContext = {
         ...mockContext,
         session: {
-          user: mockContext.session?.user,
           expires: '2020-01-01', // 過去の日付
+          user: mockContext.session?.user,
         },
       } as GraphQLContext
 
@@ -243,15 +299,17 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
       const malformedUserIds = [
         '', // 空文字
         '   ', // スペースのみ
-        null as any, // null
-        undefined as any, // undefined
-        123 as any, // 数値
-        {} as any, // オブジェクト
+        null as unknown, // null
+        undefined as unknown, // undefined
+        123 as unknown, // 数値
+        {} as unknown, // オブジェクト
         'user-123; DROP TABLE users;--', // SQLインジェクション試行
       ]
 
       malformedUserIds.forEach((userId) => {
-        expect(() => requireResourceOwnership(mockContext, userId)).toThrow()
+        expect(() =>
+          requireResourceOwnership(mockContext, userId as string)
+        ).toThrow()
       })
     })
 
@@ -317,7 +375,7 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
 
       noSqlInjectionPayloads.forEach((payload) => {
         expect(() =>
-          requireResourceOwnership(mockContext, payload as any)
+          requireResourceOwnership(mockContext, payload as unknown as string)
         ).toThrow()
       })
     })
@@ -355,13 +413,19 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
   describe('Rate Limiting and Abuse Prevention - TDD Cycle 5', () => {
     it('should FAIL - detect and prevent brute force authentication attempts (Red Phase)', () => {
       // RED: ブルートフォース攻撃の検出と防止
-      const attemptContexts = Array.from({ length: 100 }, (_, i) => ({
+      const attemptContexts = Array.from({ length: 100 }, (_, _i) => ({
         ...mockContext,
-        session: null,
         req: {
-          ip: '192.168.1.100',
+          body: {},
+          cookies: {},
+          env: {},
           headers: { 'user-agent': 'AttackBot/1.0' },
-        },
+          ip: '192.168.1.100',
+          method: 'POST',
+          query: {},
+          url: '/graphql',
+        } as unknown as NextApiRequest,
+        session: undefined,
       }))
 
       let authFailures = 0
@@ -402,16 +466,22 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
   describe('Session Security and Token Management - TDD Cycle 6', () => {
     it('should FAIL - detect session hijacking attempts (Red Phase)', () => {
       // RED: セッションハイジャックの検出
-      const originalContext = mockContext
+      const _originalContext = mockContext
       const suspiciousContext = {
         ...mockContext,
         req: {
           ...mockContext.req,
-          ip: '192.168.1.999', // 異なるIP
+          body: {},
+          cookies: {},
+          env: {},
           headers: {
             'user-agent': 'DifferentBrowser/1.0', // 異なるユーザーエージェント
           },
-        },
+          ip: '192.168.1.999', // 異なるIP
+          method: 'POST',
+          query: {},
+          url: '/graphql',
+        } as unknown as NextApiRequest,
       } as GraphQLContext
 
       // セッション整合性チェックが必要
@@ -443,16 +513,16 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
       const sensitiveContext = {
         ...mockContext,
         session: {
-          user: {
-            id: 'user-123',
-            name: 'John Doe',
-            email: 'john@secret-company.com',
-            role: 'user',
-            permissions: ['classified:read'],
-            secretApiKey: 'sk-1234567890abcdef', // 機密情報
-            internalNotes: 'User has access to classified documents',
-          },
           expires: '2024-12-31',
+          user: {
+            email: 'john@secret-company.com',
+            id: 'user-123',
+            internalNotes: 'User has access to classified documents',
+            name: 'John Doe',
+            permissions: ['classified:read'],
+            role: 'user',
+            secretApiKey: 'sk-1234567890abcdef', // 機密情報
+          },
         },
       } as GraphQLContext
 
@@ -474,17 +544,17 @@ describe('GraphQL Authentication & Authorization Security Tests', () => {
       const nonExistentUserContext = {
         ...mockContext,
         session: {
+          expires: '2024-12-31',
           user: {
+            email: 'ghost@nowhere.com',
             id: 'non-existent-user-999',
             name: 'Ghost User',
-            email: 'ghost@nowhere.com',
           },
-          expires: '2024-12-31',
         },
       } as GraphQLContext
 
-      let existingUserError: string = ''
-      let nonExistentUserError: string = ''
+      let existingUserError = ''
+      let nonExistentUserError = ''
 
       try {
         requirePermission(existingUserContext, 'admin:manage_users')

@@ -7,6 +7,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PrismaClient } from '@prisma/client'
+import type { NextRequest } from 'next/server'
 
 import { DataLoaderContext } from '@/graphql/context/dataloader-context'
 import { createGraphQLContext } from '@/graphql/context/graphql-context'
@@ -29,10 +30,12 @@ const mockPrisma = {
 
 // NextRequestのモック
 const mockRequest = {
+  cookies: new Map(),
   headers: new Headers(),
   method: 'POST',
+  nextUrl: new URL('http://localhost:3000/api/graphql'),
   url: 'http://localhost:3000/api/graphql',
-} as unknown as Request
+} as unknown as NextRequest
 
 describe('DataLoader Basic Functionality Tests', () => {
   beforeEach(() => {

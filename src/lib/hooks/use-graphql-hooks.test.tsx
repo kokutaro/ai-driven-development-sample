@@ -12,8 +12,10 @@ import { useCategoriesGraphQL } from './use-categories-graphql'
 import { useDashboardStatsGraphQL } from './use-stats-graphql'
 import { useTodosGraphQL } from './use-todos-graphql'
 
+import { TodoStatus } from '@/graphql/types/todo.types'
+
 // モックデータ
-const mockTodos = [
+const _mockTodos = [
   {
     category: {
       color: '#FF6B6B',
@@ -34,7 +36,7 @@ const mockTodos = [
   },
 ]
 
-const mockCategories = [
+const _mockCategories = [
   {
     color: '#FF6B6B',
     createdAt: new Date().toISOString(),
@@ -45,7 +47,7 @@ const mockCategories = [
   },
 ]
 
-const mockStats = {
+const _mockStats = {
   averageCompletionTime: 3.5,
   cancelled: 0,
   categories: [],
@@ -90,7 +92,7 @@ describe('GraphQL Hooks Integration Tests', () => {
       const { result } = renderHook(
         () =>
           useTodosGraphQL({
-            filter: { status: 'PENDING' as any },
+            filter: { status: TodoStatus.PENDING },
             pagination: { limit: 10, offset: 0 },
             sort: { direction: 'DESC', field: 'createdAt' },
           }),

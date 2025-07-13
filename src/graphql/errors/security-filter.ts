@@ -20,10 +20,26 @@ export enum SecurityLevel {
 }
 
 /**
+ * 拡張フィールドの型定義
+ */
+export type ExtensionFields = Record<string, unknown>
+
+/**
+ * フィルタリングされたデータの型定義
+ */
+export interface FilteredData {
+  [key: string]: unknown
+  extensions?: Record<string, unknown>
+  locations?: ReadonlyArray<{ column: number; line: number }>
+  message?: string
+  path?: ReadonlyArray<number | string>
+}
+
+/**
  * フィルタリング結果の型定義
  */
 export interface FilterResult {
-  filtered: any
+  filtered: FilteredData
   riskLevel: 'critical' | 'high' | 'low' | 'medium'
   securityViolations: SecurityViolation[]
 }
@@ -77,7 +93,7 @@ export interface SecurityViolation {
     | 'information_disclosure'
     | 'injection_attempt'
     | 'privilege_escalation'
-  value?: any
+  value?: unknown
 }
 
 /**
@@ -171,7 +187,7 @@ export class GraphQLSecurityFilter {
     let riskLevel: FilterResult['riskLevel'] = 'low'
 
     // 基本的なエラーオブジェクト構造
-    const filtered: any = {
+    const filtered = {
       extensions: this.filterExtensions(
         error.extensions,
         securityContext,
@@ -368,11 +384,11 @@ export class GraphQLSecurityFilter {
    * エラー拡張フィールドをフィルタリング
    */
   private filterExtensions(
-    extensions: any,
+    extensions: ExtensionFields,
     securityContext: SecurityContext,
     violations: SecurityViolation[]
-  ): any {
-    const filtered: any = {}
+  ): ExtensionFields {
+    const filtered: ExtensionFields = {}
 
     // 許可されたフィールドのみを含める
     for (const field of this.config.allowedExtensions) {
@@ -393,7 +409,7 @@ export class GraphQLSecurityFilter {
     }
 
     // 機密フィールドの検出と除去
-    for (const [key, value] of Object.entries(extensions)) {
+    for (const [key, _value] of Object.entries(extensions)) {
       if (this.isSensitiveField(key)) {
         violations.push({
           action: 'removed',
@@ -411,9 +427,9 @@ export class GraphQLSecurityFilter {
   /**
    * 最小限の拡張フィールドを取得
    */
-  private getMinimalExtensions(extensions: any): any {
+  private getMinimalExtensions(extensions: ExtensionFields): ExtensionFields {
     return {
-      code: extensions.code || 'UNKNOWN_ERROR',
+      code: extensions.code ?? 'UNKNOWN_ERROR',
       timestamp: new Date().toISOString(),
     }
   }
@@ -469,20 +485,28 @@ export class GraphQLSecurityFilter {
       (v) => v.severity === 'critical'
     )
     if (criticalViolations.length > 0) {
-      this.logger.error('Critical security violation detected', logData)
+      this.logger.error(
+        'Critical security violation detected',
+        error instanceof Error ? error : new Error(String(error)),
+        logData
+      )
     } else {
-      this.logger.warn('Security violations detected', logData)
+      this.logger.warn('Security violations detected', undefined, logData)
     }
   }
 
   /**
    * 機密データをマスキング
    */
-  private maskSensitiveData(obj: any, violations: SecurityViolation[]): void {
+  private maskSensitiveData(
+    obj: Record<string, unknown>,
+    violations: SecurityViolation[]
+  ): void {
     if (typeof obj !== 'object' || obj === null) return
 
     for (const [key, value] of Object.entries(obj)) {
       if (this.isSensitiveField(key)) {
+        // eslint-disable-next-line security/detect-object-injection
         obj[key] = '[REDACTED]'
 
         violations.push({
@@ -494,8 +518,8 @@ export class GraphQLSecurityFilter {
           value:
             typeof value === 'string' ? `${value.slice(0, 10)}...` : '[OBJECT]',
         })
-      } else if (typeof value === 'object') {
-        this.maskSensitiveData(value, violations)
+      } else if (typeof value === 'object' && value !== null) {
+        this.maskSensitiveData(value as Record<string, unknown>, violations)
       }
     }
   }
@@ -519,15 +543,13 @@ export class GraphQLSecurityFilter {
 /**
  * デフォルトセキュリティフィルターインスタンス
  */
-let defaultSecurityFilter: GraphQLSecurityFilter | null = null
+let defaultSecurityFilter: GraphQLSecurityFilter | undefined = undefined
 
 /**
  * デフォルトセキュリティフィルターを取得
  */
 export function getSecurityFilter(): GraphQLSecurityFilter {
-  if (!defaultSecurityFilter) {
-    defaultSecurityFilter = new GraphQLSecurityFilter()
-  }
+  defaultSecurityFilter ??= new GraphQLSecurityFilter()
   return defaultSecurityFilter
 }
 
@@ -547,14 +569,14 @@ export function initializeSecurityFilter(
 export function secureError(
   error: BaseGraphQLError,
   securityContext: SecurityContext
-): any {
+): FilteredData {
   const filter = getSecurityFilter()
   const result = filter.filterError(error, securityContext)
 
   // 高リスクの場合は追加ログ
   if (result.riskLevel === 'critical' || result.riskLevel === 'high') {
     const logger = getLogger()
-    logger.warn('High risk security filtering applied', {
+    logger.warn('High risk security filtering applied', undefined, {
       errorCode: error.extensions.code,
       riskLevel: result.riskLevel,
       violationCount: result.securityViolations.length,

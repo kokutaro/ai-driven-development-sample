@@ -8,17 +8,17 @@ import { describe, expect, it } from 'vitest'
 
 describe('GraphQL API Integration Tests', () => {
   describe('Basic Setup Tests', () => {
-    it('should validate that GraphQL packages are installed', () => {
+    it('should validate that GraphQL packages are installed', async () => {
       // パッケージが正常にインストールされているかテスト
-      expect(() => require('graphql')).not.toThrow()
-      expect(() => require('type-graphql')).not.toThrow()
-      expect(() => require('@apollo/client')).not.toThrow()
-      expect(() => require('graphql-scalars')).not.toThrow()
+      await expect(() => import('graphql')).resolves.toBeDefined()
+      await expect(() => import('type-graphql')).resolves.toBeDefined()
+      await expect(() => import('@apollo/client')).resolves.toBeDefined()
+      await expect(() => import('graphql-scalars')).resolves.toBeDefined()
     })
 
-    it('should validate that TypeScript decorators are working', () => {
+    it('should validate that TypeScript decorators are working', async () => {
       // デコレーターの動作確認 - reflect-metadataが読み込まれているか
-      require('reflect-metadata')
+      await import('reflect-metadata')
       expect(Reflect).toBeDefined()
       expect(typeof Reflect.getMetadata).toBe('function')
     })
@@ -83,8 +83,8 @@ describe('GraphQL API Integration Tests', () => {
   describe('TypeGraphQL Integration Tests', () => {
     it('should validate TypeGraphQL decorators are working properly', async () => {
       // TypeGraphQLデコレーターの動作確認
-      require('reflect-metadata')
-      const { registerEnumType } = require('type-graphql')
+      await import('reflect-metadata')
+      const { registerEnumType } = await import('type-graphql')
 
       expect(registerEnumType).toBeDefined()
       expect(typeof registerEnumType).toBe('function')

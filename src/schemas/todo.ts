@@ -5,18 +5,18 @@ import { z } from 'zod'
  */
 export const todoSchema = z.object({
   categoryId: z
-    .union([z.string().cuid(), z.literal(''), z.null()])
+    .union([z.string().cuid(), z.literal('')])
     .optional()
-    .transform((val) => (val === '' || val === null ? undefined : val)),
+    .transform((val) => (val === '' ? undefined : val)),
   description: z
     .string()
     .max(1000, '説明は1000文字以内で入力してください')
     .optional(),
   dueDate: z
-    .union([z.string(), z.null(), z.undefined()])
+    .union([z.string(), z.undefined()])
     .optional()
     .transform((val) => {
-      if (val === null || val === undefined) return
+      if (val === undefined) return
       if (typeof val === 'string' && val.trim() === '') return
       try {
         const date = new Date(val)
@@ -30,9 +30,9 @@ export const todoSchema = z.object({
     }),
   isImportant: z.boolean().default(false),
   kanbanColumnId: z
-    .union([z.string().cuid(), z.literal(''), z.null()])
+    .union([z.string().cuid(), z.literal('')])
     .optional()
-    .transform((val) => (val === '' || val === null ? undefined : val)),
+    .transform((val) => (val === '' ? undefined : val)),
   title: z
     .string()
     .min(1, 'タイトルは必須です')

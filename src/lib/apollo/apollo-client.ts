@@ -13,7 +13,43 @@ import {
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 
-import type { NormalizedCacheObject } from '@apollo/client'
+import type { FieldMergeFunction, NormalizedCacheObject } from '@apollo/client'
+
+/**
+ * サブタスク型定義
+ */
+interface SubTask {
+  completed: boolean
+  id: string
+  order: number
+  title: string
+}
+
+/**
+ * Todo型定義
+ */
+interface Todo {
+  completionRate: number
+  createdAt: string
+  description?: string
+  dueDate?: string
+  id: string
+  isOverdue: boolean
+  priority: string
+  status: string
+  title: string
+  updatedAt: string
+}
+
+/**
+ * TodoListレスポンス型定義
+ */
+interface TodoListResponse {
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  todos: Todo[]
+  total: number
+}
 
 /**
  * GraphQLエンドポイントのURL
@@ -47,30 +83,30 @@ export function createApolloClient(): ApolloClient<NormalizedCacheObject> {
   })
 
   // エラーハンドリングリンクの作成
-  const errorLink = onError(
-    ({ forward, graphQLErrors, networkError, operation }) => {
-      if (graphQLErrors) {
-        for (const { locations, message, path } of graphQLErrors) {
-          console.error(
-            `GraphQL error: Message: ${message}, Location: ${locations}, Path: ${path}`
-          )
-        }
-      }
-
-      if (networkError) {
-        console.error(`Network error: ${networkError}`)
-
-        // 401エラーの場合は認証ページにリダイレクト
-        if (
-          'statusCode' in networkError &&
-          networkError.statusCode === 401 && // 既存のauth.tsと同様の処理
-          globalThis.window !== undefined
-        ) {
-          globalThis.location.href = '/auth/signin'
-        }
+  const errorLink = onError(({ graphQLErrors, networkError }) => {
+    if (graphQLErrors) {
+      for (const { locations, message, path } of graphQLErrors) {
+        console.error(
+          `GraphQL error: Message: ${message}, Location: ${
+            locations ? JSON.stringify(locations) : 'unknown'
+          }, Path: ${path ? JSON.stringify(path) : 'unknown'}`
+        )
       }
     }
-  )
+
+    if (networkError) {
+      console.error(`Network error: ${networkError}`)
+
+      // 401エラーの場合は認証ページにリダイレクト
+      if (
+        'statusCode' in networkError &&
+        networkError.statusCode === 401 && // 既存のauth.tsと同様の処理
+        globalThis.window !== undefined
+      ) {
+        globalThis.location.href = '/auth/signin'
+      }
+    }
+  })
 
   // リンクチェーンの作成
   const link = from([errorLink, authLink, httpLink])
@@ -83,21 +119,30 @@ export function createApolloClient(): ApolloClient<NormalizedCacheObject> {
           todos: {
             // Todoリストのページネーション対応
             keyArgs: ['filter', 'sort'],
-            merge(existing, incoming, { args }) {
-              const offset = args?.pagination?.offset || 0
-              const merged = existing ? [...existing.todos] : []
+            merge: ((
+              existing: TodoListResponse | undefined,
+              incoming: TodoListResponse,
+              { args }
+            ) => {
+              const offset = args?.pagination?.offset ?? 0
+              const merged: Todo[] = existing ? [...existing.todos] : []
 
-              if (incoming) {
+              if (incoming?.todos) {
                 for (let i = 0; i < incoming.todos.length; i++) {
+                  // eslint-disable-next-line security/detect-object-injection
                   merged[offset + i] = incoming.todos[i]
                 }
               }
 
-              return {
-                ...incoming,
+              const result: TodoListResponse = {
+                hasNextPage: incoming?.hasNextPage ?? false,
+                hasPreviousPage: incoming?.hasPreviousPage ?? false,
                 todos: merged,
+                total: incoming?.total ?? 0,
               }
-            },
+
+              return result
+            }) as FieldMergeFunction<TodoListResponse>,
           },
           todoStats: {
             // 統計情報のキャッシュ戦略
@@ -109,9 +154,12 @@ export function createApolloClient(): ApolloClient<NormalizedCacheObject> {
         fields: {
           subTasks: {
             // サブタスクの並び順を維持
-            merge(existing, incoming) {
-              return incoming
-            },
+            merge: ((
+              _existing: readonly SubTask[] | undefined,
+              incoming: readonly SubTask[] | undefined
+            ): readonly SubTask[] => {
+              return incoming ?? []
+            }) as FieldMergeFunction<readonly SubTask[]>,
           },
         },
       },
@@ -143,7 +191,7 @@ export function createApolloClient(): ApolloClient<NormalizedCacheObject> {
 /**
  * グローバルなApollo Clientインスタンス
  */
-let apolloClient: ApolloClient<NormalizedCacheObject> | null = null
+let apolloClient: ApolloClient<NormalizedCacheObject> | undefined = undefined
 
 /**
  * Apollo Clientのシングルトンインスタンスを取得します
@@ -151,9 +199,7 @@ let apolloClient: ApolloClient<NormalizedCacheObject> | null = null
  * @returns Apollo Clientインスタンス
  */
 export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
-  if (!apolloClient) {
-    apolloClient = createApolloClient()
-  }
+  apolloClient ??= createApolloClient()
   return apolloClient
 }
 
@@ -161,5 +207,5 @@ export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
  * Apollo Clientインスタンスをリセットします（テスト用）
  */
 export function resetApolloClient(): void {
-  apolloClient = null
+  apolloClient = undefined
 }
