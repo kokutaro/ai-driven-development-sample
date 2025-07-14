@@ -1,0 +1,129 @@
+/**
+ * GraphQL API エンドポイント
+ *
+ * Next.js App RouterでGraphQL APIを提供します。
+ */
+import { ApolloServer } from 'apollo-server-nextjs';
+import { NextResponse } from 'next/server';
+
+import type { NextRequest } from 'next/server';
+
+import { createGraphQLContext } from '@/graphql/context/graphql-context';
+import { createGraphQLSchema } from '@/graphql/schema';
+import 'reflect-metadata';
+
+let apolloServer: ApolloServer | undefined = undefined
+
+/**
+ * GraphQL GET リクエストハンドラー（Playground用）
+ */
+export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === 'development') {
+    // 開発環境ではPlaygroundを表示
+    return new NextResponse(
+      `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GraphQL Playground</title>
+        </head>
+        <body>
+          <div id="root">
+            <h1>GraphQL Playground</h1>
+            <p>GraphQL Playgroundは POST リクエストでご利用ください。</p>
+            <p>エンドポイント: <code>/api/graphql</code></p>
+          </div>
+        </body>
+      </html>
+      `,
+      {
+        headers: { 'Content-Type': 'text/html' },
+      }
+    )
+  }
+
+  return new NextResponse('Method not allowed', { status: 405 })
+}
+
+/**
+ * GraphQL POST リクエストハンドラー
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const server = await getApolloServer()
+
+    const body = await request.text()
+    const url = new URL(request.url)
+
+    // Express形式のreq/resオブジェクトを作成
+    const req = {
+      body,
+      headers: Object.fromEntries(request.headers.entries()),
+      method: request.method,
+      url: url.pathname + url.search,
+    }
+
+    const res = {
+      end: () => { },
+      headers: new Map(),
+      setHeader: (name: string, value: string) => {
+        res.headers.set(name, value)
+      },
+      statusCode: 200,
+      write: () => { },
+    }
+
+    // Apollo Serverでリクエストを処理
+    const result = await server.createHandler({
+      path: '/api/graphql',
+    })(req as any, res as any)
+
+    return new NextResponse(JSON.stringify(result), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...Object.fromEntries(res.headers.entries()),
+      },
+      status: 200,
+    })
+  } catch (error) {
+    console.error('GraphQL API Error:', error)
+    return new NextResponse(
+      JSON.stringify({
+        errors: [
+          {
+            extensions: {
+              code: 'INTERNAL_ERROR',
+            },
+            message: 'Internal server error',
+          },
+        ],
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
+  }
+}
+
+/**
+ * Apollo Serverのインスタンスを取得または作成します
+ */
+async function getApolloServer() {
+  if (apolloServer) {
+    return apolloServer
+  }
+
+  const schema = await createGraphQLSchema()
+
+  apolloServer = new ApolloServer({
+    context: createGraphQLContext,
+    debug: process.env.NODE_ENV === 'development',
+    introspection: process.env.NODE_ENV === 'development',
+    playground: process.env.NODE_ENV === 'development',
+    schema,
+  })
+
+  await apolloServer.start()
+  return apolloServer
+}

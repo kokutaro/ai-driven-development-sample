@@ -1,0 +1,29 @@
+# TODOのGraphQLフラグメント定義
+
+# 基本的なTODOフィールド
+fragment TodoFields on Todo {
+  id
+  title
+  description
+  status
+  priority
+  isCompleted
+  isImportant
+  dueDate
+  categoryId
+  userId
+  order
+  completionRate
+  isOverdue
+  createdAt
+  updatedAt
+  subTasks {
+    id
+    title
+    completed
+    order
+    todoId
+    createdAt
+    updatedAt
+  }
+}

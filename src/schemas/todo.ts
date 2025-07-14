@@ -13,10 +13,10 @@ export const todoSchema = z.object({
     .max(1000, '説明は1000文字以内で入力してください')
     .optional(),
   dueDate: z
-    .union([z.string(), z.null(), z.undefined()])
+    .union([z.string(), z.undefined(), z.null()])
     .optional()
     .transform((val) => {
-      if (val === null || val === undefined) return
+      if (val === undefined || val === null) return
       if (typeof val === 'string' && val.trim() === '') return
       try {
         const date = new Date(val)
@@ -44,7 +44,7 @@ export const todoUpdateSchema = todoSchema.partial()
 export const todoQuerySchema = z.object({
   categoryId: z.string().cuid().optional(),
   filter: z
-    .enum(['today', 'important', 'upcoming', 'completed', 'all'])
+    .enum(['today', 'important', 'upcoming', 'completed', 'pending', 'all'])
     .default('all'),
   limit: z.coerce.number().min(1).max(100).default(50),
   page: z.coerce.number().min(1).default(1),

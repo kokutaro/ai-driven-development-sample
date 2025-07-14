@@ -2,6 +2,7 @@ import { listTodosInputSchema } from '../schemas/todo-mcp'
 
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logError } from '@/lib/mcp/utils/logger'
 import { buildFilterConditions } from '@/lib/todo-filters'
 
 /**
@@ -130,7 +131,7 @@ ${
       ],
     }
   } catch (error) {
-    console.error('TODO一覧取得エラー:', error)
+    logError('TODO一覧取得エラー:', error)
 
     // エラーの種類に応じたメッセージ
     let errorMessage = 'TODO一覧の取得に失敗しました。'

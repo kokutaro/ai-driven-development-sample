@@ -13,6 +13,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"],
     "plugins": [
       {
@@ -31,7 +33,7 @@
     "build/**/*",
     "out/**/*",
     "public/**/*",
-    "mcp-server/**/*"
+    "src/graphql/generated/**/*"
   ],
   "include": [
     "**/*.ts",

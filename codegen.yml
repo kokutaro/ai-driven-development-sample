@@ -1,0 +1,41 @@
+# GraphQL Code Generator 設定ファイル
+schema: './schema.graphql'
+documents: 'src/graphql/**/*.graphql'
+generates:
+  src/graphql/generated/graphql.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-react-apollo'
+    config:
+      # Apollo Client Hooks の生成
+      withHooks: true
+      withComponent: false
+      withHOC: false
+
+      # TypeScript設定
+      skipTypename: false
+      scalars:
+        DateTime: 'Date'
+        Upload: 'File'
+
+      # React Apollo設定
+      apolloReactCommonImportFrom: '@apollo/client'
+      apolloReactHooksImportFrom: '@apollo/client'
+
+      # 型の生成設定
+      enumsAsTypes: true
+      constEnums: true
+
+      # フック名の設定
+      addInfiniteQuery: false
+
+      # 出力設定
+      avoidOptionals:
+        field: true
+        inputValue: false
+        object: false
+
+      # その他の設定
+      maybeValue: 'T | undefined'
+      inputMaybeValue: 'T | undefined'

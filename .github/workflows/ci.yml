@@ -49,6 +49,9 @@ jobs:
           npx prisma generate
           npx prisma db push
 
+      - name: GraphQL Code Generation
+        run: yarn codegen
+
       - name: Run format check
         run: yarn format --check
 

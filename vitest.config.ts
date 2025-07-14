@@ -33,6 +33,7 @@ export default defineConfig({
       },
     },
     environment: 'jsdom',
+    exclude: ['node_modules/**'],
     globals: true,
     /**
      * CI環境ではメモリ不足を防ぐためテストワーカー数を1に制限します
@@ -42,7 +43,12 @@ export default defineConfig({
     server: {
       deps: {
         // next-authなどの外部依存をプリバンドル
-        external: ['next-auth', '@auth/prisma-adapter'],
+        external: [
+          'next-auth',
+          '@auth/prisma-adapter',
+          'graphql',
+          'type-graphql',
+        ],
       },
     },
     setupFiles: ['./src/tests/setup.ts'],

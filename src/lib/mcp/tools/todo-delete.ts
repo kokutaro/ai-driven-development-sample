@@ -2,6 +2,7 @@ import { deleteTodoInputSchema } from '../schemas/todo-mcp'
 
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logError } from '@/lib/mcp/utils/logger'
 
 /**
  * TODO削除ツール
@@ -71,7 +72,7 @@ ID: ${todo.id}
       ],
     }
   } catch (error) {
-    console.error('TODO削除エラー:', error)
+    logError('TODO削除エラー:', error)
 
     // エラーの種類に応じたメッセージ
     let errorMessage = 'TODOの削除に失敗しました。'

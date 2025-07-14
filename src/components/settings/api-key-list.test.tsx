@@ -1,3 +1,4 @@
+import { act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -158,7 +159,9 @@ describe('ApiKeyList', () => {
       await user.click(deleteButtons[0])
 
       // 確認ダイアログのコールバックを実行
-      confirmCallback()
+      await act(async () => {
+        confirmCallback()
+      })
 
       expect(mockDeleteApiKey).toHaveBeenCalledWith('key1')
     })
@@ -186,7 +189,9 @@ describe('ApiKeyList', () => {
       await user.click(deleteButtons[0])
 
       // エラーが発生してもクラッシュしない
-      expect(() => confirmCallback()).not.toThrow()
+      await act(async () => {
+        expect(() => confirmCallback()).not.toThrow()
+      })
     })
   })
 

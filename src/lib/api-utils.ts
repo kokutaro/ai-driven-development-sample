@@ -27,11 +27,18 @@ export function createErrorResponse(
 /**
  * 成功レスポンスを作成する
  */
-export function createSuccessResponse<T>(data: T, status = 200): NextResponse {
+export function createSuccessResponse<T>(
+  data: T,
+  statusOrMetadata: number | Record<string, unknown> = 200
+): NextResponse {
+  const status = typeof statusOrMetadata === 'number' ? statusOrMetadata : 200
+  const metadata = typeof statusOrMetadata === 'object' ? statusOrMetadata : {}
+
   const response: ApiResponse<T> = {
     data,
     success: true,
     timestamp: new Date().toISOString(),
+    ...metadata,
   }
   return NextResponse.json(response, { status })
 }
