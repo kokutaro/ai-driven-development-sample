@@ -2,19 +2,79 @@
  * GraphQLテスト用ユーティリティ
  *
  * テスト環境での GraphQL スキーマとモックデータを提供します。
+ * schema realmの問題を回避し、一貫性のあるテスト環境を提供します。
  */
-import type { GraphQLSchema } from 'graphql'
+// GraphQLモジュールの統一インポート（schema realm問題回避）
+import * as GraphQLModule from 'graphql'
 import 'reflect-metadata'
+
+import { buildGraphQLSchema } from './schema/schema.builder'
+
+import type { DocumentNode, ExecutionResult, GraphQLSchema } from 'graphql'
+
+// GraphQL関数を統一モジュールから取得
+const { execute, parse } = GraphQLModule
+
+/**
+ * テスト用GraphQLスキーマのシングルトンインスタンス
+ */
+let testSchema: GraphQLSchema | undefined = undefined
+
+/**
+ * テスト用スキーマキャッシュをクリアします
+ * テスト間でスキーマの状態をリセットする必要がある場合に使用します
+ */
+export function clearTestSchemaCache(): void {
+  testSchema = undefined
+}
 
 /**
  * テスト用GraphQLスキーマを作成します
+ * レガシー関数 - getTestGraphQLSchemaを使用してください
  *
  * @returns GraphQLスキーマ
  */
 export async function createTestSchema(): Promise<GraphQLSchema> {
-  // 実際の実装では createGraphQLSchema を使用
-  const { createGraphQLSchema } = await import('./schema')
-  return createGraphQLSchema()
+  return getTestGraphQLSchema()
+}
+
+/**
+ * GraphQLクエリを実行します
+ * スキーマの一貫性を保証するため、統一されたexecute関数を使用します
+ */
+export async function executeGraphQLQuery(
+  query: string,
+  contextValue?: unknown,
+  variableValues?: Record<string, unknown>
+): Promise<ExecutionResult> {
+  const schema = await getTestGraphQLSchema()
+  const document = parse(query)
+
+  return execute({
+    contextValue,
+    document,
+    schema,
+    variableValues,
+  })
+}
+
+/**
+ * テスト用GraphQLスキーマを取得します
+ * 初回呼び出し時にスキーマを構築し、以降はキャッシュされたインスタンスを返します
+ *
+ * @returns GraphQLスキーマ
+ */
+export async function getTestGraphQLSchema(): Promise<GraphQLSchema> {
+  testSchema ??= await buildGraphQLSchema()
+  return testSchema
+}
+
+/**
+ * GraphQLクエリをパースします
+ * 統一されたparse関数を使用します
+ */
+export function parseGraphQLQuery(query: string): DocumentNode {
+  return parse(query)
 }
 
 /**

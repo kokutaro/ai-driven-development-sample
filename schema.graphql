@@ -53,7 +53,9 @@ input StatsFilter {
   startDate: DateTimeISO
 }
 
-"""統計期間の指定"""
+"""
+統計期間の指定
+"""
 enum StatsPeriod {
   ALL_TIME
   MONTH
@@ -93,7 +95,9 @@ type Todo {
   userId: String!
 }
 
-"""Todoの優先度"""
+"""
+Todoの優先度
+"""
 enum TodoPriority {
   HIGH
   LOW
@@ -116,7 +120,9 @@ type TodoStats {
   total: Float!
 }
 
-"""Todoのステータス"""
+"""
+Todoのステータス
+"""
 enum TodoStatus {
   CANCELLED
   COMPLETED

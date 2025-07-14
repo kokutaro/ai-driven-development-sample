@@ -94,10 +94,15 @@ export abstract class BaseGraphQLError extends GraphQLError {
     extensions?: GraphQLErrorExtensions,
     isOperational = true
   ) {
+    // Auto-generate requestId if not provided
+    const requestId =
+      (extensions?.requestId as string) ?? BaseGraphQLError.generateRequestId()
+
     const enhancedExtensions: GraphQLErrorExtensions = {
       category,
       code,
       isOperational,
+      requestId,
       severity,
       timestamp: new Date().toISOString(),
       ...extensions,
@@ -111,7 +116,7 @@ export abstract class BaseGraphQLError extends GraphQLError {
     this.severity = severity
     this.isOperational = isOperational
     this.timestamp = enhancedExtensions.timestamp as string
-    this.requestId = extensions?.requestId as string
+    this.requestId = requestId
     this.userId = extensions?.userId as string
 
     // エラー名を設定
@@ -121,6 +126,13 @@ export abstract class BaseGraphQLError extends GraphQLError {
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor)
     }
+  }
+
+  /**
+   * リクエストIDを生成する
+   */
+  private static generateRequestId(): string {
+    return `req_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
   }
 
   /**

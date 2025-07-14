@@ -422,9 +422,20 @@ export class GraphQLErrorFormatter {
 
     const logContext = {
       ...logData,
+      environment: process.env.NODE_ENV,
       ip: this.getClientIp(),
       requestId: this.requestId,
+      severity: error.severity,
       userAgent: this.getUserAgent(),
+    }
+
+    // 本番環境では機密情報をさらにフィルタリング
+    if (this.config.isProduction) {
+      delete logContext.error.stack
+      // 本番環境ではユーザーIDも部分的にマスク
+      if (logContext.error.userId) {
+        logContext.error.userId = this.maskUserId(logContext.error.userId)
+      }
     }
 
     // ログレベルに応じて出力
@@ -450,6 +461,16 @@ export class GraphQLErrorFormatter {
         break
       }
     }
+  }
+
+  /**
+   * ユーザーIDをマスク（本番環境用）
+   */
+  private maskUserId(userId: string): string {
+    if (userId.length <= 4) {
+      return '****'
+    }
+    return `${userId.slice(0, 2)}****${userId.slice(-2)}`
   }
 }
 

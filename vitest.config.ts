@@ -43,7 +43,12 @@ export default defineConfig({
     server: {
       deps: {
         // next-authなどの外部依存をプリバンドル
-        external: ['next-auth', '@auth/prisma-adapter'],
+        external: [
+          'next-auth',
+          '@auth/prisma-adapter',
+          'graphql',
+          'type-graphql',
+        ],
       },
     },
     setupFiles: ['./src/tests/setup.ts'],

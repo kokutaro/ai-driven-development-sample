@@ -5,7 +5,11 @@
  * 全てのリゾルバーを統合し、統一されたスキーマを提供します。
  */
 import 'reflect-metadata'
-import { buildSchema } from 'type-graphql'
+// TypeGraphQLモジュールの統一インポート（schema realm問題回避）
+import * as TypeGraphQLModule from 'type-graphql'
+
+// TypeGraphQL関数を統一モジュールから取得
+const { buildSchema } = TypeGraphQLModule
 
 import { CategoryResolver } from '../resolvers/category.resolver'
 import { StatsResolver } from '../resolvers/stats.resolver'

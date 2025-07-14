@@ -114,5 +114,8 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "resolutions": {
+    "graphql": "^16.11.0"
   }
 }
