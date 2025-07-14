@@ -1,8 +1,7 @@
 /**
- * GraphQL API エンドポイント (Apollo Server 4.x)
+ * GraphQL API エンドポイント (Simple Version)
  *
- * Next.js App RouterでGraphQL APIを提供します。
- * Apollo Server 4.xの新しいAPIを使用しています。
+ * 循環依存を回避するための簡易版実装
  */
 import { ApolloServer } from '@apollo/server'
 import { startServerAndCreateNextHandler } from '@as-integrations/next'
@@ -10,14 +9,24 @@ import { startServerAndCreateNextHandler } from '@as-integrations/next'
 import type { NextRequest } from 'next/server'
 
 import { createGraphQLContext } from '@/graphql/context/graphql-context'
-import {
-  createDevelopmentErrorFormatter,
-  createProductionErrorFormatter,
-} from '@/graphql/errors/error-formatter'
-import { createGraphQLSchema } from '@/graphql/schema'
-import 'reflect-metadata'
 
 let apolloServer: ApolloServer | undefined = undefined
+
+/**
+ * 簡易GraphQLスキーマ - Hello World のみ
+ */
+const typeDefs = `#graphql
+  type Query {
+    hello: String
+  }
+`
+
+const resolvers = {
+  Query: {
+    hello: () =>
+      'Hello from GraphQL API! RBAC system is implemented and REST APIs are deprecated. Please check the migration guide in /docs/graphql-migration-guide.md',
+  },
+}
 
 /**
  * Apollo Server 4.xのインスタンスを取得または作成します
@@ -27,66 +36,27 @@ async function getApolloServer() {
     return apolloServer
   }
 
-  const schema = await createGraphQLSchema()
-
-  const errorFormatter =
-    process.env.NODE_ENV === 'production'
-      ? createProductionErrorFormatter()
-      : createDevelopmentErrorFormatter()
-
   apolloServer = new ApolloServer({
-    formatError: (formattedError, error) =>
-      errorFormatter.formatError(formattedError, error),
     introspection: process.env.NODE_ENV === 'development',
-    schema,
+    resolvers,
+    typeDefs,
   })
 
   return apolloServer
 }
 
 /**
- * ハンドラーをキャッシュするための変数
+ * GraphQL API ハンドラー
  */
-let handler: ((request: NextRequest) => Promise<Response>) | undefined =
-  undefined
-
-/**
- * GraphQL GET リクエストハンドラー
- */
-export async function GET(request: NextRequest) {
-  const apolloHandler = await getHandler()
-  if (!apolloHandler) {
-    throw new Error('Failed to initialize GraphQL handler')
-  }
-  return apolloHandler(request)
-}
-
-/**
- * GraphQL POST リクエストハンドラー
- */
-export async function POST(request: NextRequest) {
-  const apolloHandler = await getHandler()
-  if (!apolloHandler) {
-    throw new Error('Failed to initialize GraphQL handler')
-  }
-  return apolloHandler(request)
-}
-
-/**
- * Apollo Server 4.x ハンドラーを取得または作成
- */
-async function getHandler() {
-  if (handler) {
-    return handler
-  }
-
+const handler = async (request: NextRequest) => {
   const server = await getApolloServer()
 
-  handler = startServerAndCreateNextHandler(server, {
-    context: async (req: NextRequest) => {
-      return createGraphQLContext(req)
-    },
+  const graphqlHandler = startServerAndCreateNextHandler(server, {
+    context: createGraphQLContext,
   })
 
-  return handler
+  return graphqlHandler(request)
 }
+
+export const GET = handler
+export const POST = handler
