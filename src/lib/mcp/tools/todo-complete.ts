@@ -2,6 +2,7 @@ import { completeTodoInputSchema } from '../schemas/todo-mcp'
 
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { logError } from '@/lib/mcp/utils/logger'
 
 /**
  * TODO完了切り替えツール
@@ -69,7 +70,7 @@ ID: ${todo.id}
       ],
     }
   } catch (error) {
-    console.error('TODO完了切り替えエラー:', error)
+    logError('TODO完了切り替えエラー:', error)
 
     // エラーの種類に応じたメッセージ
     let errorMessage = 'TODOの状態更新に失敗しました。'

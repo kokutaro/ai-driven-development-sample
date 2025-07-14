@@ -11,9 +11,6 @@ export default defineConfig({
     },
   },
   test: {
-    exclude: [
-      'node_modules/**',
-    ],
     coverage: {
       exclude: [
         'src/tests/**/*.test.{ts,tsx}',
@@ -36,6 +33,7 @@ export default defineConfig({
       },
     },
     environment: 'jsdom',
+    exclude: ['node_modules/**'],
     globals: true,
     /**
      * CI環境ではメモリ不足を防ぐためテストワーカー数を1に制限します

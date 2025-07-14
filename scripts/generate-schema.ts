@@ -37,7 +37,7 @@ generateSchema()
     // NOP
   })
   // eslint-disable-next-line unicorn/prefer-top-level-await
-  .catch(async (error) => {
+  .catch(async (_error) => {
     // eslint-disable-next-line unicorn/no-process-exit
     process.exit(1)
   })
