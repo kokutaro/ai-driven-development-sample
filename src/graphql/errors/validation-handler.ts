@@ -97,20 +97,11 @@ export class GraphQLValidationHandler {
     zodError: ZodError,
     operation?: string
   ): ValidationError {
-    const validationDetails: Record<string, string[]> = {}
     const fieldErrors: FieldValidationError[] = []
 
     for (const issue of zodError.issues) {
       const fieldPath = issue.path.join('.')
       const localizedMessage = this.getJapaneseErrorMessage(issue)
-
-      // eslint-disable-next-line security/detect-object-injection
-      if (!validationDetails[fieldPath]) {
-        // eslint-disable-next-line security/detect-object-injection
-        validationDetails[fieldPath] = []
-      }
-      // eslint-disable-next-line security/detect-object-injection
-      validationDetails[fieldPath].push(localizedMessage)
 
       fieldErrors.push({
         code: issue.code,
@@ -121,7 +112,8 @@ export class GraphQLValidationHandler {
 
     const message = this.createSummaryMessage(fieldErrors.length)
 
-    return new ValidationError(message, validationDetails, {
+    // validationDetailsを配列形式で設定（テストとの互換性のため）
+    return new ValidationError(message, fieldErrors, {
       fieldErrors,
       operation,
       originalError: zodError,

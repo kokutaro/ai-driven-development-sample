@@ -90,6 +90,13 @@ export class SecurityFilter {
   }
 
   /**
+   * 入力サニタイゼーションが有効かどうかをチェック
+   */
+  public isInputSanitizationEnabled(): boolean {
+    return this.config.enableInputSanitization
+  }
+
+  /**
    * 入力値のサニタイゼーション
    */
   public sanitizeInput(input: string): string {
@@ -742,7 +749,7 @@ export function withSecurityFilter<T extends Record<string, unknown>>(
       const threats = filter.validateInput(value, key, clientIp)
       filter.throwIfCritical(threats)
 
-      if (filter.config.enableInputSanitization) {
+      if (filter.isInputSanitizationEnabled()) {
         ;(sanitized as Record<string, unknown>)[key] =
           filter.sanitizeInput(value)
       }

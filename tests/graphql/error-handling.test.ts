@@ -369,7 +369,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
       const logger = new StructuredLogger()
 
       const logSpy = vi
-        .spyOn(console, 'error')
+        .spyOn(console, 'info')
         .mockImplementation(() => undefined)
 
       const error = new ValidationError('Validation failed', {

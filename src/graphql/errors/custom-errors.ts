@@ -173,12 +173,28 @@ export abstract class BaseGraphQLError extends GraphQLError {
  */
 export class AuthenticationError extends BaseGraphQLError {
   constructor(message = '認証が必要です', extensions?: GraphQLErrorExtensions) {
+    // セキュリティコンテキストを自動的に追加
+    const securityContext = {
+      authenticationFailure: true,
+      timestamp: new Date().toISOString(),
+      ...((extensions?.attemptCount !== undefined ||
+        extensions?.lastAttempt !== undefined) && {
+        attemptDetails: {
+          attemptCount: extensions.attemptCount,
+          lastAttempt: extensions.lastAttempt,
+        },
+      }),
+    }
+
     super(
       message,
       'UNAUTHENTICATED',
       ErrorCategory.AUTHENTICATION,
       ErrorSeverity.MEDIUM,
-      extensions
+      {
+        ...extensions,
+        securityContext,
+      }
     )
   }
 }
@@ -375,19 +391,18 @@ export class ResourceNotFoundError extends BaseGraphQLError {
 export class ValidationError extends BaseGraphQLError {
   constructor(
     message: string,
-    validationDetails?: Record<string, string[]>,
+    validationDetails?:
+      | Array<{ code: string; field: string; message: string }>
+      | Record<string, string[]>,
     extensions?: GraphQLErrorExtensions
   ) {
-    super(
-      message,
-      'BAD_USER_INPUT',
-      ErrorCategory.VALIDATION,
-      ErrorSeverity.LOW,
-      {
-        validationDetails,
-        ...extensions,
-      }
-    )
+    // extensionsからcodeを取得、なければデフォルトの'VALIDATION_ERROR'を使用
+    const code = (extensions?.code as string) ?? 'VALIDATION_ERROR'
+
+    super(message, code, ErrorCategory.VALIDATION, ErrorSeverity.LOW, {
+      validationDetails,
+      ...extensions,
+    })
   }
 }
 

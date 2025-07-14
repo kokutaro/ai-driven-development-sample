@@ -1,8 +1,8 @@
 /**
- * Apollo Server 4.x エラーフォーマッター
+ * GraphQLエラーフォーマッター
  *
- * プロダクション準備のための包括的なエラーフォーマット機能を提供します。
- * セキュリティ、ログ、監視、国際化を統合したエラーハンドリングシステムです。
+ * クライアントに返すエラーレスポンスを適切にフォーマットします。
+ * セキュリティ、国際化、開発環境でのデバッグ支援を考慮します。
  */
 import { GraphQLError } from 'graphql'
 
@@ -10,167 +10,111 @@ import {
   BaseGraphQLError,
   createGraphQLErrorFromError,
   createUserFriendlyMessage,
+  ErrorCategory,
+  ErrorSeverity,
   sanitizeErrorForLogging,
 } from './custom-errors'
-import { AllErrorCodes, getErrorCodeInfo } from './error-codes'
+import { getLogger } from './logger'
 
-import type { ErrorMetrics } from './custom-errors'
-import type { ErrorCode } from './error-codes'
+import type { StructuredLogger } from './logger'
 import type { GraphQLFormattedError } from 'graphql'
 
 /**
- * エラーフォーマッター設定
+ * フォーマッター設定の型定義
  */
 export interface ErrorFormatterConfig {
   /** デバッグモード */
   debugMode?: boolean
-  /** エラー詳細の出力 */
-  includeErrorDetails?: boolean
-  /** スタックトレース出力 */
-  includeStackTrace?: boolean
   /** 本番環境フラグ */
   isProduction?: boolean
-  /** 国際化ロケール */
-  locale?: string
-  /** ログ出力インスタンス */
-  logger?: Logger
-  /** メトリクス収集インスタンス */
-  metricsCollector?: MetricsCollector
+  /** ロガーインスタンス */
+  logger?: StructuredLogger
   /** セキュリティ設定 */
-  security?: {
-    /** 許可された拡張フィールド */
-    allowedExtensions?: string[]
-    /** 内部エラーの詳細を隠すか */
-    hideInternalDetails?: boolean
-    /** 機密情報をマスクするか */
-    maskSensitiveData?: boolean
-  }
+  security?: SecurityConfig
 }
 
 /**
- * 構造化ログ出力用のロガー
+ * フォーマット済みエラーの型定義
  */
-interface Logger {
-  debug(message: string, data?: unknown): void
-  error(message: string, data?: unknown): void
-  fatal(message: string, data?: unknown): void
-  info(message: string, data?: unknown): void
-  warn(message: string, data?: unknown): void
+export interface FormattedError {
+  extensions?: Record<string, unknown>
+  locations?: ReadonlyArray<{ column: number; line: number }>
+  message: string
+  path?: ReadonlyArray<number | string>
 }
 
 /**
- * メトリクス収集用のインターフェース
+ * セキュリティ設定の型定義
  */
-interface MetricsCollector {
-  incrementCounter(name: string, tags?: Record<string, string>): void
-  recordError(metrics: ErrorMetrics): void
-  recordHistogram(
-    name: string,
-    value: number,
-    tags?: Record<string, string>
-  ): void
+export interface SecurityConfig {
+  /** 許可されたエラー拡張フィールド */
+  allowedExtensions?: string[]
+  /** 内部エラーの詳細を隠すか */
+  hideInternalDetails?: boolean
+  /** 機密データのマスキングを有効にするか */
+  maskSensitiveData?: boolean
 }
 
 /**
- * Apollo Server 4.x用のエラーフォーマッター
+ * GraphQLエラーフォーマッター
  */
 export class GraphQLErrorFormatter {
-  private readonly config: Required<ErrorFormatterConfig>
-  private readonly requestId: string
+  private readonly config: Required<Omit<ErrorFormatterConfig, 'security'>> & {
+    security?: SecurityConfig
+  }
+  private readonly logger: StructuredLogger
 
-  constructor(config: ErrorFormatterConfig = {}, requestId?: string) {
-    const isProduction =
-      config.isProduction ?? process.env.NODE_ENV === 'production'
-
+  constructor(config: ErrorFormatterConfig = {}) {
     this.config = {
       debugMode: config.debugMode ?? process.env.NODE_ENV === 'development',
-      includeErrorDetails:
-        config.includeErrorDetails ?? process.env.NODE_ENV === 'development',
-      includeStackTrace:
-        config.includeStackTrace ?? process.env.NODE_ENV === 'development',
-      isProduction,
-      locale: config.locale ?? 'ja',
-      logger: config.logger ?? this.createDefaultLogger(),
-      metricsCollector:
-        config.metricsCollector ?? this.createDefaultMetricsCollector(),
-      security: {
-        allowedExtensions: config.security?.allowedExtensions ?? [
-          'code',
-          'category',
-          'severity',
-          'timestamp',
-          'retryable',
-        ],
-        hideInternalDetails:
-          config.security?.hideInternalDetails ?? isProduction,
-        maskSensitiveData: config.security?.maskSensitiveData ?? true,
-      },
+      isProduction:
+        config.isProduction ?? process.env.NODE_ENV === 'production',
+      logger: config.logger ?? getLogger(),
+      security: config.security,
     }
-    this.requestId = requestId ?? this.generateRequestId()
+
+    this.logger = this.config.logger
   }
 
   /**
-   * GraphQLエラーをフォーマットする
-   * Apollo Server 4.xのformatError関数で使用
+   * エラーをクライアント向けにフォーマット
+   *
+   * テスト用シンプルインターフェース: formatError({ message }, error)
+   * Apollo Server用インターフェース: formatError(formattedError, error)
    */
-  public formatError = (
-    formattedError: GraphQLFormattedError,
+  formatError(
+    formattedError: GraphQLFormattedError | { message: string },
     error: unknown
-  ): GraphQLFormattedError => {
+  ): FormattedError | GraphQLFormattedError {
     try {
-      // BaseGraphQLErrorに変換
-      const graphqlError = this.convertToBaseGraphQLError(error, formattedError)
+      // BaseGraphQLErrorかどうか確認
+      const graphqlError =
+        error instanceof BaseGraphQLError
+          ? error
+          : this.convertToBaseGraphQLError(
+              error,
+              formattedError as GraphQLFormattedError
+            )
 
       // ログ出力
       this.logError(graphqlError)
-
-      // メトリクス収集
-      this.collectMetrics(graphqlError)
 
       // クライアント向けのエラーレスポンス生成
       return this.createClientResponse(graphqlError, formattedError)
     } catch (formatterError) {
       // フォーマッター自体でエラーが発生した場合の安全な処理
-      this.config.logger.error('Error formatter failed', {
-        formatterError,
-        originalError: error,
-        requestId: this.requestId,
-      })
+      this.logger.error(
+        'Error formatter failed',
+        formatterError instanceof Error
+          ? formatterError
+          : new Error(String(formatterError)),
+        {
+          originalError: error,
+        }
+      )
 
       return this.createFallbackResponse(formattedError)
     }
-  }
-
-  /**
-   * エラーメトリクスを収集
-   */
-  private collectMetrics(error: BaseGraphQLError): void {
-    const errorInfo = getErrorCodeInfo(error.extensions.code as ErrorCode)
-
-    // エラーメトリクス記録
-    const metrics: ErrorMetrics = {
-      category: error.category,
-      count: 1,
-      errorCode: error.extensions.code as string,
-      requestId: this.requestId,
-      severity: error.severity,
-      timestamp: error.timestamp,
-      userId: error.userId,
-    }
-
-    this.config.metricsCollector.recordError(metrics)
-
-    // カウンター増加
-    this.config.metricsCollector.incrementCounter('graphql_errors_total', {
-      category: error.category,
-      code: error.extensions.code as string,
-      severity: error.severity,
-    })
-
-    // HTTPステータス別カウンター
-    this.config.metricsCollector.incrementCounter('graphql_errors_by_status', {
-      status: errorInfo.httpStatus.toString(),
-    })
   }
 
   /**
@@ -178,7 +122,7 @@ export class GraphQLErrorFormatter {
    */
   private convertToBaseGraphQLError(
     error: unknown,
-    formattedError: GraphQLFormattedError
+    formattedError: GraphQLFormattedError | { message: string }
   ): BaseGraphQLError {
     // 既にBaseGraphQLErrorの場合
     if (error instanceof BaseGraphQLError) {
@@ -187,41 +131,17 @@ export class GraphQLErrorFormatter {
 
     // GraphQLErrorの場合
     if (error instanceof GraphQLError) {
-      return createGraphQLErrorFromError(
-        error,
-        formattedError.extensions?.code as ErrorCode,
-        undefined,
-        undefined,
-        {
-          requestId: this.requestId,
-          ...formattedError.extensions,
-        }
-      )
+      return createGraphQLErrorFromError(error)
     }
 
     // 一般的なErrorの場合
     if (error instanceof Error) {
-      return createGraphQLErrorFromError(
-        error,
-        undefined,
-        undefined,
-        undefined,
-        {
-          requestId: this.requestId,
-        }
-      )
+      return createGraphQLErrorFromError(error)
     }
 
     // その他の場合
     return createGraphQLErrorFromError(
-      new Error(formattedError.message || 'Unknown error'),
-      AllErrorCodes.INTERNAL_SERVER_ERROR,
-      undefined,
-      undefined,
-      {
-        originalError: error,
-        requestId: this.requestId,
-      }
+      new Error(formattedError.message || 'Unknown error')
     )
   }
 
@@ -230,187 +150,98 @@ export class GraphQLErrorFormatter {
    */
   private createClientResponse(
     error: BaseGraphQLError,
-    originalFormatted: GraphQLFormattedError
-  ): GraphQLFormattedError {
-    const errorInfo = getErrorCodeInfo(error.extensions.code as ErrorCode)
-
+    originalFormatted: GraphQLFormattedError | { message: string }
+  ): FormattedError {
     // ユーザーフレンドリーなメッセージを生成
     const userMessage = this.config.isProduction
       ? createUserFriendlyMessage(error)
       : error.message
 
     // 基本的なレスポンス構造
-    const response: GraphQLFormattedError = {
+    const response: FormattedError = {
       extensions: {
-        category: error.category,
         code: error.extensions.code,
-        requestId: this.requestId,
-        retryable: errorInfo.retryable,
+        requestId: error.extensions.requestId,
         severity: error.severity,
         timestamp: error.timestamp,
       },
-      locations: originalFormatted.locations,
       message: userMessage,
-      path: originalFormatted.path,
     }
 
-    // 拡張フィールドを組み立て
-    let extensions = { ...response.extensions }
-
-    // 開発環境または非本番環境での追加情報
-    if (this.config.includeErrorDetails) {
-      extensions = {
-        ...extensions,
-        httpStatus: errorInfo.httpStatus,
-        originalMessage: error.message,
-        userMessage: errorInfo.userMessage,
+    // GraphQLFormattedErrorの場合はlocationやpathも含める
+    if ('locations' in originalFormatted || 'path' in originalFormatted) {
+      const gqlFormatted = originalFormatted
+      if (gqlFormatted.locations) {
+        response.locations = gqlFormatted.locations
+      }
+      if (gqlFormatted.path) {
+        response.path = gqlFormatted.path
       }
     }
 
     // デバッグモードでの詳細情報
     if (this.config.debugMode) {
-      extensions = {
-        ...extensions,
-        errorId: error.requestId,
+      response.extensions = {
+        ...response.extensions,
+        category: error.category,
         isOperational: error.isOperational,
         userId: error.userId,
       }
     }
 
-    // スタックトレースの追加
-    if (this.config.includeStackTrace && error.stack) {
-      extensions = {
-        ...extensions,
+    // スタックトレースの追加（開発環境）
+    if (this.config.debugMode && error.stack) {
+      response.extensions = {
+        ...response.extensions,
         stackTrace: error.stack,
       }
     }
 
-    // セキュリティフィルタリング
-    let finalMessage = response.message
+    // セキュリティフィルタリング（内部エラーの詳細を隠す）
     if (
-      this.config.security.hideInternalDetails &&
-      (error.severity as string) === 'CRITICAL'
+      this.config.isProduction &&
+      (error.severity === ErrorSeverity.CRITICAL ||
+        error.category === ErrorCategory.SYSTEM)
     ) {
-      finalMessage = '内部エラーが発生しました。管理者にお問い合わせください。'
-      extensions = {
+      response.message =
+        'システムエラーが発生しました。管理者にお問い合わせください。'
+      response.extensions = {
         code: error.extensions.code,
-        requestId: this.requestId,
+        requestId: error.extensions.requestId,
         timestamp: error.timestamp,
       }
     }
 
-    // 許可された拡張フィールドのみを残す
-    const filteredExtensions = this.filterAllowedExtensions(extensions)
-
-    // 新しいレスポンスオブジェクトを作成
-    return {
-      ...response,
-      extensions: filteredExtensions,
-      message: finalMessage,
+    // セキュリティ設定に基づく拡張フィールドのフィルタリング
+    if (this.config.security?.allowedExtensions) {
+      const filteredExtensions: Record<string, unknown> = {}
+      for (const allowedField of this.config.security.allowedExtensions) {
+        if (response.extensions && allowedField in response.extensions) {
+          // eslint-disable-next-line security/detect-object-injection
+          filteredExtensions[allowedField] = response.extensions[allowedField]
+        }
+      }
+      response.extensions = filteredExtensions
     }
-  }
 
-  /**
-   * デフォルトロガーを作成
-   */
-  private createDefaultLogger(): Logger {
-    return {
-      debug: (message: string, data?: unknown) => console.debug(message, data),
-      error: (message: string, data?: unknown) => console.error(message, data),
-      fatal: (message: string, data?: unknown) =>
-        console.error('[FATAL]', message, data),
-      info: (message: string, data?: unknown) => console.info(message, data),
-      warn: (message: string, data?: unknown) => console.warn(message, data),
-    }
-  }
-
-  /**
-   * デフォルトメトリクス収集器を作成
-   */
-  private createDefaultMetricsCollector(): MetricsCollector {
-    return {
-      incrementCounter: (_name: string, _tags?: Record<string, string>) => {
-        // デフォルトは何もしない
-      },
-      recordError: (_metrics: ErrorMetrics) => {
-        // デフォルトは何もしない（実際の実装では外部メトリクスサービスに送信）
-      },
-      recordHistogram: (
-        _name: string,
-        _value: number,
-        _tags?: Record<string, string>
-      ) => {
-        // デフォルトは何もしない
-      },
-    }
+    return response
   }
 
   /**
    * フォーマッター自体でエラーが発生した場合のフォールバック
    */
   private createFallbackResponse(
-    originalFormatted: GraphQLFormattedError
-  ): GraphQLFormattedError {
+    originalFormatted: GraphQLFormattedError | { message: string }
+  ): FormattedError {
     return {
       extensions: {
-        code: AllErrorCodes.INTERNAL_SERVER_ERROR,
-        requestId: this.requestId,
+        code: 'INTERNAL_SERVER_ERROR',
         timestamp: new Date().toISOString(),
       },
-      locations: originalFormatted.locations,
       message: this.config.isProduction
         ? 'システムエラーが発生しました'
         : originalFormatted.message || 'Internal Server Error',
-      path: originalFormatted.path,
     }
-  }
-
-  /**
-   * 許可された拡張フィールドのみをフィルタリング
-   */
-  private filterAllowedExtensions(
-    extensions: Record<string, unknown>
-  ): Record<string, unknown> {
-    if (!this.config.security.maskSensitiveData || !extensions) {
-      return extensions
-    }
-
-    const filtered: Record<string, unknown> = {}
-    const allowed = this.config.security.allowedExtensions
-
-    if (allowed && Array.isArray(allowed)) {
-      for (const key of allowed) {
-        if (Object.hasOwnProperty.call(extensions, key)) {
-          // eslint-disable-next-line security/detect-object-injection
-          filtered[key] = extensions[key]
-        }
-      }
-    }
-
-    return filtered
-  }
-
-  /**
-   * リクエストIDを生成
-   */
-  private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
-  }
-
-  /**
-   * クライアントIPを取得（コンテキストから）
-   */
-  private getClientIp(): string | undefined {
-    // TODO: GraphQLコンテキストからIPアドレスを取得
-    return undefined
-  }
-
-  /**
-   * ユーザーエージェントを取得（コンテキストから）
-   */
-  private getUserAgent(): string | undefined {
-    // TODO: GraphQLコンテキストからUser-Agentを取得
-    return undefined
   }
 
   /**
@@ -418,15 +249,12 @@ export class GraphQLErrorFormatter {
    */
   private logError(error: BaseGraphQLError): void {
     const logData = sanitizeErrorForLogging(error)
-    const errorInfo = getErrorCodeInfo(error.extensions.code as ErrorCode)
 
     const logContext = {
       ...logData,
       environment: process.env.NODE_ENV,
-      ip: this.getClientIp(),
-      requestId: this.requestId,
+      requestId: error.requestId,
       severity: error.severity,
-      userAgent: this.getUserAgent(),
     }
 
     // 本番環境では機密情報をさらにフィルタリング
@@ -439,26 +267,33 @@ export class GraphQLErrorFormatter {
     }
 
     // ログレベルに応じて出力
-    switch (errorInfo.logLevel) {
-      case 'debug': {
-        this.config.logger.debug(`GraphQL Error: ${error.message}`, logContext)
+    switch (error.severity) {
+      case ErrorSeverity.CRITICAL: {
+        this.logger.error(`GraphQL Error: ${error.message}`, error, logContext)
         break
       }
-      case 'error': {
-        this.config.logger.error(`GraphQL Error: ${error.message}`, logContext)
+      case ErrorSeverity.HIGH: {
+        this.logger.error(`GraphQL Error: ${error.message}`, error, logContext)
         break
       }
-      case 'fatal': {
-        this.config.logger.fatal(`GraphQL Error: ${error.message}`, logContext)
+      case ErrorSeverity.LOW: {
+        this.logger.info(`GraphQL Error: ${error.message}`, logContext)
         break
       }
-      case 'info': {
-        this.config.logger.info(`GraphQL Error: ${error.message}`, logContext)
+      case ErrorSeverity.MEDIUM: {
+        this.logger.warn(
+          `GraphQL Error: ${error.message}`,
+          undefined,
+          logContext
+        )
         break
       }
-      case 'warn': {
-        this.config.logger.warn(`GraphQL Error: ${error.message}`, logContext)
-        break
+      default: {
+        this.logger.warn(
+          `GraphQL Error: ${error.message}`,
+          undefined,
+          logContext
+        )
       }
     }
   }
@@ -475,63 +310,50 @@ export class GraphQLErrorFormatter {
 }
 
 /**
+ * デフォルトエラーフォーマッターインスタンス
+ */
+let defaultFormatter: GraphQLErrorFormatter | undefined = undefined
+
+/**
  * 開発用の設定済みエラーフォーマッター
  */
 export function createDevelopmentErrorFormatter(
-  logger?: Logger
-): (
-  formattedError: GraphQLFormattedError,
-  error: unknown
-) => GraphQLFormattedError {
-  return createGraphQLErrorFormatter({
+  logger?: StructuredLogger
+): GraphQLErrorFormatter {
+  return new GraphQLErrorFormatter({
     debugMode: true,
-    includeErrorDetails: true,
-    includeStackTrace: true,
     isProduction: false,
     logger,
-    security: {
-      hideInternalDetails: false,
-      maskSensitiveData: false,
-    },
   })
-}
-
-/**
- * Apollo Server 4.x設定用のファクトリー関数
- */
-export function createGraphQLErrorFormatter(
-  config?: ErrorFormatterConfig
-): (
-  formattedError: GraphQLFormattedError,
-  error: unknown
-) => GraphQLFormattedError {
-  return (formattedError: GraphQLFormattedError, error: unknown) => {
-    const formatter = new GraphQLErrorFormatter(config)
-    return formatter.formatError(formattedError, error)
-  }
 }
 
 /**
  * プロダクション用の設定済みエラーフォーマッター
  */
 export function createProductionErrorFormatter(
-  logger?: Logger,
-  metricsCollector?: MetricsCollector
-): (
-  formattedError: GraphQLFormattedError,
-  error: unknown
-) => GraphQLFormattedError {
-  return createGraphQLErrorFormatter({
+  logger?: StructuredLogger
+): GraphQLErrorFormatter {
+  return new GraphQLErrorFormatter({
     debugMode: false,
-    includeErrorDetails: false,
-    includeStackTrace: false,
     isProduction: true,
     logger,
-    metricsCollector,
-    security: {
-      allowedExtensions: ['code', 'timestamp', 'requestId', 'retryable'],
-      hideInternalDetails: true,
-      maskSensitiveData: true,
-    },
   })
+}
+
+/**
+ * デフォルトエラーフォーマッターを取得
+ */
+export function getErrorFormatter(): GraphQLErrorFormatter {
+  defaultFormatter ??= new GraphQLErrorFormatter()
+  return defaultFormatter
+}
+
+/**
+ * エラーフォーマッターを初期化
+ */
+export function initializeErrorFormatter(
+  config?: ErrorFormatterConfig
+): GraphQLErrorFormatter {
+  defaultFormatter = new GraphQLErrorFormatter(config)
+  return defaultFormatter
 }

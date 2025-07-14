@@ -204,6 +204,7 @@ export class PrismaErrorHandler {
             {
               clientVersion: prismaError.clientVersion,
               prismaCode: prismaError.code,
+              retryable: true,
             }
           ),
           logLevel: 'error',
@@ -272,8 +273,10 @@ export class PrismaErrorHandler {
               uniqueConstraint: toStringArray(prismaError.meta?.target),
             },
             {
+              code: 'BAD_USER_INPUT',
               operation,
               prismaCode: prismaError.code,
+              retryable: false,
             }
           ),
           logLevel: 'info',

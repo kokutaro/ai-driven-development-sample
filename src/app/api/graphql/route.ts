@@ -29,11 +29,14 @@ async function getApolloServer() {
 
   const schema = await createGraphQLSchema()
 
+  const errorFormatter =
+    process.env.NODE_ENV === 'production'
+      ? createProductionErrorFormatter()
+      : createDevelopmentErrorFormatter()
+
   apolloServer = new ApolloServer({
-    formatError:
-      process.env.NODE_ENV === 'production'
-        ? createProductionErrorFormatter()
-        : createDevelopmentErrorFormatter(),
+    formatError: (formattedError, error) =>
+      errorFormatter.formatError(formattedError, error),
     introspection: process.env.NODE_ENV === 'development',
     schema,
   })

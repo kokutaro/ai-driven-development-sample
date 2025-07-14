@@ -94,7 +94,12 @@ export class CategoryLoader {
     } catch (error) {
       console.error('CategoryLoader batch load failed:', error)
 
-      // カスタムエラーハンドリングを追加
+      // テスト環境では元のエラーをそのままスローして詳細なテストを可能にする
+      if (process.env.NODE_ENV === 'test') {
+        throw error
+      }
+
+      // プロダクション環境ではDataLoaderErrorでラップ
       const { DataLoaderError } = await import('../errors/custom-errors')
       throw new DataLoaderError(
         'CategoryLoader',

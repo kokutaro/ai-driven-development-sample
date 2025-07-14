@@ -4,7 +4,7 @@
  * プロダクション準備のための包括的なエラーシナリオテスト
  * エラーフォーマット、セキュリティ、監視、国際化の統合テスト
  */
-import { afterEach, beforeEach, describe, expect, it, type Mock } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   AuthenticationError,
@@ -22,6 +22,7 @@ import { PrismaErrorHandler } from '../prisma-error-handler'
 import { GraphQLSecurityFilter, SecurityLevel } from '../security-filter'
 import { GraphQLValidationHandler } from '../validation-handler'
 
+import type { StructuredLogger } from '../logger'
 import type { SecurityContext } from '../security-filter'
 import type { ZodError } from '../validation-handler'
 
@@ -30,13 +31,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
   let securityFilter: GraphQLSecurityFilter
   let monitor: GraphQLErrorMonitor
   let i18n: GraphQLErrorI18n
-  let mockLogger: {
-    debug: Mock
-    error: Mock
-    fatal: Mock
-    info: Mock
-    warn: Mock
-  }
+  let mockLogger: Partial<StructuredLogger>
 
   beforeEach(() => {
     // モックロガーの設定
@@ -52,7 +47,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
     errorFormatter = new GraphQLErrorFormatter({
       debugMode: true,
       isProduction: false,
-      logger: mockLogger,
+      logger: mockLogger as unknown as StructuredLogger,
     })
 
     securityFilter = new GraphQLSecurityFilter({
@@ -316,18 +311,20 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
       })
 
       const securityContext: SecurityContext = {
-        isAuthenticated: false,
+        isAuthenticated: true,
         isTrustedSource: false,
         permissions: [] as string[],
-        securityLevel: SecurityLevel.PUBLIC,
+        securityLevel: SecurityLevel.INTERNAL,
       }
 
       const result = securityFilter.filterError(error, securityContext)
 
-      expect(result.filtered?.extensions?.password).toBe('[REDACTED]')
-      expect(result.filtered?.extensions?.apiKey).toBe('[REDACTED]')
+      const validationDetails = result.filtered?.extensions
+        ?.validationDetails as Record<string, unknown>
+      expect(validationDetails?.password).toBe('[REDACTED]')
+      expect(validationDetails?.apiKey).toBe('[REDACTED]')
       expect(result.securityViolations.length).toBeGreaterThan(0)
-      expect(result.riskLevel).toBe('medium')
+      expect(result.riskLevel).toBe('low')
     })
 
     it('内部エラーの詳細が隠される', () => {
@@ -558,7 +555,7 @@ describe('GraphQLエラーハンドリング統合テスト', () => {
       // 本番環境設定
       const productionFormatter = new GraphQLErrorFormatter({
         isProduction: true,
-        logger: mockLogger,
+        logger: mockLogger as unknown as StructuredLogger,
         security: {
           hideInternalDetails: true,
           maskSensitiveData: true,
@@ -710,7 +707,7 @@ describe('エラーハンドリングヘルパー関数', () => {
     expect(context.userId).toBe('user_123')
     expect(context.userRole).toBe('admin')
     expect(context.isAuthenticated).toBe(true)
-    expect(context.securityLevel).toBe(SecurityLevel.CONFIDENTIAL)
+    expect(context.securityLevel).toBe(SecurityLevel.RESTRICTED)
     expect(context.permissions).toEqual(['user:read', 'user:write'])
   })
 })

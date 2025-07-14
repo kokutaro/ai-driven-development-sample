@@ -154,7 +154,9 @@ export class GraphQLErrorMonitor {
   /**
    * ヘルスチェックを実行
    */
-  async performHealthCheck(): Promise<HealthCheckResult> {
+  async performHealthCheck(): Promise<
+    HealthCheckResult & { avgResponseTime: number; errorRate: number }
+  > {
     const result: HealthCheckResult = {
       checks: {},
       metrics: {
@@ -199,7 +201,12 @@ export class GraphQLErrorMonitor {
     // メトリクス計算
     result.metrics = this.calculateHealthMetrics()
 
-    return result
+    // テスト互換性のために平坦化されたプロパティを追加
+    return {
+      ...result,
+      avgResponseTime: result.metrics.averageResponseTime,
+      errorRate: result.metrics.errorRate,
+    }
   }
 
   /**

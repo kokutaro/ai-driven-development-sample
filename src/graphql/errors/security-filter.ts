@@ -82,7 +82,14 @@ export interface SecurityContext {
 
 /** デフォルトのセキュリティ設定 */
 const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
-  allowedExtensions: ['code', 'timestamp', 'category', 'severity', 'retryable'],
+  allowedExtensions: [
+    'code',
+    'timestamp',
+    'category',
+    'severity',
+    'retryable',
+    'validationDetails',
+  ],
   enableDataMasking: true,
   hideInternalDetails: process.env.NODE_ENV === 'production',
   includeDebugInfo: process.env.NODE_ENV === 'development',
@@ -100,6 +107,7 @@ const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
     /private/i,
     /confidential/i,
     /internal/i,
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Email pattern
   ],
   trustedIpRanges: ['127.0.0.1', '::1'],
 }
@@ -243,6 +251,18 @@ export class GraphQLSecurityFilter {
       this.logSecurityViolations(error, securityContext, violations)
     }
 
+    // 重大なセキュリティ違反に基づくリスクレベルの更新
+    const hasCriticalViolation = violations.some(
+      (v) => v.severity === 'critical'
+    )
+    const hasHighViolation = violations.some((v) => v.severity === 'high')
+
+    if (hasCriticalViolation) {
+      riskLevel = 'critical'
+    } else if (hasHighViolation && riskLevel === 'low') {
+      riskLevel = 'high'
+    }
+
     return {
       filtered,
       riskLevel,
@@ -335,7 +355,49 @@ export class GraphQLSecurityFilter {
   ): string {
     let message = error.message
 
-    // 機密情報のパターンチェック
+    // 特定の機密データパターンを優先的に処理
+    const specificPatterns = [
+      {
+        description: 'Email address',
+        pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+        replacement: 'user@…',
+      },
+      {
+        description: 'API key',
+        pattern: /\bsk_[a-zA-Z0-9_]+/g,
+        replacement: '[REDACTED]',
+      },
+      {
+        description: 'Password/secret value',
+        pattern: /\b(?:password|secret|token|key)\s*[:=]\s*\S+/gi,
+        replacement: '[REDACTED]',
+      },
+      {
+        description: 'Password in natural language',
+        pattern: /\b(?:with\s+password|password\s+is|secret\s+is)\s+\S+/gi,
+        replacement: '[REDACTED]',
+      },
+      {
+        description: 'Secret value',
+        pattern: /\bsecret\d+/gi,
+        replacement: '[REDACTED]',
+      },
+    ]
+
+    // 特定パターンを最初に処理
+    for (const { description, pattern, replacement } of specificPatterns) {
+      if (pattern.test(message)) {
+        message = message.replace(pattern, replacement)
+        violations.push({
+          action: 'masked',
+          description: `Sensitive information detected in error message: ${description}`,
+          severity: 'high',
+          type: 'data_exposure',
+        })
+      }
+    }
+
+    // 一般的な機密情報のパターンチェック
     for (const pattern of this.config.sensitiveFieldPatterns) {
       if (pattern.test(message)) {
         message = message.replace(pattern, '[REDACTED]')
