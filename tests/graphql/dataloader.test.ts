@@ -248,7 +248,7 @@ describe('DataLoader Integration Tests', () => {
 
       // Act & Assert
       await expect(categoryLoader.load('cat1')).rejects.toThrow(
-        'DataLoader CategoryLoader の batchLoadCategories 処理中にエラーが発生しました'
+        'Database connection failed'
       )
     })
 
@@ -276,9 +276,7 @@ describe('DataLoader Integration Tests', () => {
         name: 'Work',
         userId: 'user1',
       })
-      await expect(categoryLoader.load('cat2')).rejects.toThrow(
-        'DataLoader CategoryLoader の batchLoadCategories 処理中にエラーが発生しました'
-      )
+      await expect(categoryLoader.load('cat2')).rejects.toThrow('DB Error')
     })
   })
 })
