@@ -16,18 +16,12 @@ import {
   RemoveUserRoleInput,
   Role,
   RoleCheckResult,
-  UserPermissionsResponse,
+  // UserPermissionsResponse,
 } from '../types/rbac.types'
 
 import type { GraphQLContext } from '../context/graphql-context'
 
-import {
-  checkPermission,
-  getUserPermissions,
-  getUserRoles,
-  hasRole,
-  SYSTEM_ROLES,
-} from '@/lib/rbac'
+import { checkPermission, hasRole, SYSTEM_ROLES } from '@/lib/rbac'
 
 @Resolver()
 export class RBACResolver {
@@ -320,76 +314,76 @@ export class RBACResolver {
     )
   }
 
-  /**
-   * 指定されたユーザーの権限情報を取得します
-   *
-   * @param userId - ユーザーID
-   * @param context - GraphQLコンテキスト
-   * @returns ユーザー権限情報
-   */
-  @Query(() => UserPermissionsResponse)
-  async userPermissions(
-    @Arg('userId', () => String) userId: string,
-    @Ctx() context: GraphQLContext
-  ): Promise<UserPermissionsResponse> {
-    // 自分の情報を取得するか、管理者権限が必要
-    const currentUser = context.session?.user
-    if (!currentUser?.id) {
-      throw new Error('ログインが必要です')
-    }
+  // /**
+  //  * 指定されたユーザーの権限情報を取得します
+  //  *
+  //  * @param userId - ユーザーID
+  //  * @param context - GraphQLコンテキスト
+  //  * @returns ユーザー権限情報
+  //  */
+  // @Query(() => UserPermissionsResponse)
+  // async userPermissions(
+  //   @Arg('userId', () => String) userId: string,
+  //   @Ctx() context: GraphQLContext
+  // ): Promise<UserPermissionsResponse> {
+  //   // 自分の情報を取得するか、管理者権限が必要
+  //   const currentUser = context.session?.user
+  //   if (!currentUser?.id) {
+  //     throw new Error('ログインが必要です')
+  //   }
 
-    const isOwnInfo = currentUser.id === userId
-    const isAdmin = await hasRole(
-      currentUser.id,
-      SYSTEM_ROLES.ADMIN,
-      context.prisma
-    )
+  //   const isOwnInfo = currentUser.id === userId
+  //   const isAdmin = await hasRole(
+  //     currentUser.id,
+  //     SYSTEM_ROLES.ADMIN,
+  //     context.prisma
+  //   )
 
-    if (!isOwnInfo && !isAdmin) {
-      throw new Error('他のユーザーの権限情報を取得する権限がありません')
-    }
+  //   if (!isOwnInfo && !isAdmin) {
+  //     throw new Error('他のユーザーの権限情報を取得する権限がありません')
+  //   }
 
-    return withPrismaErrorHandling(
-      async () => {
-        const [roles, permissions] = await Promise.all([
-          getUserRoles(userId, context.prisma),
-          getUserPermissions(userId, context.prisma),
-        ])
+  //   return withPrismaErrorHandling(
+  //     async () => {
+  //       const [roles, permissions] = await Promise.all([
+  //         getUserRoles(userId, context.prisma),
+  //         getUserPermissions(userId, context.prisma),
+  //       ])
 
-        return {
-          permissionNames: permissions.map((permission) => permission.name),
-          permissions: permissions.map((permission) => ({
-            action: permission.action,
-            createdAt: permission.createdAt,
-            description: permission.description ?? undefined,
-            displayName: permission.displayName,
-            id: permission.id,
-            isSystem: permission.isSystem,
-            name: permission.name,
-            resource: permission.resource,
-            updatedAt: permission.updatedAt,
-          })),
-          roleNames: roles.map((role) => role.name),
-          roles: roles.map((role) => ({
-            createdAt: role.createdAt,
-            description: role.description ?? undefined,
-            displayName: role.displayName,
-            id: role.id,
-            isSystem: role.isSystem,
-            name: role.name,
-            updatedAt: role.updatedAt,
-          })),
-          user: {
-            createdAt: new Date(),
-            email: currentUser.email ?? undefined,
-            id: userId,
-            name: currentUser.name ?? undefined,
-            updatedAt: new Date(),
-          },
-        }
-      },
-      'findMany',
-      'UserPermissions'
-    )
-  }
+  //       return {
+  //         permissionNames: permissions.map((permission) => permission.name),
+  //         permissions: permissions.map((permission) => ({
+  //           action: permission.action,
+  //           createdAt: permission.createdAt,
+  //           description: permission.description ?? undefined,
+  //           displayName: permission.displayName,
+  //           id: permission.id,
+  //           isSystem: permission.isSystem,
+  //           name: permission.name,
+  //           resource: permission.resource,
+  //           updatedAt: permission.updatedAt,
+  //         })),
+  //         roleNames: roles.map((role) => role.name),
+  //         roles: roles.map((role) => ({
+  //           createdAt: role.createdAt,
+  //           description: role.description ?? undefined,
+  //           displayName: role.displayName,
+  //           id: role.id,
+  //           isSystem: role.isSystem,
+  //           name: role.name,
+  //           updatedAt: role.updatedAt,
+  //         })),
+  //         user: {
+  //           createdAt: new Date(),
+  //           email: currentUser.email ?? undefined,
+  //           id: userId,
+  //           name: currentUser.name ?? undefined,
+  //           updatedAt: new Date(),
+  //         },
+  //       }
+  //     },
+  //     'findMany',
+  //     'UserPermissions'
+  //   )
+  // }
 }

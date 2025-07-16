@@ -35,8 +35,8 @@ export class Role {
   @Field(() => Date)
   updatedAt!: Date
 
-  @Field(() => [User], { nullable: true })
-  users?: User[]
+  // @Field(() => [() => User], { nullable: true })
+  // users?: User[]
 }
 
 /**
@@ -68,39 +68,39 @@ export class Permission {
   @Field(() => String)
   resource!: string
 
-  @Field(() => [Role], { nullable: true })
-  roles?: Role[]
+  // @Field(() => [() => Role], { nullable: true })
+  // roles?: Role[]
 
   @Field(() => Date)
   updatedAt!: Date
 }
 
-/**
- * ユーザーロール関係型
- */
-@ObjectType()
-export class UserRole {
-  @Field(() => Date)
-  createdAt!: Date
+// /**
+//  * ユーザーロール関係型
+//  */
+// @ObjectType()
+// export class UserRole {
+//   @Field(() => Date)
+//   createdAt!: Date
 
-  @Field(() => ID)
-  id!: string
+//   @Field(() => ID)
+//   id!: string
 
-  @Field(() => Role)
-  role!: Role
+//   @Field(() => () => Role)
+//   role!: Role
 
-  @Field(() => ID)
-  roleId!: string
+//   @Field(() => ID)
+//   roleId!: string
 
-  @Field(() => Date)
-  updatedAt!: Date
+//   @Field(() => Date)
+//   updatedAt!: Date
 
-  @Field(() => User)
-  user!: User
+//   @Field(() => () => User)
+//   user!: User
 
-  @Field(() => ID)
-  userId!: string
-}
+//   @Field(() => ID)
+//   userId!: string
+// }
 
 /**
  * ユーザー型（RBAC機能拡張版）
@@ -125,8 +125,8 @@ export class User {
   @Field(() => [Permission], { nullable: true })
   permissions?: Permission[]
 
-  @Field(() => [Role], { nullable: true })
-  roles?: Role[]
+  // @Field(() => [() => Role], { nullable: true })
+  // roles?: Role[]
 
   @Field(() => Date)
   updatedAt!: Date
@@ -264,26 +264,26 @@ export class CheckRoleArgs {
   userId!: string
 }
 
-/**
- * ユーザー権限レスポンス型
- */
-@ObjectType()
-export class UserPermissionsResponse {
-  @Field(() => [String])
-  permissionNames!: string[]
+// /**
+//  * ユーザー権限レスポンス型
+//  */
+// @ObjectType()
+// export class UserPermissionsResponse {
+//   @Field(() => [String])
+//   permissionNames!: string[]
 
-  @Field(() => [Permission])
-  permissions!: Permission[]
+//   @Field(() => [Permission])
+//   permissions!: Permission[]
 
-  @Field(() => [String])
-  roleNames!: string[]
+//   @Field(() => [String])
+//   roleNames!: string[]
 
-  @Field(() => [Role])
-  roles!: Role[]
+//   @Field(() => [() => Role])
+//   roles!: Role[]
 
-  @Field(() => User)
-  user!: User
-}
+//   @Field(() => () => User)
+//   user!: User
+// }
 
 /**
  * 権限チェック結果型

@@ -4,7 +4,15 @@
  * カテゴリ管理のGraphQL APIを提供します。
  * 実際のPrismaデータベースと連携します。
  */
-import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql'
+import {
+  Arg,
+  Ctx,
+  Field,
+  InputType,
+  Mutation,
+  Query,
+  Resolver,
+} from 'type-graphql'
 
 import {
   getUserId,
@@ -22,16 +30,24 @@ import { SYSTEM_PERMISSIONS } from '@/lib/rbac'
 /**
  * カテゴリ作成用の入力型
  */
-interface CreateCategoryInput {
-  color: string
-  name: string
+@InputType()
+class CreateCategoryInput {
+  @Field(() => String)
+  color!: string
+
+  @Field(() => String)
+  name!: string
 }
 
 /**
  * カテゴリ更新用の入力型
  */
-interface UpdateCategoryInput {
+@InputType()
+class UpdateCategoryInput {
+  @Field(() => String, { nullable: true })
   color?: string
+
+  @Field(() => String, { nullable: true })
   name?: string
 }
 
@@ -88,7 +104,7 @@ export class CategoryResolver {
    */
   @Mutation(() => Category)
   async createCategory(
-    @Arg('input', () => Object) input: CreateCategoryInput,
+    @Arg('input', () => CreateCategoryInput) input: CreateCategoryInput,
     @Ctx() context: GraphQLContext
   ): Promise<Category> {
     // 認証チェック
@@ -194,7 +210,7 @@ export class CategoryResolver {
   @Mutation(() => Category)
   async updateCategory(
     @Arg('id', () => String) id: string,
-    @Arg('input', () => Object) input: UpdateCategoryInput,
+    @Arg('input', () => UpdateCategoryInput) input: UpdateCategoryInput,
     @Ctx() context: GraphQLContext
   ): Promise<Category> {
     // 認証チェック

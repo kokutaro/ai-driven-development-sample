@@ -200,6 +200,9 @@ export class StatsResolver {
     period: StatsPeriod
   ): TodoStats {
     const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrow = new Date(today)
+    tomorrow.setDate(today.getDate() + 1)
 
     // 基本統計
     const total = todos.length
@@ -208,6 +211,20 @@ export class StatsResolver {
     const overdue = todos.filter(
       (t) => t.dueDate && new Date(t.dueDate) < now && !t.isCompleted
     ).length
+
+    // 追加統計（クライアント要求に対応）
+    const important = todos.filter((t) => t.isImportant).length
+    const todayTodos = todos.filter(
+      (t) =>
+        t.dueDate &&
+        new Date(t.dueDate) >= today &&
+        new Date(t.dueDate) < tomorrow &&
+        !t.isCompleted
+    ).length
+    const upcomingTodos = todos.filter(
+      (t) => t.dueDate && new Date(t.dueDate) >= now && !t.isCompleted
+    ).length
+    const assignedTodos = todos.filter((t) => !t.isCompleted).length // 全未完了タスクを割り当てとして扱う
 
     const completionRate = total > 0 ? completed / total : 0
     const averageCompletionTime = this.calculateAverageCompletionTime(todos)
@@ -237,18 +254,25 @@ export class StatsResolver {
     const dailyStats = this.calculateDailyStats(todos)
 
     return {
+      assignedCount: assignedTodos,
       averageCompletionTime,
       cancelled: 0, // 現在のスキーマにはcancelledステータスがないため0
       categories: categoryStats,
       completed,
+      completedCount: completed,
       completionRate,
       dailyStats,
       generatedAt: new Date(),
+      importantCount: important,
       inProgress: 0, // 現在のスキーマにはinProgressステータスがないため0
       overdue,
+      overdueCount: overdue,
       pending,
       period,
+      todayCount: todayTodos,
       total,
+      totalCount: total,
+      upcomingCount: upcomingTodos,
     }
   }
 
