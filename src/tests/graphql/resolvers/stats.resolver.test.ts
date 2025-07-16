@@ -127,6 +127,7 @@ describe('StatsResolver', () => {
 
       // Assert
       expect(result).toEqual({
+        assignedCount: 2,
         averageCompletionTime: expect.any(Number),
         cancelled: 0,
         categories: [
@@ -150,14 +151,20 @@ describe('StatsResolver', () => {
           },
         ],
         completed: 2,
+        completedCount: 2,
         completionRate: 0.5,
         dailyStats: expect.any(Array),
         generatedAt: expect.any(Date),
+        importantCount: 1,
         inProgress: 0,
         overdue: 0,
+        overdueCount: 0,
         pending: 2,
         period: StatsPeriod.MONTH,
+        todayCount: 0,
         total: 4,
+        totalCount: 4,
+        upcomingCount: 0,
       })
     })
 
@@ -190,18 +197,25 @@ describe('StatsResolver', () => {
 
       // Assert
       expect(result).toEqual({
+        assignedCount: 0,
         averageCompletionTime: 0,
         cancelled: 0,
         categories: [],
         completed: 0,
+        completedCount: 0,
         completionRate: 0,
         dailyStats: [],
         generatedAt: expect.any(Date),
+        importantCount: 0,
         inProgress: 0,
         overdue: 0,
+        overdueCount: 0,
         pending: 0,
         period: StatsPeriod.MONTH,
+        todayCount: 0,
         total: 0,
+        totalCount: 0,
+        upcomingCount: 0,
       })
     })
   })
