@@ -239,3 +239,28 @@ model RolePermission {
   @@unique([roleId, permissionId])
   @@map("RolePermission")
 }
+
+// Event Store model for Event Sourcing
+model EventStore {
+  id          String   @id @default(cuid())
+  aggregateId String   // アグリゲートの識別子
+  eventType   String   // イベントタイプ
+  eventData   String   @db.Text // イベントデータ（JSON）
+  metadata    String   @db.Text // メタデータ（JSON）
+  version     Int      // アグリゲートのバージョン
+  occurredAt  DateTime // イベント発生日時
+  insertedAt  DateTime @default(now()) // EventStore挿入日時
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Indexes for performance
+  @@index([aggregateId, version])
+  @@index([aggregateId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([occurredAt])
+  @@index([insertedAt])
+
+  // Unique constraint for aggregate version to prevent concurrency issues
+  @@unique([aggregateId, version])
+  @@map("EventStore")
+}
