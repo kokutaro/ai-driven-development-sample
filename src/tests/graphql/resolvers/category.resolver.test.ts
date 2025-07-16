@@ -13,6 +13,36 @@ import type { GraphQLContext } from '@/graphql/context/graphql-context'
 import type { PrismaClient } from '@prisma/client'
 
 import { CategoryResolver } from '@/graphql/resolvers/category.resolver'
+import { checkPermission, requirePermission } from '@/lib/rbac'
+
+// Mock the rbac module
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn(),
+  getUserPermissions: vi.fn(),
+  getUserRoles: vi.fn(),
+  hasRole: vi.fn(),
+  requirePermission: vi.fn(),
+  requireRole: vi.fn(),
+  SYSTEM_PERMISSIONS: {
+    ADMIN_PANEL: 'admin_panel',
+    DELETE_CATEGORY: 'delete_category',
+    DELETE_TODO: 'delete_todo',
+    DELETE_USER: 'delete_user',
+    MANAGE_CATEGORY: 'manage_category',
+    MANAGE_TODO: 'manage_todo',
+    MANAGE_USER: 'manage_user',
+    READ_CATEGORY: 'read_category',
+    READ_TODO: 'read_todo',
+    READ_USER: 'read_user',
+    SYSTEM_CONFIG: 'system_config',
+    WRITE_CATEGORY: 'write_category',
+    WRITE_TODO: 'write_todo',
+  },
+  SYSTEM_ROLES: {
+    ADMIN: 'ADMIN',
+    USER: 'USER',
+  },
+}))
 
 // モックの設定
 const mockPrismaClient = {
@@ -71,6 +101,17 @@ describe('CategoryResolver', () => {
   beforeEach(() => {
     resolver = new CategoryResolver()
     vi.clearAllMocks()
+
+    // Reset RBAC mocks to default successful state
+    const mockRequirePermission = vi.mocked(requirePermission)
+    const mockCheckPermission = vi.mocked(checkPermission)
+
+    mockRequirePermission.mockReset()
+    mockCheckPermission.mockReset()
+
+    // Default to successful permission checks
+    mockRequirePermission.mockResolvedValue(undefined)
+    mockCheckPermission.mockResolvedValue(true)
   })
 
   describe('categories クエリ', () => {

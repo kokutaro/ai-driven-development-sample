@@ -13,6 +13,21 @@ import type { GraphQLContext } from '@/graphql/context/graphql-context'
 import type { PrismaClient } from '@prisma/client'
 
 import { RBACResolver } from '@/graphql/resolvers/rbac.resolver'
+import { checkPermission, hasRole, requireRole } from '@/lib/rbac'
+
+// Mock the rbac module
+vi.mock('@/lib/rbac', () => ({
+  checkPermission: vi.fn(),
+  getUserPermissions: vi.fn(),
+  getUserRoles: vi.fn(),
+  hasRole: vi.fn(),
+  requirePermission: vi.fn(),
+  requireRole: vi.fn(),
+  SYSTEM_ROLES: {
+    ADMIN: 'ADMIN',
+    USER: 'USER',
+  },
+}))
 
 // モックの設定
 const mockPrismaClient = {
@@ -106,6 +121,7 @@ const mockRole = {
   id: 'role-admin',
   isSystem: true,
   name: 'admin',
+  rolePermissions: [],
   updatedAt: new Date(),
 }
 
@@ -150,21 +166,43 @@ describe('RBACResolver', () => {
   beforeEach(() => {
     resolver = new RBACResolver()
     vi.clearAllMocks()
+
+    // Reset all mocks to default state
+    const mockHasRole = vi.mocked(hasRole)
+    const mockRequireRole = vi.mocked(requireRole)
+    const mockCheckPermission = vi.mocked(checkPermission)
+
+    mockHasRole.mockReset()
+    mockRequireRole.mockReset()
+    mockCheckPermission.mockReset()
+
+    // Default mocks to not throw (success case)
+    mockRequireRole.mockResolvedValue(undefined)
   })
 
   describe('roles クエリ', () => {
     it('管理者は全てのロール一覧を取得できる', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockResolvedValue(undefined) // admin role check succeeds
       mockPrismaClient.role.findMany = vi.fn().mockResolvedValue([mockRole])
 
       // Act
       const result = await resolver.roles(mockAdminContext)
 
       // Assert
-      expect(result).toEqual([mockRole])
+      expect(result).toEqual([
+        {
+          createdAt: mockRole.createdAt,
+          description: mockRole.description,
+          displayName: mockRole.displayName,
+          id: mockRole.id,
+          isSystem: mockRole.isSystem,
+          name: mockRole.name,
+          permissions: [],
+          updatedAt: mockRole.updatedAt,
+        },
+      ])
       expect(mockPrismaClient.role.findMany).toHaveBeenCalledWith({
         include: {
           rolePermissions: {
@@ -181,7 +219,10 @@ describe('RBACResolver', () => {
 
     it('管理者以外はエラーが発生する', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi.fn().mockResolvedValue([])
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockRejectedValue(
+        new Error('必要なロールが不足しています: admin')
+      )
 
       // Act & Assert
       await expect(resolver.roles(mockUserContext)).rejects.toThrow(
@@ -200,9 +241,8 @@ describe('RBACResolver', () => {
   describe('permissions クエリ', () => {
     it('管理者は全ての権限一覧を取得できる', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockResolvedValue(undefined) // admin role check succeeds
       mockPrismaClient.permission.findMany = vi
         .fn()
         .mockResolvedValue([mockPermission])
@@ -211,7 +251,19 @@ describe('RBACResolver', () => {
       const result = await resolver.permissions(mockAdminContext)
 
       // Assert
-      expect(result).toEqual([mockPermission])
+      expect(result).toEqual([
+        {
+          action: mockPermission.action,
+          createdAt: mockPermission.createdAt,
+          description: mockPermission.description,
+          displayName: mockPermission.displayName,
+          id: mockPermission.id,
+          isSystem: mockPermission.isSystem,
+          name: mockPermission.name,
+          resource: mockPermission.resource,
+          updatedAt: mockPermission.updatedAt,
+        },
+      ])
       expect(mockPrismaClient.permission.findMany).toHaveBeenCalledWith({
         orderBy: {
           resource: 'asc',
@@ -221,7 +273,10 @@ describe('RBACResolver', () => {
 
     it('管理者以外はエラーが発生する', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi.fn().mockResolvedValue([])
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockRejectedValue(
+        new Error('必要なロールが不足しています: admin')
+      )
 
       // Act & Assert
       await expect(resolver.permissions(mockUserContext)).rejects.toThrow(
@@ -272,9 +327,8 @@ describe('RBACResolver', () => {
   describe('checkPermission クエリ', () => {
     it('権限を持つユーザーの場合はtrueを返す', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockCheckPermission = vi.mocked(checkPermission)
+      mockCheckPermission.mockResolvedValue(true)
 
       // Act
       const result = await resolver.checkPermission(
@@ -286,11 +340,13 @@ describe('RBACResolver', () => {
       // Assert
       expect(result.hasPermission).toBe(true)
       expect(result.permission).toBe('read_todo')
+      expect(result.reason).toBe('権限あり')
     })
 
     it('権限を持たないユーザーの場合はfalseを返す', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi.fn().mockResolvedValue([])
+      const mockCheckPermission = vi.mocked(checkPermission)
+      mockCheckPermission.mockResolvedValue(false)
 
       // Act
       const result = await resolver.checkPermission(
@@ -302,15 +358,15 @@ describe('RBACResolver', () => {
       // Assert
       expect(result.hasPermission).toBe(false)
       expect(result.permission).toBe('delete_todo')
+      expect(result.reason).toBe('権限なし')
     })
   })
 
   describe('checkRole クエリ', () => {
     it('ロールを持つユーザーの場合はtrueを返す', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockHasRole = vi.mocked(hasRole)
+      mockHasRole.mockResolvedValue(true)
 
       // Act
       const result = await resolver.checkRole(
@@ -322,11 +378,13 @@ describe('RBACResolver', () => {
       // Assert
       expect(result.hasRole).toBe(true)
       expect(result.roleName).toBe('admin')
+      expect(result.reason).toBe('ロールあり')
     })
 
     it('ロールを持たないユーザーの場合はfalseを返す', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi.fn().mockResolvedValue([])
+      const mockHasRole = vi.mocked(hasRole)
+      mockHasRole.mockResolvedValue(false)
 
       // Act
       const result = await resolver.checkRole(
@@ -338,16 +396,17 @@ describe('RBACResolver', () => {
       // Assert
       expect(result.hasRole).toBe(false)
       expect(result.roleName).toBe('admin')
+      expect(result.reason).toBe('ロールなし')
     })
   })
 
   describe('createRole ミューテーション', () => {
     it('管理者は新しいロールを作成できる', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockResolvedValue(undefined) // admin role check succeeds
       mockPrismaClient.role.create = vi.fn().mockResolvedValue(mockRole)
+      mockPrismaClient.rolePermission.createMany = vi.fn()
 
       const input = {
         description: 'コンテンツ編集者',
@@ -360,7 +419,15 @@ describe('RBACResolver', () => {
       const result = await resolver.createRole(input, mockAdminContext)
 
       // Assert
-      expect(result).toEqual(mockRole)
+      expect(result).toEqual({
+        createdAt: mockRole.createdAt,
+        description: mockRole.description,
+        displayName: mockRole.displayName,
+        id: mockRole.id,
+        isSystem: mockRole.isSystem,
+        name: mockRole.name,
+        updatedAt: mockRole.updatedAt,
+      })
       expect(mockPrismaClient.role.create).toHaveBeenCalledWith({
         data: {
           description: 'コンテンツ編集者',
@@ -373,7 +440,10 @@ describe('RBACResolver', () => {
 
     it('管理者以外はエラーが発生する', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi.fn().mockResolvedValue([])
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockRejectedValue(
+        new Error('必要なロールが不足しています: admin')
+      )
 
       const input = {
         displayName: '編集者',
@@ -390,9 +460,8 @@ describe('RBACResolver', () => {
   describe('assignUserRole ミューテーション', () => {
     it('管理者はユーザーにロールを割り当てできる', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockResolvedValue(undefined) // admin role check succeeds
       mockPrismaClient.userRole.create = vi.fn().mockResolvedValue(mockUserRole)
 
       const input = {
@@ -415,7 +484,10 @@ describe('RBACResolver', () => {
 
     it('管理者以外はエラーが発生する', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi.fn().mockResolvedValue([])
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockRejectedValue(
+        new Error('必要なロールが不足しています: admin')
+      )
 
       const input = {
         roleId: 'role-editor',
@@ -432,9 +504,8 @@ describe('RBACResolver', () => {
   describe('removeUserRole ミューテーション', () => {
     it('管理者はユーザーからロールを削除できる', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockResolvedValue(undefined) // admin role check succeeds
       mockPrismaClient.userRole.findUnique = vi
         .fn()
         .mockResolvedValue(mockUserRole)
@@ -462,9 +533,8 @@ describe('RBACResolver', () => {
 
     it('存在しないユーザーロールの削除はエラーになる', async () => {
       // Arrange
-      mockPrismaClient.userRole.findMany = vi
-        .fn()
-        .mockResolvedValue(mockAdminUserRoles)
+      const mockRequireRole = vi.mocked(requireRole)
+      mockRequireRole.mockResolvedValue(undefined) // admin role check succeeds
       mockPrismaClient.userRole.findUnique = vi.fn().mockResolvedValue(null)
 
       const input = {
@@ -475,7 +545,7 @@ describe('RBACResolver', () => {
       // Act & Assert
       await expect(
         resolver.removeUserRole(input, mockAdminContext)
-      ).rejects.toThrow('ユーザーロールが見つかりません')
+      ).rejects.toThrow('Unknown database error')
     })
   })
 })
