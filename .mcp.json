@@ -5,15 +5,6 @@
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@latest"],
       "env": {}
-    },
-    "ESLint": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["@eslint/mcp@latest"]
-    },
-    "todo": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "http://localhost:3000/api/mcp"]
     }
   }
 }

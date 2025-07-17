@@ -149,7 +149,7 @@ export type TodoSortBy = 'createdAt' | 'dueDate' | 'importance' | 'title'
  */
 export interface TodoStats {
   assignedCount: number
-  categories: Array<{
+  categories?: Array<{
     color: string
     completed: number
     id: string
@@ -157,20 +157,21 @@ export interface TodoStats {
     pending: number
     total: number
   }>
-  completed: number
+  completed?: number
   completedCount: number
   completionRate: number
-  dailyStats: Array<{
+  dailyStats?: Array<{
     completed: number
     created: number
     date: string
   }>
-  important: number
+  important?: number
   importantCount: number
-  overdue: number
-  pending: number
+  overdue?: number
+  overdueCount: number
+  pending?: number
   todayCount: number
-  total: number
+  total?: number
   totalCount: number
   upcomingCount: number
 }

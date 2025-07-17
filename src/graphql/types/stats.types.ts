@@ -72,6 +72,9 @@ export class DailyStats {
 @ObjectType()
 export class TodoStats {
   @Field(() => Number)
+  assignedCount!: number
+
+  @Field(() => Number)
   averageCompletionTime!: number
 
   @Field(() => Number)
@@ -84,6 +87,9 @@ export class TodoStats {
   completed!: number
 
   @Field(() => Number)
+  completedCount!: number
+
+  @Field(() => Number)
   completionRate!: number
 
   @Field(() => [DailyStats])
@@ -93,10 +99,16 @@ export class TodoStats {
   generatedAt!: Date
 
   @Field(() => Number)
+  importantCount!: number
+
+  @Field(() => Number)
   inProgress!: number
 
   @Field(() => Number)
   overdue!: number
+
+  @Field(() => Number)
+  overdueCount!: number
 
   @Field(() => Number)
   pending!: number
@@ -105,7 +117,16 @@ export class TodoStats {
   period!: StatsPeriod
 
   @Field(() => Number)
+  todayCount!: number
+
+  @Field(() => Number)
   total!: number
+
+  @Field(() => Number)
+  totalCount!: number
+
+  @Field(() => Number)
+  upcomingCount!: number
 }
 
 /**

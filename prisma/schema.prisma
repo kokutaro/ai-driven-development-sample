@@ -23,6 +23,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   apiKeys       ApiKey[]
+  userRoles     UserRole[]
 
   @@map("User")
 }
@@ -170,4 +171,96 @@ model ApiKey {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ApiKey")
+}
+
+// RBAC (Role-Based Access Control) models
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique // admin, editor, viewer
+  displayName String   // 管理者, 編集者, 閲覧者
+  description String?
+  isSystem    Boolean  @default(false) // システム組み込みロール
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("Role")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique // read_todo, write_todo, delete_todo
+  displayName String   // タスク読み取り, タスク書き込み, タスク削除
+  description String?
+  resource    String   // todo, category, user
+  action      String   // read, write, delete, manage
+  isSystem    Boolean  @default(true) // システム組み込み権限
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("Permission")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([userId, roleId])
+  @@map("UserRole")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([roleId, permissionId])
+  @@map("RolePermission")
+}
+
+// Event Store model for Event Sourcing
+model EventStore {
+  id          String   @id @default(cuid())
+  aggregateId String   // アグリゲートの識別子
+  eventType   String   // イベントタイプ
+  eventData   String   @db.Text // イベントデータ（JSON）
+  metadata    String   @db.Text // メタデータ（JSON）
+  version     Int      // アグリゲートのバージョン
+  occurredAt  DateTime // イベント発生日時
+  insertedAt  DateTime @default(now()) // EventStore挿入日時
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Indexes for performance
+  @@index([aggregateId, version])
+  @@index([aggregateId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([occurredAt])
+  @@index([insertedAt])
+
+  // Unique constraint for aggregate version to prevent concurrency issues
+  @@unique([aggregateId, version])
+  @@map("EventStore")
 }

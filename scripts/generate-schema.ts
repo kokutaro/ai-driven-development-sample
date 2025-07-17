@@ -4,13 +4,13 @@
  * TypeGraphQLからschema.graphqlファイルを生成します。
  */
 import 'reflect-metadata'
-import { buildGraphQLSchema } from '../src/graphql/schema/schema.builder'
+import { createGraphQLSchema } from '../src/graphql/schema'
 
 async function generateSchema() {
   try {
     console.log('🔄 GraphQLスキーマファイルを生成中...')
 
-    const schema = await buildGraphQLSchema()
+    const schema = await createGraphQLSchema()
 
     console.log(
       '✅ GraphQLスキーマファイルの生成が完了しました: schema.graphql'

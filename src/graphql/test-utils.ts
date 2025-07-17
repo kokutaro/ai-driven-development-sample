@@ -8,7 +8,7 @@
 import * as GraphQLModule from 'graphql'
 import 'reflect-metadata'
 
-import { buildGraphQLSchema } from './schema/schema.builder'
+import { createGraphQLSchema } from './schema'
 
 import type { DocumentNode, ExecutionResult, GraphQLSchema } from 'graphql'
 
@@ -65,7 +65,7 @@ export async function executeGraphQLQuery(
  * @returns GraphQLスキーマ
  */
 export async function getTestGraphQLSchema(): Promise<GraphQLSchema> {
-  testSchema ??= await buildGraphQLSchema()
+  testSchema ??= await createGraphQLSchema()
   return testSchema
 }
 
