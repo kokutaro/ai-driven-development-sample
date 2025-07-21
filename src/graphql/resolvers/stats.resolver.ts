@@ -63,6 +63,9 @@ export class StatsResolver {
    */
   @Query(() => TodoStats)
   async dashboardStats(@Ctx() context: GraphQLContext): Promise<TodoStats> {
+    // 認証チェック
+    requireAuth(context)
+
     // 今日の統計を取得
     return this.todoStats(
       {
@@ -81,12 +84,12 @@ export class StatsResolver {
    */
   @Query(() => TodoStats)
   async todoStats(
-    @Arg('filter', () => StatsFilter, { nullable: true }) filter?: StatsFilter,
-    @Ctx() context?: GraphQLContext
+    @Ctx() context: GraphQLContext,
+    @Arg('filter', () => StatsFilter, { nullable: true }) filter?: StatsFilter
   ): Promise<TodoStats> {
     // 認証チェック
-    requireAuth(context!)
-    const userId = getUserId(context!)
+    requireAuth(context)
+    const userId = getUserId(context)
 
     const period = filter?.period ?? StatsPeriod.MONTH
 
@@ -97,7 +100,7 @@ export class StatsResolver {
 
         // 基本的なTodo統計を取得
         const [todos, categories] = await Promise.all([
-          context!.prisma.todo.findMany({
+          context.prisma.todo.findMany({
             select: {
               categoryId: true,
               createdAt: true,
@@ -111,7 +114,7 @@ export class StatsResolver {
               ...dateFilter,
             },
           }),
-          context!.prisma.category.findMany({
+          context.prisma.category.findMany({
             select: {
               color: true,
               id: true,
