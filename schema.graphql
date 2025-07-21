@@ -3,6 +3,11 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+input AssignUserRoleInput {
+  roleId: ID!
+  userId: ID!
+}
+
 type Category {
   color: String!
   createdAt: DateTimeISO!
@@ -22,6 +27,18 @@ type CategoryStats {
   total: Float!
 }
 
+input CreateCategoryInput {
+  color: String!
+  name: String!
+}
+
+input CreateRoleInput {
+  description: String
+  displayName: String!
+  name: String!
+  permissionIds: [String!]
+}
+
 type DailyStats {
   completed: Float!
   created: Float!
@@ -35,15 +52,70 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 scalar DateTimeISO
 
 type Mutation {
+  assignUserRole(input: AssignUserRoleInput!): Boolean!
+  createCategory(input: CreateCategoryInput!): Category!
+  createRole(input: CreateRoleInput!): Role!
   createTodo(title: String!): Todo!
+  deleteCategory(id: String!): Boolean!
+  deleteTodo(id: String!): Boolean!
+  removeUserRole(input: RemoveUserRoleInput!): Boolean!
+  toggleTodoCompletion(id: String!): Todo!
+  updateCategory(id: String!, input: UpdateCategoryInput!): Category!
+  updateTodo(description: String, id: String!, isCompleted: Boolean, isImportant: Boolean, title: String): Todo!
+}
+
+type Permission {
+  action: String!
+  createdAt: DateTimeISO!
+  description: String
+  displayName: String!
+  id: ID!
+  isSystem: Boolean!
+  name: String!
+  resource: String!
+  updatedAt: DateTimeISO!
+}
+
+type PermissionCheckResult {
+  action: String
+  hasPermission: Boolean!
+  permission: String!
+  reason: String
+  resource: String
 }
 
 type Query {
   categories: [Category!]!
+  checkPermission(permission: String!, userId: String!): PermissionCheckResult!
+  checkRole(roleName: String!, userId: String!): RoleCheckResult!
   dashboardStats: TodoStats!
   hello: String!
+  permissions: [Permission!]!
+  roles: [Role!]!
   todoStats(filter: StatsFilter): TodoStats!
   todos: [Todo!]!
+}
+
+input RemoveUserRoleInput {
+  roleId: ID!
+  userId: ID!
+}
+
+type Role {
+  createdAt: DateTimeISO!
+  description: String
+  displayName: String!
+  id: ID!
+  isSystem: Boolean!
+  name: String!
+  permissions: [Permission!]
+  updatedAt: DateTimeISO!
+}
+
+type RoleCheckResult {
+  hasRole: Boolean!
+  reason: String
+  roleName: String!
 }
 
 input StatsFilter {
@@ -53,9 +125,7 @@ input StatsFilter {
   startDate: DateTimeISO
 }
 
-"""
-統計期間の指定
-"""
+"""統計期間の指定"""
 enum StatsPeriod {
   ALL_TIME
   MONTH
@@ -95,9 +165,7 @@ type Todo {
   userId: String!
 }
 
-"""
-Todoの優先度
-"""
+"""Todoの優先度"""
 enum TodoPriority {
   HIGH
   LOW
@@ -106,26 +174,36 @@ enum TodoPriority {
 }
 
 type TodoStats {
+  assignedCount: Float!
   averageCompletionTime: Float!
   cancelled: Float!
   categories: [CategoryStats!]!
   completed: Float!
+  completedCount: Float!
   completionRate: Float!
   dailyStats: [DailyStats!]!
   generatedAt: DateTimeISO!
+  importantCount: Float!
   inProgress: Float!
   overdue: Float!
+  overdueCount: Float!
   pending: Float!
   period: StatsPeriod!
+  todayCount: Float!
   total: Float!
+  totalCount: Float!
+  upcomingCount: Float!
 }
 
-"""
-Todoのステータス
-"""
+"""Todoのステータス"""
 enum TodoStatus {
   CANCELLED
   COMPLETED
   IN_PROGRESS
   PENDING
+}
+
+input UpdateCategoryInput {
+  color: String
+  name: String
 }

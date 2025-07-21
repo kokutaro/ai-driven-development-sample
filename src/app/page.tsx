@@ -6,8 +6,8 @@ import { useDisclosure, useMediaQuery } from '@mantine/hooks'
 import { Header } from '@/components/layout/header'
 import { TodoDetailDrawer } from '@/components/todo/todo-detail-drawer'
 import { TodoDetailPanel } from '@/components/todo/todo-detail-panel'
-import { TodoMainContent } from '@/components/todo/todo-main-content'
-import { TodoSidebar } from '@/components/todo/todo-sidebar'
+import { TodoMainContentGraphQL } from '@/components/todo/todo-main-content-graphql'
+import { TodoSidebarGraphQL } from '@/components/todo/todo-sidebar-graphql'
 import { useUiStore } from '@/stores/ui-store'
 
 /**
@@ -62,14 +62,14 @@ export default function TodoPage() {
 
         {/* 左サイドバー - フィルタ */}
         <AppShell.Navbar p="md">
-          <TodoSidebar />
+          <TodoSidebarGraphQL />
         </AppShell.Navbar>
 
         {/* メインコンテンツ - タスク一覧 */}
         <AppShell.Main
           onClick={!isDesktop && navbarOpened ? closeNavbar : undefined}
         >
-          <TodoMainContent />
+          <TodoMainContentGraphQL />
         </AppShell.Main>
 
         {/* 右サイドバー - タスク詳細（デスクトップのみ） */}

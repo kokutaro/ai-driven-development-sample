@@ -19,8 +19,10 @@ import {
   getUserId,
   optimizeDataLoaderCache,
   requireAuth,
+  requireResourceOwnership,
   withOptimisticLocking,
 } from '../context/graphql-context'
+import { requirePermissionInContext } from '../context/rbac-context'
 import { withPrismaErrorHandling } from '../errors/prisma-error-handler'
 import {
   Category,
@@ -31,6 +33,8 @@ import {
 } from '../types/todo.types'
 
 import type { GraphQLContext } from '../context/graphql-context'
+
+import { SYSTEM_PERMISSIONS } from '@/lib/rbac'
 
 // レート制限記録用のMapC(本来はRedisなどの外部ストレージを使用)
 const rateLimitMap = new Map<string, number[]>()
@@ -189,10 +193,13 @@ export class TodoResolver {
     @Ctx() context: GraphQLContext
   ): Promise<Todo> {
     // 1. 認証チェック
-    const _session = requireAuth(context)
+    requireAuth(context)
     const userId = getUserId(context)
 
-    // 2. 入力バリデーション
+    // 2. RBAC権限チェック: Todo書き込み権限が必要
+    await requirePermissionInContext(context, SYSTEM_PERMISSIONS.WRITE_TODO)
+
+    // 3. 入力バリデーション
     if (!title || typeof title !== 'string') {
       throw new Error('タイトルは必須です')
     }
@@ -266,6 +273,73 @@ export class TodoResolver {
   }
 
   /**
+   * TODOを削除します
+   */
+  @Mutation(() => Boolean)
+  async deleteTodo(
+    @Arg('id', () => String) id: string,
+    @Ctx() context: GraphQLContext
+  ): Promise<boolean> {
+    const startTime = Date.now()
+
+    // 1. 認証チェック
+    requireAuth(context)
+    getUserId(context)
+
+    // 2. RBAC権限チェック: Todo削除権限が必要
+    await requirePermissionInContext(context, SYSTEM_PERMISSIONS.DELETE_TODO)
+
+    // 3. 入力バリデーション
+    if (!id || typeof id !== 'string') {
+      throw new Error('無効のTodo IDです')
+    }
+
+    return withPrismaErrorHandling(
+      async () => {
+        // 3. 既存のTodoの存在確認と所有権チェック
+        const existingTodo = await context.prisma.todo.findUnique({
+          select: { userId: true },
+          where: { id },
+        })
+
+        if (!existingTodo) {
+          throw new Error('指定されたTodoが見つかりません')
+        }
+
+        requireResourceOwnership(context, existingTodo.userId)
+
+        // 4. 楽観的ロッキングによる削除
+        await withOptimisticLocking(
+          async () => {
+            await context.prisma.todo.delete({
+              where: { id },
+            })
+          },
+          `delete_todo_${id}`,
+          3
+        )
+
+        // パフォーマンス監視
+        const responseTime = Date.now() - startTime
+        if (responseTime > 500) {
+          console.warn(`[PERFORMANCE] Todo deletion took ${responseTime}ms`)
+        }
+
+        // DataLoaderキャッシュ最適化
+        optimizeDataLoaderCache(context)
+
+        // 関連キャッシュのクリア
+        context.dataloaders.subTaskLoader.clear(id)
+
+        return true
+      },
+      'delete',
+      'Todo',
+      id
+    )
+  }
+
+  /**
    * Hello World クエリ（動作確認用）
    */
   @Query(() => String)
@@ -307,6 +381,9 @@ export class TodoResolver {
 
     // 認証チェック
     const _session = requireAuth(context)
+
+    // RBAC権限チェック: Todo読み取り権限が必要
+    await requirePermissionInContext(context, SYSTEM_PERMISSIONS.READ_TODO)
 
     return withPrismaErrorHandling(
       async () => {
@@ -354,6 +431,207 @@ export class TodoResolver {
       },
       'findMany',
       'Todo'
+    )
+  }
+
+  /**
+   * TODO完了状態切替
+   */
+  @Mutation(() => Todo)
+  async toggleTodoCompletion(
+    @Arg('id', () => String) id: string,
+    @Ctx() context: GraphQLContext
+  ): Promise<Todo> {
+    const startTime = Date.now()
+
+    // 1. 認証チェック
+    requireAuth(context)
+    getUserId(context)
+
+    // 2. RBAC権限チェック: Todo書き込み権限が必要
+    await requirePermissionInContext(context, SYSTEM_PERMISSIONS.WRITE_TODO)
+
+    return withPrismaErrorHandling(
+      async () => {
+        // 3. 現在のTodo状態を取得
+        const currentTodo = await context.prisma.todo.findUnique({
+          select: {
+            isCompleted: true,
+            userId: true,
+          },
+          where: { id },
+        })
+
+        if (!currentTodo) {
+          throw new Error('指定されたTodoが見つかりません')
+        }
+
+        requireResourceOwnership(context, currentTodo.userId)
+
+        // 3. 楽観的ロッキングによる完了状態切替
+        const updatedTodo = await withOptimisticLocking(
+          async () => {
+            return await context.prisma.todo.update({
+              data: {
+                isCompleted: !currentTodo.isCompleted,
+                updatedAt: new Date(),
+              },
+              where: { id },
+            })
+          },
+          `toggle_todo_${id}`,
+          3
+        )
+
+        // パフォーマンス監視
+        const responseTime = Date.now() - startTime
+        if (responseTime > 500) {
+          console.warn(`[PERFORMANCE] Todo toggle took ${responseTime}ms`)
+        }
+
+        // DataLoaderキャッシュ最適化
+        optimizeDataLoaderCache(context)
+
+        // GraphQL型への変換
+        return {
+          categoryId: updatedTodo.categoryId ?? undefined,
+          completionRate: updatedTodo.isCompleted ? 100 : 0,
+          createdAt: updatedTodo.createdAt,
+          description: updatedTodo.description ?? undefined,
+          dueDate: updatedTodo.dueDate ?? undefined,
+          id: updatedTodo.id,
+          isCompleted: updatedTodo.isCompleted,
+          isImportant: updatedTodo.isImportant,
+          isOverdue: updatedTodo.dueDate
+            ? new Date() > updatedTodo.dueDate && !updatedTodo.isCompleted
+            : false,
+          order: updatedTodo.order,
+          priority: TodoPriority.MEDIUM,
+          status: TodoStatus.PENDING,
+          subTasks: [],
+          title: updatedTodo.title,
+          updatedAt: updatedTodo.updatedAt,
+          userId: updatedTodo.userId,
+        }
+      },
+      'toggle',
+      'Todo',
+      id
+    )
+  }
+
+  /**
+   * TODOを更新します - 楽観的ロッキング対応
+   */
+  @Mutation(() => Todo)
+  async updateTodo(
+    @Arg('id', () => String) id: string,
+    @Ctx() context: GraphQLContext,
+    @Arg('title', () => String, { nullable: true }) title?: string,
+    @Arg('description', () => String, { nullable: true }) description?: string,
+    @Arg('isCompleted', () => Boolean, { nullable: true })
+    isCompleted?: boolean,
+    @Arg('isImportant', () => Boolean, { nullable: true })
+    isImportant?: boolean
+  ): Promise<Todo> {
+    const startTime = Date.now()
+
+    // 1. 認証チェック
+    requireAuth(context)
+    getUserId(context)
+
+    // 2. RBAC権限チェック: Todo書き込み権限が必要
+    await requirePermissionInContext(context, SYSTEM_PERMISSIONS.WRITE_TODO)
+
+    // 3. 入力バリデーション
+    if (!id || typeof id !== 'string') {
+      throw new Error('無効のTodo IDです')
+    }
+
+    return withPrismaErrorHandling(
+      async () => {
+        // 3. 既存のTodoの存在確認と所有権チェック
+        const existingTodo = await context.prisma.todo.findUnique({
+          select: { userId: true },
+          where: { id },
+        })
+
+        if (!existingTodo) {
+          throw new Error('指定されたTodoが見つかりません')
+        }
+
+        requireResourceOwnership(context, existingTodo.userId)
+
+        // 4. タイトルのサニタイゼーション
+        const sanitizedTitle = title ? sanitizeInput(title) : undefined
+        const sanitizedDescription = description
+          ? sanitizeInput(description)
+          : undefined
+
+        // 5. バリデーション
+        if (sanitizedTitle !== undefined) {
+          if (sanitizedTitle.length === 0) {
+            throw new Error('タイトルは必須です')
+          }
+          if (sanitizedTitle.length > 200) {
+            throw new Error('タイトルは200文字以内で入力してください')
+          }
+        }
+
+        // 6. PrismaでTODOを更新
+        const updatedTodo = await withOptimisticLocking(
+          async () => {
+            return await context.prisma.todo.update({
+              data: {
+                ...(sanitizedTitle !== undefined && { title: sanitizedTitle }),
+                ...(sanitizedDescription !== undefined && {
+                  description: sanitizedDescription,
+                }),
+                ...(isCompleted !== undefined && { isCompleted }),
+                ...(isImportant !== undefined && { isImportant }),
+                updatedAt: new Date(),
+              },
+              where: { id },
+            })
+          },
+          `update_todo_${id}`,
+          3
+        )
+
+        // パフォーマンス監視
+        const responseTime = Date.now() - startTime
+        if (responseTime > 1000) {
+          console.warn(`[PERFORMANCE] Todo update took ${responseTime}ms`)
+        }
+
+        // DataLoaderキャッシュ最適化
+        optimizeDataLoaderCache(context)
+
+        // GraphQL型への変換
+        return {
+          categoryId: updatedTodo.categoryId ?? undefined,
+          completionRate: 0,
+          createdAt: updatedTodo.createdAt,
+          description: updatedTodo.description ?? undefined,
+          dueDate: updatedTodo.dueDate ?? undefined,
+          id: updatedTodo.id,
+          isCompleted: updatedTodo.isCompleted,
+          isImportant: updatedTodo.isImportant,
+          isOverdue: updatedTodo.dueDate
+            ? new Date() > updatedTodo.dueDate && !updatedTodo.isCompleted
+            : false,
+          order: updatedTodo.order,
+          priority: TodoPriority.MEDIUM,
+          status: TodoStatus.PENDING,
+          subTasks: [],
+          title: updatedTodo.title,
+          updatedAt: updatedTodo.updatedAt,
+          userId: updatedTodo.userId,
+        }
+      },
+      'update',
+      'Todo',
+      id
     )
   }
 }

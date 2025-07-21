@@ -71,6 +71,35 @@ describe('GraphQL Resolver Integration Tests - TDD Red Phase', () => {
           findUnique: vi.fn(),
           update: vi.fn(),
         },
+        userRole: {
+          create: vi.fn(),
+          delete: vi.fn(),
+          findMany: vi.fn().mockResolvedValue([
+            {
+              id: 'user-role-1',
+              role: {
+                displayName: 'User',
+                id: 'role-user',
+                isSystem: true,
+                name: 'user',
+                rolePermissions: [
+                  {
+                    permission: {
+                      action: 'read',
+                      displayName: 'Read Todo',
+                      id: 'perm-read-todo',
+                      name: 'read_todo',
+                      resource: 'todo',
+                    },
+                  },
+                ],
+              },
+              roleId: 'role-user',
+              userId: 'test-user-1',
+            },
+          ]),
+          findUnique: vi.fn(),
+        },
       },
       queryBus: {
         execute: vi.fn(),
